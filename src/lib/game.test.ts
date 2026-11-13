@@ -4,6 +4,7 @@ import type { LeaderboardData } from "./types";
 import { eligibleTargetRanks, generateRound, MAX_TIE_SIZE, todayET } from "./round";
 import { formatValue, ordinal, scoreHole } from "./scoring";
 import { search } from "@/components/PlayerSearch";
+import { buildShareText, holeEmoji } from "./share";
 
 const data = raw as unknown as LeaderboardData;
 
@@ -102,5 +103,27 @@ describe("player search", () => {
     expect(search(players, "ruth").map((p) => p.id)).toEqual(["ruthba01", "ruthbo01"]);
     expect(search(players, "babe r").map((p) => p.id)).toEqual(["ruthba01"]);
     expect(search(players, "b")).toEqual([]);
+  });
+});
+
+describe("share text", () => {
+  it("shows only hole scores, total and link (no spoilers)", () => {
+    const text = buildShareText({
+      date: "2026-11-13",
+      scores: [4, 12, 0],
+      url: "https://baseball-golf.vercel.app",
+    });
+    expect(text).toBe(
+      "Baseball Golf · Nov 13, 2026\n🟩 +4  🟨 +12  ⛳ ACE\nTotal: 16\nhttps://baseball-golf.vercel.app",
+    );
+  });
+  it("labels practice rounds and buckets scores", () => {
+    const text = buildShareText({ date: "2026-11-13", practiceSeed: "abc123", scores: [35, 90, 150], url: "x" });
+    expect(text.split("\n")[0]).toBe("Baseball Golf · Practice #abc123");
+    expect(text).toContain("🟧 +35  🟥 +90  ⬛ +150");
+    expect([0, 5, 6, 20, 21, 50, 51, 149, 150].map(holeEmoji).join("")).toBe("⛳🟩🟨🟨🟧🟧🟥🟥⬛");
+  });
+  it("celebrates a perfect round", () => {
+    expect(buildShareText({ date: "2026-11-13", scores: [0, 0, 0], url: "x" })).toContain("perfect round");
   });
 });

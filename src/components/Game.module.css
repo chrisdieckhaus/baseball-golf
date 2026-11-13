@@ -333,3 +333,40 @@
     display: none;
   }
 }
+
+/* ---- Share ---- */
+.share {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.shareBtn {
+  font: inherit;
+  font-weight: 700;
+  padding: 10px 22px;
+  border-radius: 999px;
+  border: none;
+  background: var(--flag);
+  color: var(--chalk);
+  cursor: pointer;
+  min-width: 12rem;
+}
+
+.shareBtn:hover {
+  filter: brightness(1.08);
+}
+
+.shareFallback {
+  width: 100%;
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  resize: none;
+}

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { GuessResult, PlayerIndexEntry, Round } from "@/lib/types";
 import { MAX_HOLE_SCORE, ordinal } from "@/lib/scoring";
+import { buildShareText } from "@/lib/share";
 import PlayerSearch from "./PlayerSearch";
 import styles from "./Game.module.css";
 
@@ -30,6 +31,95 @@ function save(key: string, results: (GuessResult | null)[]) {
   } catch {
     // storage unavailable (private mode etc.) — progress just won't persist
   }
+}
+
+/** Phones and tablets get the native share sheet; desktops copy to the clipboard. */
+function prefersShareSheet(): boolean {
+  return (
+    typeof navigator.share === "function" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(pointer: coarse)").matches
+  );
+}
+
+async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    // Older browsers / insecure contexts: fall back to a hidden textarea.
+    try {
+      const el = document.createElement("textarea");
+      el.value = text;
+      el.setAttribute("readonly", "");
+      el.style.position = "fixed";
+      el.style.opacity = "0";
+      document.body.appendChild(el);
+      el.select();
+      const ok = document.execCommand("copy");
+      document.body.removeChild(el);
+      return ok;
+    } catch {
+      return false;
+    }
+  }
+}
+
+type ShareStatus = "idle" | "copied" | "failed";
+
+function ShareButton({ round, results }: { round: Round; results: GuessResult[] }) {
+  const [status, setStatus] = useState<ShareStatus>("idle");
+  const [fallbackText, setFallbackText] = useState<string | null>(null);
+
+  async function share() {
+    const url = round.practiceSeed
+      ? `${window.location.origin}/?seed=${round.practiceSeed}`
+      : window.location.origin;
+    const text = buildShareText({
+      date: round.date,
+      practiceSeed: round.practiceSeed,
+      scores: results.map((r) => r.score),
+      url,
+    });
+
+    if (prefersShareSheet()) {
+      try {
+        await navigator.share({ text });
+        return;
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") return; // user closed the sheet
+        // otherwise fall through to copying
+      }
+    }
+
+    if (await copyText(text)) {
+      setStatus("copied");
+      setFallbackText(null);
+      setTimeout(() => setStatus("idle"), 2000);
+    } else {
+      // Couldn't reach the clipboard: show the text so it can be copied by hand.
+      setStatus("failed");
+      setFallbackText(text);
+    }
+  }
+
+  return (
+    <div className={styles.share}>
+      <button className={styles.shareBtn} onClick={share}>
+        {status === "copied" ? "Copied to clipboard ✓" : "Share score"}
+      </button>
+      {fallbackText && (
+        <textarea
+          className={styles.shareFallback}
+          readOnly
+          value={fallbackText}
+          rows={fallbackText.split("\n").length}
+          onFocus={(e) => e.currentTarget.select()}
+          aria-label="Share text"
+        />
+      )}
+    </div>
+  );
 }
 
 function formatDate(date: string): string {
@@ -214,6 +304,7 @@ export default function Game({ round, practiceEnabled }: { round: Round; practic
                 : ". Come back tomorrow for a new course."}
           </p>
         )}
+        {finished && <ShareButton round={round} results={results as GuessResult[]} />}
       </div>
     </section>
   );
