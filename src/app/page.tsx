@@ -1,69 +1,49 @@
-import Image from "next/image";
+import { Suspense } from "react";
+import { connection } from "next/server";
+import Game from "@/components/Game";
+import { getRound, leaderboards } from "@/lib/data";
+import { todayET } from "@/lib/round";
 import styles from "./page.module.css";
+
+async function TodaysRound() {
+  // Render per request so the round rolls over at midnight Eastern.
+  await connection();
+  return <Game round={getRound(todayET())} />;
+}
 
 export default function Home() {
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>
-            To get started, edit the{" "}
-            <code className={styles.code}>page.tsx</code> file.
-          </h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
+    <main className={styles.main}>
+      <header className={styles.header}>
+        <h1 className={styles.title}>
+          Baseball <span>Golf</span>
+        </h1>
+        <p className={styles.tagline}>
+          Three holes. Name the player at each all-time rank. Closest to the pin wins — lowest score is best.
+        </p>
+      </header>
+
+      <Suspense fallback={<p className={styles.loading}>Setting up today&apos;s course…</p>}>
+        <TodaysRound />
+      </Suspense>
+
+      <footer className={styles.footer}>
+        <p className={styles.dataNote}>
+          Stats through the {leaderboards.throughSeason} season. Career totals include the
+          1871–75 National Association and the 1920–48 Negro Leagues.
+        </p>
+        <p>
+          Data:{" "}
+          <a href="https://sabr.org/lahman-database/" target="_blank" rel="noreferrer">
+            Lahman Baseball Database
           </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
+          , licensed{" "}
+          <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank" rel="noreferrer">
+            CC BY-SA 3.0
           </a>
-        </div>
-      </main>
-    </div>
+          .
+        </p>
+      </footer>
+    </main>
   );
 }

@@ -1,0 +1,300 @@
+.game {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.date {
+  margin: 0;
+  text-align: center;
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--chalk-dim);
+}
+
+.holes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.hole {
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 14px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.25), 0 8px 24px rgba(0, 0, 0, 0.18);
+  border: 2px solid transparent;
+  transition: opacity 0.2s, border-color 0.2s;
+}
+
+.holeCurrent {
+  border-color: var(--flag);
+}
+
+.holeLocked {
+  opacity: 0.45;
+}
+
+.holeHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.holeNum {
+  font-weight: 700;
+  color: var(--fairway);
+}
+
+.prompt {
+  margin: 8px 0 0;
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.rank {
+  color: var(--flag);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat {
+  white-space: nowrap;
+}
+
+.qualifier {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  color: var(--ink-dim);
+}
+
+/* ---- Search ---- */
+.search {
+  margin-top: 14px;
+}
+
+.searchRow {
+  display: flex;
+  gap: 8px;
+}
+
+.comboWrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.input {
+  width: 100%;
+  font: inherit;
+  font-size: 1rem;
+  padding: 11px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--fairway);
+  box-shadow: 0 0 0 3px rgba(31, 94, 59, 0.18);
+}
+
+.listbox {
+  position: absolute;
+  z-index: 10;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.option {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.optionActive {
+  background: var(--card);
+}
+
+.optionUsed {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.optName {
+  font-weight: 600;
+}
+
+.optMeta {
+  font-size: 0.82rem;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+
+.swing {
+  font: inherit;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0 20px;
+  border: none;
+  border-radius: 10px;
+  background: var(--fairway);
+  color: #fff;
+  cursor: pointer;
+}
+
+.swing:disabled {
+  background: #9aa59d;
+  cursor: not-allowed;
+}
+
+.selectedMeta {
+  margin: 6px 2px 0;
+  font-size: 0.82rem;
+  color: var(--ink-dim);
+}
+
+.error {
+  margin: 8px 0 0;
+  color: var(--flag);
+  font-size: 0.9rem;
+}
+
+/* ---- Result ---- */
+.result {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line);
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.resultRows p {
+  margin: 0 0 6px;
+  line-height: 1.4;
+}
+
+.resultRows p:last-child {
+  margin-bottom: 0;
+}
+
+.resultLabel {
+  display: block;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.muted {
+  color: var(--ink-dim);
+}
+
+.score {
+  flex-shrink: 0;
+  min-width: 76px;
+  text-align: center;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--fairway);
+  color: #fff;
+}
+
+.ace {
+  background: var(--flag);
+}
+
+.scoreNum {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.scoreNote {
+  display: block;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+/* ---- Scorecard ---- */
+.card {
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.cardTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.cardTable th,
+.cardTable td {
+  border: 1px solid var(--line);
+  padding: 6px 8px;
+}
+
+.cardTable th[scope="row"] {
+  text-align: left;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  width: 22%;
+}
+
+.total {
+  font-weight: 700;
+}
+
+.final {
+  margin: 12px 0 0;
+  text-align: center;
+}
+
+@media (max-width: 520px) {
+  .prompt {
+    font-size: 1.2rem;
+  }
+  .result {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .optMeta {
+    display: none;
+  }
+}

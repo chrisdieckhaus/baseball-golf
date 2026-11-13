@@ -1,0 +1,64 @@
+export type StatGroup = "Batting" | "Pitching";
+
+export interface LeaderboardEntry {
+  id: string;
+  name: string;
+  rank: number;
+  value: number;
+}
+
+export interface Leaderboard {
+  key: string;
+  label: string;
+  group: StatGroup;
+  kind: "count" | "rate";
+  decimals: number;
+  lowerIsBetter: boolean;
+  qualifier: string | null;
+  entries: LeaderboardEntry[];
+}
+
+export interface LeaderboardData {
+  source: string;
+  throughSeason: number;
+  maxRank: number;
+  stats: Record<string, Leaderboard>;
+}
+
+/** A hole as shown to the player before guessing (no answers). */
+export interface Hole {
+  statKey: string;
+  label: string;
+  group: StatGroup;
+  qualifier: string | null;
+  targetRank: number;
+}
+
+export interface Round {
+  date: string; // YYYY-MM-DD, America/New_York
+  holes: Hole[];
+}
+
+export interface GuessResult {
+  hole: number;
+  score: number;
+  guess: {
+    id: string;
+    name: string;
+    rank: number | null; // null = unranked (or outside the stored top ranks)
+    value: string | null;
+  };
+  target: {
+    rank: number;
+    players: { name: string; value: string }[];
+  };
+}
+
+/** Compact player record served to the browser for autocomplete. */
+export interface PlayerIndexEntry {
+  id: string;
+  n: string; // name
+  y: string; // years active
+  p: string; // primary position
+  g: number; // games (used to rank suggestions)
+}
