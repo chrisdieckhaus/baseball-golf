@@ -1,6 +1,7 @@
 import "server-only";
 import raw from "@/data/leaderboards.json";
-import type { GuessResult, LeaderboardData } from "./types";
+import type { GuessResult, LeaderboardData, PlayState } from "./types";
+import type { StoredPlay } from "./plays";
 import { generateRound } from "./round";
 import { formatValue, scoreHole } from "./scoring";
 
@@ -39,4 +40,13 @@ export function scoreGuess(
       players: targets.map((e) => ({ name: e.name, value: fmt(e.value) })),
     },
   };
+}
+
+/** Rebuild the full reveal for each saved guess (stat values, the pin, etc.) from the leaderboards. */
+export function resultsFromPlay(date: string, play: StoredPlay | null): PlayState["results"] {
+  const holes = getRound(date).holes;
+  return holes.map((_, i) => {
+    const id = play?.guessIds[i];
+    return id ? scoreGuess(date, undefined, i, id, play!.guessNames[i] ?? id) : null;
+  });
 }

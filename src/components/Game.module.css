@@ -370,3 +370,15 @@
   color: var(--ink);
   resize: none;
 }
+
+.percentile {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--ink-dim);
+}
+
+.percentile strong {
+  color: var(--ink);
+  font-size: 1.1rem;
+}

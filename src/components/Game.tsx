@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { GuessResult, PlayerIndexEntry, Round } from "@/lib/types";
+import type { GuessResult, PlayerIndexEntry, PlayState, Round, RoundStats } from "@/lib/types";
 import { MAX_HOLE_SCORE, ordinal } from "@/lib/scoring";
 import { buildShareText } from "@/lib/share";
+import { todayET } from "@/lib/round";
 import PlayerSearch from "./PlayerSearch";
 import styles from "./Game.module.css";
 
@@ -122,6 +123,21 @@ function ShareButton({ round, results }: { round: Round; results: GuessResult[] 
   );
 }
 
+function PercentileLine({ stats, isToday }: { stats: RoundStats; isToday: boolean }) {
+  const day = isToday ? "today" : "that day";
+  if (stats.percentBeaten === null) {
+    return <p className={styles.percentile}>You&apos;re the first to finish this round {day}. Check back later to see how you stack up.</p>;
+  }
+  const others = stats.others.toLocaleString("en-US");
+  return (
+    <p className={styles.percentile}>
+      You beat <strong>{stats.percentBeaten}%</strong> of the {others} other {stats.others === 1 ? "player" : "players"}{" "}
+      who finished {day}
+      {stats.tied > 0 && <> (tied with {stats.tied.toLocaleString("en-US")})</>}.
+    </p>
+  );
+}
+
 function formatDate(date: string): string {
   return new Date(`${date}T12:00:00Z`).toLocaleDateString("en-US", {
     weekday: "long",
@@ -139,14 +155,37 @@ export default function Game({ round, practiceEnabled }: { round: Round; practic
   const [results, setResults] = useState<(GuessResult | null)[]>(() => round.holes.map(() => null));
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState<RoundStats | null>(null);
 
-  // Restore today's progress after hydration. localStorage isn't available during
-  // server rendering, so this has to happen in an effect to avoid a hydration mismatch.
+  // Restore progress after hydration. localStorage isn't available during server
+  // rendering, so this has to happen in an effect to avoid a hydration mismatch.
+  // Daily rounds then load the saved state from the server, which is the source of truth
+  // (it's what enforces one guess per hole) and also provides the percentile.
   useEffect(() => {
     const saved = loadSaved(key);
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (saved && saved.length === round.holes.length) setResults(saved);
-  }, [key, round.holes.length]);
+    if (isPractice) return;
+
+    let cancelled = false;
+    fetch(`/api/play?date=${round.date}`, { cache: "no-store" })
+      .then((res) => (res.ok ? (res.json() as Promise<PlayState>) : null))
+      .then((state) => {
+        if (cancelled || !state) return;
+        // Keep browser-only progress (from before the server tracked rounds) if the server has none.
+        if (state.results.some(Boolean)) {
+          setResults(state.results);
+          save(key, state.results);
+        }
+        setStats(state.stats);
+      })
+      .catch(() => {
+        // Offline or server error: keep whatever was saved in this browser.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [key, round.date, round.holes.length, isPractice]);
 
   const current = results.findIndex((r) => r === null);
   const finished = current === -1;
@@ -170,11 +209,21 @@ export default function Game({ round, practiceEnabled }: { round: Round; practic
         }),
       });
       const data = await res.json();
+      if (res.status === 409 && data.state) {
+        // The server already has this hole (e.g. played in another tab): show what it has.
+        const state = data.state as PlayState;
+        setResults(state.results);
+        save(key, state.results);
+        setStats(state.stats);
+        setError(data.error);
+        return;
+      }
       if (!res.ok) throw new Error(data.error ?? "Something went wrong");
       const next = results.slice();
-      next[holeIndex] = data as GuessResult;
+      next[holeIndex] = data.result as GuessResult;
       setResults(next);
       save(key, next);
+      if (data.stats) setStats(data.stats as RoundStats);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {
@@ -304,6 +353,7 @@ export default function Game({ round, practiceEnabled }: { round: Round; practic
                 : ". Come back tomorrow for a new course."}
           </p>
         )}
+        {finished && !isPractice && stats && <PercentileLine stats={stats} isToday={round.date === todayET()} />}
         {finished && <ShareButton round={round} results={results as GuessResult[]} />}
       </div>
     </section>

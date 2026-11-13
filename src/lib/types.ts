@@ -63,3 +63,17 @@ export interface PlayerIndexEntry {
   p: string; // primary position
   g: number; // games (used to rank suggestions)
 }
+
+/** How a finished round compares with everyone else who finished it on its day. */
+export interface RoundStats {
+  others: number; // other players who finished (guests included)
+  worse: number; // of those, how many scored worse
+  tied: number;
+  percentBeaten: number | null; // null when nobody else has finished yet
+}
+
+/** A player's saved progress on a round, as returned by GET /api/play. */
+export interface PlayState {
+  results: (GuessResult | null)[];
+  stats: RoundStats | null; // set once the round is finished
+}
