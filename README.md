@@ -38,7 +38,12 @@ npm test        # unit tests (scoring, round generation, leaderboard sanity chec
 npm run build
 ```
 
-There's no database or environment variables. It deploys to Vercel as a standard Next.js app.
+There's no database. It deploys to Vercel as a standard Next.js app.
+
+### Practice rounds (testing)
+A **↻ New practice round** button loads a random round at `/?seed=<random>`. That round is seeded by the `seed` value, not the date, so the same link always gives the same round and testers can share them. Practice progress is saved separately from the daily round.
+
+To turn practice rounds off before launch, set the environment variable `DISABLE_PRACTICE=1` in Vercel and redeploy. That hides the button and makes the API reject practice rounds.
 
 ## How it works
 - `src/lib/round.ts` builds each day's round from a seed based on the date, so every player gets the same round without storing anything.

@@ -1,25 +1,32 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { GuessResult, PlayerIndexEntry, Round } from "@/lib/types";
 import { MAX_HOLE_SCORE, ordinal } from "@/lib/scoring";
 import PlayerSearch from "./PlayerSearch";
 import styles from "./Game.module.css";
 
-const storageKey = (date: string) => `baseball-golf:${date}`;
+/** Progress is saved per round: the date for daily rounds, the seed for practice rounds. */
+const storageKey = (round: Round) =>
+  round.practiceSeed ? `baseball-golf:practice:${round.practiceSeed}` : `baseball-golf:${round.date}`;
 
-function loadSaved(date: string): (GuessResult | null)[] | null {
+function newPracticeSeed(): string {
+  return Math.random().toString(36).slice(2, 10);
+}
+
+function loadSaved(key: string): (GuessResult | null)[] | null {
   try {
-    const raw = localStorage.getItem(storageKey(date));
+    const raw = localStorage.getItem(key);
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
 }
 
-function save(date: string, results: (GuessResult | null)[]) {
+function save(key: string, results: (GuessResult | null)[]) {
   try {
-    localStorage.setItem(storageKey(date), JSON.stringify(results));
+    localStorage.setItem(key, JSON.stringify(results));
   } catch {
     // storage unavailable (private mode etc.) — progress just won't persist
   }
@@ -35,7 +42,10 @@ function formatDate(date: string): string {
   });
 }
 
-export default function Game({ round }: { round: Round }) {
+export default function Game({ round, practiceEnabled }: { round: Round; practiceEnabled: boolean }) {
+  const router = useRouter();
+  const key = storageKey(round);
+  const isPractice = Boolean(round.practiceSeed);
   const [results, setResults] = useState<(GuessResult | null)[]>(() => round.holes.map(() => null));
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,10 +53,10 @@ export default function Game({ round }: { round: Round }) {
   // Restore today's progress after hydration. localStorage isn't available during
   // server rendering, so this has to happen in an effect to avoid a hydration mismatch.
   useEffect(() => {
-    const saved = loadSaved(round.date);
+    const saved = loadSaved(key);
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (saved && saved.length === round.holes.length) setResults(saved);
-  }, [round.date, round.holes.length]);
+  }, [key, round.holes.length]);
 
   const current = results.findIndex((r) => r === null);
   const finished = current === -1;
@@ -61,14 +71,20 @@ export default function Game({ round }: { round: Round }) {
       const res = await fetch("/api/guess", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: round.date, hole: holeIndex, playerId: player.id, playerName: player.n }),
+        body: JSON.stringify({
+          date: round.date,
+          seed: round.practiceSeed,
+          hole: holeIndex,
+          playerId: player.id,
+          playerName: player.n,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Something went wrong");
       const next = results.slice();
       next[holeIndex] = data as GuessResult;
       setResults(next);
-      save(round.date, next);
+      save(key, next);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {
@@ -78,7 +94,24 @@ export default function Game({ round }: { round: Round }) {
 
   return (
     <section className={styles.game}>
-      <p className={styles.date}>{formatDate(round.date)}</p>
+      {isPractice ? (
+        <p className={styles.date}>Practice round · #{round.practiceSeed}</p>
+      ) : (
+        <p className={styles.date}>{formatDate(round.date)}</p>
+      )}
+
+      {practiceEnabled && (
+        <div className={styles.practiceBar}>
+          <button className={styles.practiceBtn} onClick={() => router.push(`/?seed=${newPracticeSeed()}`)}>
+            ↻ New practice round
+          </button>
+          {isPractice && (
+            <button className={styles.practiceLink} onClick={() => router.push("/")}>
+              Back to today&apos;s round
+            </button>
+          )}
+        </div>
+      )}
 
       <ol className={styles.holes}>
         {round.holes.map((hole, i) => {
@@ -174,7 +207,11 @@ export default function Game({ round }: { round: Round }) {
         {finished && (
           <p className={styles.final}>
             Round complete: <strong>{total}</strong>
-            {total === 0 ? " — a perfect round!" : ". Come back tomorrow for a new course."}
+            {total === 0
+              ? " — a perfect round!"
+              : isPractice
+                ? ". Try another practice round?"
+                : ". Come back tomorrow for a new course."}
           </p>
         )}
       </div>

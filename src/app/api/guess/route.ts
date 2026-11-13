@@ -1,5 +1,5 @@
-import { getRound, scoreGuess } from "@/lib/data";
-import { HOLES_PER_ROUND, isValidDate, todayET } from "@/lib/round";
+import { scoreGuess } from "@/lib/data";
+import { HOLES_PER_ROUND, isValidDate, isValidSeed, practiceEnabled, todayET } from "@/lib/round";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -8,13 +8,22 @@ export async function POST(request: Request) {
   } catch {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
-  const { date, hole, playerId, playerName } = (body ?? {}) as Record<string, unknown>;
+  const { date, seed, hole, playerId, playerName } = (body ?? {}) as Record<string, unknown>;
 
   if (typeof date !== "string" || !isValidDate(date)) {
     return Response.json({ error: "Invalid date" }, { status: 400 });
   }
-  // Don't let anyone peek at future rounds.
-  if (date > todayET()) {
+  let practiceSeed: string | undefined;
+  if (seed !== undefined && seed !== null) {
+    if (!practiceEnabled()) {
+      return Response.json({ error: "Practice rounds are turned off" }, { status: 400 });
+    }
+    if (!isValidSeed(seed)) {
+      return Response.json({ error: "Invalid practice round" }, { status: 400 });
+    }
+    practiceSeed = seed;
+  } else if (date > todayET()) {
+    // Don't let anyone peek at future daily rounds.
     return Response.json({ error: "That round isn't available yet" }, { status: 400 });
   }
   if (typeof hole !== "number" || !Number.isInteger(hole) || hole < 0 || hole >= HOLES_PER_ROUND) {
@@ -25,6 +34,5 @@ export async function POST(request: Request) {
   }
   const name = typeof playerName === "string" ? playerName.slice(0, 80) : playerId;
 
-  getRound(date); // validates the round can be generated
-  return Response.json(scoreGuess(date, hole, playerId, name));
+  return Response.json(scoreGuess(date, practiceSeed, hole, playerId, name));
 }

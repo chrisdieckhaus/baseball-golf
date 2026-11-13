@@ -74,6 +74,12 @@ describe("generateRound", () => {
       }
     }
   });
+  it("practice rounds are seeded by the seed, not the date", () => {
+    const a = generateRound(data, "2026-11-13", "abc123");
+    expect(a.practiceSeed).toBe("abc123");
+    expect(a.holes).toEqual(generateRound(data, "2027-05-01", "abc123").holes);
+    expect(a.holes).not.toEqual(generateRound(data, "2026-11-13").holes);
+  });
   it("only targets ranks somebody holds", () => {
     expect(eligibleTargetRanks(data, "W")).not.toContain(4);
   });

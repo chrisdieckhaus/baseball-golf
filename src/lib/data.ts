@@ -6,13 +6,19 @@ import { formatValue, scoreHole } from "./scoring";
 
 export const leaderboards = raw as unknown as LeaderboardData;
 
-export function getRound(date: string) {
-  return generateRound(leaderboards, date);
+export function getRound(date: string, practiceSeed?: string) {
+  return generateRound(leaderboards, date, practiceSeed);
 }
 
-/** Score a guess for one hole of a date's round. */
-export function scoreGuess(date: string, holeIndex: number, playerId: string, playerName: string): GuessResult {
-  const hole = getRound(date).holes[holeIndex];
+/** Score a guess for one hole of a round (the daily round, or a practice round if seeded). */
+export function scoreGuess(
+  date: string,
+  practiceSeed: string | undefined,
+  holeIndex: number,
+  playerId: string,
+  playerName: string,
+): GuessResult {
+  const hole = getRound(date, practiceSeed).holes[holeIndex];
   const stat = leaderboards.stats[hole.statKey];
   const fmt = (v: number) => formatValue(v, stat.kind, stat.decimals);
 
