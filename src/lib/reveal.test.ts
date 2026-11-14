@@ -42,6 +42,13 @@ describe("Sports Revealer data", () => {
     expect(byId.get("rosepe01")!.clues[4].value).toBe("Bats S, throws R");
   });
 
+  it("lists each team once, alphabetically", () => {
+    const teams = byId.get("henderi01")!.clues[8].value.split(", ");
+    expect(teams).toEqual([...new Set(teams)].sort());
+    expect(teams).toContain("Oakland Athletics");
+    expect(byId.get("henderi01")!.clues[8].value).not.toContain("→");
+  });
+
   it("knows Rickey Henderson's best stats", () => {
     const rickey = byId.get("henderi01")!;
     expect(rickey.clues.slice(2, 4).map((c) => c.label).sort()).toEqual(["Runs", "Stolen bases"]);

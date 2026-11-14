@@ -52,7 +52,7 @@ A third daily game on the same data. Each day everyone gets the same mystery pla
 3. Inning 6: positions (pitchers: starter, reliever or closer).
 4. Inning 7: awards (All-Star, MVP, Cy Young, ROY, Gold Glove, Silver Slugger, WS MVP, Triple Crowns, World Series titles, Hall of Fame).
 5. Inning 8: years active.
-6. Inning 9: teams.
+6. Inning 9: teams, each listed once, alphabetically.
 
 - **Answer pool:** the top 150 in Baseball-Reference career WAR, kept in `scripts/data/career_war_top150.csv`.
     - It leaves out players who debuted before 1890, because they aren't in this data.
