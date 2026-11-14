@@ -13,6 +13,8 @@ import pg from "pg";
 import { leaderboards } from "../src/lib/leaderboards";
 import { playableDates } from "../src/lib/round";
 import { storeRoundIfMissing } from "../src/lib/rounds";
+import { RANK_LAUNCH_DATE } from "../src/lib/rank";
+import { storeRankRoundIfMissing } from "../src/lib/rank-rounds";
 
 const url = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
 if (!url) {
@@ -28,6 +30,12 @@ try {
   for (const date of dates) {
     if (await storeRoundIfMissing(client, leaderboards, date)) created++;
   }
+  let rankCreated = 0;
+  const rankDates = dates.filter((d) => d >= RANK_LAUNCH_DATE);
+  for (const date of rankDates) {
+    if (await storeRankRoundIfMissing(client, leaderboards, date)) rankCreated++;
+  }
+  console.log(`[backfill-rounds] Stats Ranker: checked ${rankDates.length} round(s); saved ${rankCreated} new.`);
   console.log(
     `[backfill-rounds] checked ${dates.length} daily round(s) through ${dates.at(-1)}; saved ${created} new.`,
   );

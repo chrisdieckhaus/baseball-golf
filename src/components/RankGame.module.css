@@ -1,0 +1,258 @@
+.game {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.date {
+  margin: 0;
+  text-align: center;
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--chalk-dim);
+}
+
+.card {
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.25), 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.kicker {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.stat {
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+}
+
+.qualifier {
+  margin: 2px 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+}
+
+.instructions {
+  margin: 10px 0 14px;
+  color: var(--ink-dim);
+}
+
+.end {
+  margin: 6px 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fairway);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+  padding: 8px 10px 8px 14px;
+  background: #fff;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  position: relative;
+}
+
+.dragging {
+  z-index: 2;
+  cursor: grabbing;
+  border-color: var(--fairway);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.2);
+}
+
+.locked {
+  cursor: default;
+  touch-action: auto;
+}
+
+.right {
+  border-color: #3c9a5f;
+  background: #e5f4ea;
+}
+
+.off1 {
+  border-color: #d7b33a;
+  background: #fbf3d6;
+}
+
+.off2 {
+  border-color: #e08a3a;
+  background: #fbe6d2;
+}
+
+.off3 {
+  border-color: var(--flag);
+  background: #f9dcd7;
+}
+
+.pos {
+  width: 1.4em;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--ink-dim);
+}
+
+.name {
+  flex: 1;
+  font-weight: 600;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.controls button {
+  width: 34px;
+  height: 34px;
+  font-size: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.controls button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.grip {
+  padding: 0 4px 0 6px;
+  font-size: 1.3rem;
+  color: var(--ink-dim);
+}
+
+.result {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.submit {
+  display: block;
+  width: 100%;
+  margin-top: 18px;
+  padding: 14px;
+  font: inherit;
+  font-weight: 700;
+  font-size: 1.05rem;
+  border: none;
+  border-radius: 10px;
+  background: var(--flag);
+  color: #fff;
+  cursor: pointer;
+}
+
+.submit:disabled {
+  opacity: 0.6;
+}
+
+.error {
+  margin: 10px 0 0;
+  color: var(--flag);
+}
+
+.score {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.score span {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--ink-dim);
+}
+
+.answerTitle {
+  margin: 16px 0 8px;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.answer {
+  margin: 0;
+  padding-left: 1.4em;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.answer li {
+  padding-left: 4px;
+}
+
+.answer li > span {
+  display: inline-block;
+}
+
+.answer .name {
+  display: block;
+}
+
+.value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  margin-right: 10px;
+}
+
+.rank {
+  font-size: 0.85rem;
+  color: var(--ink-dim);
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  font-size: 0.9rem;
+}
+
+.links a,
+.linkBtn {
+  color: var(--chalk);
+}
+
+.linkBtn {
+  font: inherit;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(248, 245, 236, 0.5);
+  background: transparent;
+  cursor: pointer;
+}

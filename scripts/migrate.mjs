@@ -46,6 +46,15 @@ CREATE TABLE IF NOT EXISTS rounds (
   holes       jsonb NOT NULL,
   created_at  timestamptz NOT NULL DEFAULT now()
 );
+
+-- Stats Ranker: one row per daily round, saved the first time it's needed.
+-- player_ids is the order the players are shown in. Values aren't saved.
+CREATE TABLE IF NOT EXISTS rank_rounds (
+  round_date  date PRIMARY KEY,
+  stat_key    text NOT NULL,
+  player_ids  text[] NOT NULL,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
 `;
 
 const client = new pg.Client({ connectionString: url });
