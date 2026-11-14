@@ -9,7 +9,7 @@ import { playableDates, roundNumber, todayET } from "@/lib/round";
 import styles from "./archive.module.css";
 
 export const metadata: Metadata = {
-  title: "Previous rounds · Baseball Golf",
+  title: "Baseball Golf archive",
   description: "Play any previous daily round of Baseball Golf.",
 };
 

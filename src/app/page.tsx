@@ -1,10 +1,17 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import Game from "@/components/Game";
 import { getRound, leaderboards } from "@/lib/data";
 import { isPlayableDate, isValidSeed, practiceEnabled, todayET } from "@/lib/round";
 import styles from "./page.module.css";
+
+export const metadata: Metadata = {
+  // The layout's title template doesn't apply to a page in the same segment.
+  title: { absolute: "Baseball Golf · Daily Dugout" },
+  description: "A daily baseball trivia game: name the player at each all-time career rank. Lowest score wins.",
+};
 
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
 
