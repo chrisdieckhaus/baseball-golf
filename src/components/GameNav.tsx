@@ -5,9 +5,9 @@ import { usePathname } from "next/navigation";
 import styles from "./GameNav.module.css";
 
 const GAMES = [
-  { href: "/", label: "Baseball Golf" },
-  { href: "/rank", label: "Stats Ranker" },
-  { href: "/reveal", label: "Sports Revealer" },
+  { href: "/", label: "Golf" },
+  { href: "/rank", label: "Ranker" },
+  { href: "/reveal", label: "Revealer" },
 ];
 
 /** Links to every game, shown at the top of each page. The current game is highlighted. */
