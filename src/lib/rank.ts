@@ -53,30 +53,41 @@ export interface RankReveal {
 }
 
 /**
- * Pick the stat and five players. Picks five random players from the stat's top
- * RANK_POOL with distinct values, so there's exactly one right order.
- * (Smarter selection — spread of ranks, eras, recognizability — comes later.)
+ * Pick the stat and five players: one from each fifth of the stat's top
+ * RANK_POOL (ranks 1–60, 61–120, 121–180, 181–240, 241–300), so every round
+ * spans the leaderboard. The five are then shuffled into the order they're shown.
  */
 export function generateStoredRankRound(data: LeaderboardData, date: string, practiceSeed?: string): StoredRankRound {
   const seedString = practiceSeed ? `stats-ranker:practice:${practiceSeed}` : `stats-ranker:${date}`;
   const rand = mulberry32(hashString(seedString));
+  const pick = <T,>(arr: T[]): T => arr[Math.floor(rand() * arr.length)];
   const keys = Object.keys(data.stats).sort();
+  const bandSize = RANK_POOL / RANK_PLAYERS;
 
   for (;;) {
-    const statKey = keys[Math.floor(rand() * keys.length)];
-    const pool = data.stats[statKey].entries.filter((e) => e.rank <= RANK_POOL);
-    const picked: string[] = [];
+    const statKey = pick(keys);
+    const entries = data.stats[statKey].entries;
     const values = new Set<number>();
-    // Partial Fisher–Yates over a copy, skipping players who'd tie a value already picked.
-    const deck = [...pool];
-    for (let i = 0; i < deck.length && picked.length < RANK_PLAYERS; i++) {
-      const j = i + Math.floor(rand() * (deck.length - i));
-      [deck[i], deck[j]] = [deck[j], deck[i]];
-      if (values.has(deck[i].value)) continue;
-      values.add(deck[i].value);
-      picked.push(deck[i].id);
+    const picked: string[] = [];
+    for (let band = 0; band < RANK_PLAYERS; band++) {
+      const lo = band * bandSize + 1;
+      const hi = (band + 1) * bandSize;
+      // Tied players share a rank, so they always land in the same band; the value
+      // check is just a guard so there's exactly one right order.
+      const candidates = entries.filter((e) => e.rank >= lo && e.rank <= hi && !values.has(e.value));
+      if (candidates.length === 0) break;
+      const e = pick(candidates);
+      values.add(e.value);
+      picked.push(e.id);
     }
-    if (picked.length === RANK_PLAYERS) return { statKey, playerIds: picked };
+    if (picked.length < RANK_PLAYERS) continue; // stat too short; try another
+
+    // Fisher–Yates: show them in a random order.
+    for (let i = picked.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [picked[i], picked[j]] = [picked[j], picked[i]];
+    }
+    return { statKey, playerIds: picked };
   }
 }
 

@@ -35,6 +35,28 @@ describe("Stats Ranker round", () => {
     }
   });
 
+  it("takes one player from each fifth of the top 300", () => {
+    for (let i = 0; i < 200; i++) {
+      const r = generateStoredRankRound(leaderboards, date, `b${i}`);
+      const stat = leaderboards.stats[r.statKey];
+      const bands = r.playerIds
+        .map((id) => Math.floor((stat.entries.find((e) => e.id === id)!.rank - 1) / (RANK_POOL / RANK_PLAYERS)))
+        .sort();
+      expect(bands).toEqual([0, 1, 2, 3, 4]);
+    }
+  });
+
+  it("doesn't show the players in band order", () => {
+    let inOrder = 0;
+    for (let i = 0; i < 200; i++) {
+      const r = generateStoredRankRound(leaderboards, date, `s${i}`);
+      const round = rankRoundFromStored(leaderboards, date, r);
+      if (scoreRankOrder(leaderboards, round, r.playerIds).score === 0) inOrder++;
+    }
+    // A random shuffle is already right 1 time in 120.
+    expect(inOrder).toBeLessThan(10);
+  });
+
   it("orders lower-is-better stats ascending", () => {
     const stored = { statKey: "ERA", playerIds: leaderboards.stats.ERA.entries.slice(0, 5).map((e) => e.id).reverse() };
     const r = rankRoundFromStored(leaderboards, date, stored);
