@@ -4,8 +4,9 @@ import GameNav from "@/components/GameNav";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Baseball Golf",
-  description: "A daily baseball trivia game: name the player at each all-time career rank. Lowest score wins.",
+  title: { default: "Daily Dugout", template: "%s · Daily Dugout" },
+  description: "Daily Dugout: quick daily sports stats games. Baseball Golf, Stats Ranker and Sports Revealer.",
+  applicationName: "Daily Dugout",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

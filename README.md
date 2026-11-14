@@ -1,8 +1,16 @@
-# Baseball Golf
+# Daily Dugout
+
+Quick daily sports stats games, all in one app:
+
+- **Baseball Golf** (`/`): name the player at each all-time career rank.
+- **Stats Ranker** (`/rank`): put five players in order of one career stat.
+- **Sports Revealer** (`/reveal`): name the mystery player from his stats, one clue per inning.
+
+## Baseball Golf
 
 A daily baseball trivia game. Each day everyone plays the same three holes. Each hole gives a career stat and an all-time rank, for example "83rd all-time in career RBIs." Name the player you think holds that rank. Your score is how far off your player's rank is, capped at 150 per hole. Lowest total wins.
 
-## Rules
+### Rules
 - Three holes a day. Each hole's stat is random and its target rank is between 1 and 150. A new round starts at midnight Eastern.
 - One guess per hole, and you can't use the same player twice in a round.
 - Hole score = `min(|target rank − your player's rank|, 150)`. An unranked guess scores 150.

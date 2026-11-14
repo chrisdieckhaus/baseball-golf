@@ -10,13 +10,16 @@ const GAMES = [
   { href: "/reveal", label: "Revealer" },
 ];
 
-/** Links to every game, shown at the top of each page. The current game is highlighted. */
+/** The Daily Dugout name and links to every game, shown at the top of each page. The current game is highlighted. */
 export default function GameNav() {
   const pathname = usePathname();
   // The archive belongs to Baseball Golf.
   const current = pathname === "/archive" ? "/" : pathname;
   return (
     <nav className={styles.nav} aria-label="Games">
+      <Link href="/" className={styles.brand}>
+        Daily Dugout
+      </Link>
       {GAMES.map((g) => (
         <Link
           key={g.href}
