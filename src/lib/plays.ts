@@ -115,8 +115,9 @@ export async function recordGuess(
 }
 
 /**
- * How a finished score compares with everyone else who finished this round on its day.
- * Guests count. The player's own play is excluded from the comparison.
+ * How a finished score compares with everyone else who has finished this round,
+ * whether they played it on its day or later from the archive. Guests count.
+ * The player's own play is excluded from the comparison.
  */
 export async function getRoundStats(
   db: Queryable,
@@ -129,7 +130,7 @@ export async function getRoundStats(
             count(*) FILTER (WHERE total_score > $3::smallint)  AS worse,
             count(*) FILTER (WHERE total_score = $3::smallint)  AS tied
        FROM plays
-      WHERE round_date = $1 AND is_live AND total_score IS NOT NULL AND player_id <> $2`,
+      WHERE round_date = $1 AND total_score IS NOT NULL AND player_id <> $2`,
     [roundDate, playerId, totalScore],
   );
   const others = Number(rows[0].others);

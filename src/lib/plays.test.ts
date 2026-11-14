@@ -66,7 +66,7 @@ describe.skipIf(!url)("round tracking (Postgres)", () => {
     expect(await guess(A, 2, "p4", 0)).toMatchObject({ ok: false, reason: "already_guessed", play: { totalScore: 15 } });
   });
 
-  it("computes percentiles from live, finished rounds (guests included)", async () => {
+  it("computes percentiles from every finished play of the round (guests and archive plays included)", async () => {
     // Ten other finished players with totals 10, 20, ..., 100.
     for (let i = 1; i <= 10; i++) {
       const id = `00000000-0000-4000-8000-0000000001${String(i).padStart(2, "0")}`;
@@ -76,11 +76,11 @@ describe.skipIf(!url)("round tracking (Postgres)", () => {
     }
     await guess(B, 0, "p1", 5); // unfinished: ignored
     const late = "00000000-0000-4000-8000-0000000002ff";
-    for (const [h, id] of ["p1", "p2", "p3"].entries()) await guess(late, h, id, 0, false); // archive play: ignored
+    for (const [h, id] of ["p1", "p2", "p3"].entries()) await guess(late, h, id, 0, false); // archive play: counts
 
     for (const [h, id] of ["p1", "p2", "p3"].entries()) await guess(A, h, id, h === 0 ? 45 : 0); // total 45
     const stats = await getRoundStats(db, D, A, 45);
-    expect(stats).toEqual({ others: 10, worse: 6, tied: 0, percentBeaten: 60 });
+    expect(stats).toEqual({ others: 11, worse: 6, tied: 0, percentBeaten: 55 });
 
     // A different day is a separate pool.
     expect((await getRoundStats(db, "2026-11-12", A, 45)).others).toBe(0);

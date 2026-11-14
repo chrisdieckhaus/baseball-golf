@@ -27,13 +27,15 @@ CREATE TABLE IF NOT EXISTS plays (
   guess_names   text[] NOT NULL DEFAULT ARRAY[NULL, NULL, NULL]::text[],
   hole_scores   smallint[] NOT NULL DEFAULT ARRAY[NULL, NULL, NULL]::smallint[],
   total_score   smallint,
-  is_live       boolean NOT NULL,           -- started on the round's own day (ET); only these count for percentiles
+  is_live       boolean NOT NULL,           -- started on the round's own day (ET), not later from the archive
   started_at    timestamptz NOT NULL DEFAULT now(),
   completed_at  timestamptz,
   PRIMARY KEY (player_id, round_date)
 );
-CREATE INDEX IF NOT EXISTS plays_percentile_idx
-  ON plays (round_date, total_score) WHERE is_live AND total_score IS NOT NULL;
+-- Percentiles compare every finished play of a round, archive plays included.
+DROP INDEX IF EXISTS plays_percentile_idx;  -- older index that covered only same-day plays
+CREATE INDEX IF NOT EXISTS plays_round_scores_idx
+  ON plays (round_date, total_score) WHERE total_score IS NOT NULL;
 
 -- One row per daily round, saved the first time it's needed. Once saved, this row
 -- is the round, even if the generator changes later. Only each hole's stat and

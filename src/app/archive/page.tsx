@@ -83,7 +83,7 @@ export default function ArchivePage() {
           Previous <span>rounds</span>
         </h1>
         <p className={styles.tagline}>
-          Play any round you missed. Past rounds don&apos;t count toward that day&apos;s percentile.
+          Play any round you missed, and see how you stack up against everyone who&apos;s played it.
         </p>
         <Link href="/" className={styles.back}>
           ← Today&apos;s round

@@ -128,15 +128,20 @@ function ShareButton({ round, isToday, results }: { round: Round; isToday: boole
 }
 
 function PercentileLine({ stats, isToday }: { stats: RoundStats; isToday: boolean }) {
-  const day = isToday ? "today" : "that day";
+  // Everyone who has finished this round counts, whether they played it on its day or later.
+  const who = isToday ? "who finished today" : "who've finished this round";
   if (stats.percentBeaten === null) {
-    return <p className={styles.percentile}>You&apos;re the first to finish this round {day}. Check back later to see how you stack up.</p>;
+    return (
+      <p className={styles.percentile}>
+        You&apos;re the first to finish this round. Check back later to see how you stack up.
+      </p>
+    );
   }
   const others = stats.others.toLocaleString("en-US");
   return (
     <p className={styles.percentile}>
       You beat <strong>{stats.percentBeaten}%</strong> of the {others} other {stats.others === 1 ? "player" : "players"}{" "}
-      who finished {day}
+      {who}
       {stats.tied > 0 && <> (tied with {stats.tied.toLocaleString("en-US")})</>}.
     </p>
   );
@@ -257,12 +262,6 @@ export default function Game({
           Play previous rounds
         </Link>
       </div>
-      {!isPractice && !isToday && (
-        <p className={styles.pastNote}>
-          You&apos;re playing a previous round. It doesn&apos;t count toward that day&apos;s percentile.{" "}
-          <Link href="/">Play today&apos;s round</Link>
-        </p>
-      )}
 
       {practiceEnabled && (
         <div className={styles.practiceBar}>
