@@ -55,6 +55,12 @@ CREATE TABLE IF NOT EXISTS rank_rounds (
   player_ids  text[] NOT NULL,
   created_at  timestamptz NOT NULL DEFAULT now()
 );
+
+-- One-time fix (safe to remove later): Stats Ranker round #1 (2026-11-14) was
+-- saved with Guy Hecker, who debuted before 1890 and is no longer in the data.
+-- Delete it so the backfill right after this saves it again. Matches nothing
+-- once the new round is saved.
+DELETE FROM rank_rounds WHERE round_date = '2026-11-14' AND 'heckegu01' = ANY (player_ids);
 `;
 
 const client = new pg.Client({ connectionString: url });

@@ -21,6 +21,8 @@ export interface Leaderboard {
 export interface LeaderboardData {
   source: string;
   throughSeason: number;
+  /** Only players who debuted in this season or later are included. */
+  firstDebutYear: number;
   maxRank: number;
   stats: Record<string, Leaderboard>;
 }

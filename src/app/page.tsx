@@ -50,8 +50,8 @@ export default function Home({ searchParams }: { searchParams: SearchParams }) {
           <Link href="/rank">New: play Stats Ranker →</Link>
         </p>
         <p className={styles.dataNote}>
-          Stats through the {leaderboards.throughSeason} season. Career totals include the
-          1871–75 National Association and the 1920–48 Negro Leagues.
+          Stats through the {leaderboards.throughSeason} season, for players who debuted in{" "}
+          {leaderboards.firstDebutYear} or later. Career totals include the 1920–48 Negro Leagues.
         </p>
         <p>
           Data:{" "}
