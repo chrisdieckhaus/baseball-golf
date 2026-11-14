@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { buildRankShareText, RANK_MAX_SCORE, rankRoundNumber, rankShareLine, type RankReveal, type RankRound } from "@/lib/rank";
+import { RankCompare } from "@/components/CompareStats";
+import type { RankStats } from "@/lib/game-plays";
 import { ordinal } from "@/lib/scoring";
 import styles from "./RankGame.module.css";
 
@@ -58,6 +60,7 @@ export default function RankGame({ round, isToday, practiceEnabled }: { round: R
   const key = storageKey(round);
   const [order, setOrder] = useState<string[]>(round.players.map((p) => p.id));
   const [reveal, setReveal] = useState<RankReveal | null>(null);
+  const [stats, setStats] = useState<RankStats | null>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,15 +79,16 @@ export default function RankGame({ round, isToday, practiceEnabled }: { round: R
     // The database has this browser's daily plays. Use the saved play if there
     // is one; if only this browser has it (played before plays were saved), upload it.
     let cancelled = false;
-    const apply = (next: { order: string[]; reveal: RankReveal }) => {
+    const apply = (next: { order: string[]; reveal: RankReveal; stats?: RankStats | null }) => {
       if (cancelled) return;
       setOrder(next.order);
       setReveal(next.reveal);
-      save(key, next);
+      setStats(next.stats ?? null);
+      save(key, { order: next.order, reveal: next.reveal });
     };
     fetch(`/api/rank?date=${round.date}`, { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
-      .then((body: { play: { order: string[]; reveal: RankReveal } | null } | null) => {
+      .then((body: { play: { order: string[]; reveal: RankReveal; stats: RankStats | null } | null } | null) => {
         if (!body || cancelled) return;
         if (body.play) return apply(body.play);
         if (saved) {
@@ -94,7 +98,7 @@ export default function RankGame({ round, isToday, practiceEnabled }: { round: R
             body: JSON.stringify({ date: round.date, seed: null, order: saved.order }),
           })
             .then((res) => (res.ok ? res.json() : null))
-            .then((b) => b && apply({ order: b.order, reveal: b.reveal }));
+            .then((b) => b && apply(b));
         }
       })
       .catch(() => {
@@ -162,6 +166,7 @@ export default function RankGame({ round, isToday, practiceEnabled }: { round: R
       const finalOrder: string[] = body.order ?? order;
       setOrder(finalOrder);
       setReveal(body.reveal);
+      setStats(body.stats ?? null);
       save(key, { order: finalOrder, reveal: body.reveal });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
@@ -290,6 +295,7 @@ export default function RankGame({ round, isToday, practiceEnabled }: { round: R
             {reveal.score === 0 ? "Perfect order!" : `Off by ${reveal.score}`}
             <span> / {RANK_MAX_SCORE} max</span>
           </p>
+          {stats && <RankCompare stats={stats} isToday={isToday} />}
           <h3 className={styles.answerTitle}>The real order</h3>
           <ol className={styles.answer}>
             {reveal.answer.map((a) => (

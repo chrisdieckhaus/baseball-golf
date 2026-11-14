@@ -1,5 +1,5 @@
 import { getDb } from "@/lib/db";
-import { getRevealPlay, recordRevealGuesses } from "@/lib/game-plays";
+import { getRevealPlay, getRevealStats, recordRevealGuesses, revealResult } from "@/lib/game-plays";
 import { ensurePlayerId, readPlayerId } from "@/lib/player-cookie";
 import { isValidGuesses, revealState, SKIP } from "@/lib/reveal";
 import { getRevealRound, isPlayableRevealDate } from "@/lib/reveal-data";
@@ -17,10 +17,11 @@ export async function GET(request: Request) {
   const play = await getRevealPlay(db, me, date);
   if (!play || play.guesses.length === 0) return Response.json({ play: null }, { headers: noStore });
   const { player } = await getRevealRound(date);
-  return Response.json(
-    { play: { guesses: play.guesses, names: play.names, state: revealState(player, play.guesses) } },
-    { headers: noStore },
-  );
+  const state = revealState(player, play.guesses);
+  const stats = state.done
+    ? await getRevealStats(db, date, me, revealResult(play.guesses.length, state.solved))
+    : null;
+  return Response.json({ play: { guesses: play.guesses, names: play.names, state, stats } }, { headers: noStore });
 }
 
 /**
@@ -74,9 +75,11 @@ export async function POST(request: Request) {
       done: state.done,
       isLive: date === todayET(),
     });
-    if (!saved) {
-      return Response.json({ guesses: play.guesses, names: play.names, state: revealState(player, play.guesses) });
-    }
+    const finalState = saved ? state : revealState(player, play.guesses);
+    const stats = finalState.done
+      ? await getRevealStats(db, date, me, revealResult(play.guesses.length, finalState.solved))
+      : null;
+    return Response.json({ guesses: play.guesses, names: play.names, state: finalState, stats });
   } catch (e) {
     console.error("[api/reveal] Couldn't save the play", e);
   }
