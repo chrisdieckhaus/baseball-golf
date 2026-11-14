@@ -27,10 +27,32 @@ To refresh the data when a new Lahman release comes out:
 git clone --depth 1 https://github.com/cdalzell/Lahman /tmp/Lahman
 pip install pyreadr pandas
 python3 scripts/build_data.py /tmp/Lahman/data
+python3 scripts/build_reveal_data.py /tmp/Lahman/data
 npm test
 ```
 
 Every round, old ones included, is scored against the current leaderboards, so a refresh updates the answers to past rounds too. Keep every stat that stored rounds use in the file, even if it's dropped from the pool for new rounds.
+
+## Sports Revealer (`/reveal`)
+A third daily game on the same data. Each day everyone gets the same mystery player and has nine innings to name him, with one guess per inning. A wrong guess or a skip reveals the next clue:
+
+1. Innings 1–4: his four best career stats by all-time rank, from his 4th-best up to his best. Each shows its rank, for example "1,406 (1st)".
+    - Hitters: R, H, 2B, 3B, HR, RBI, SB, BB, SO, AVG.
+    - Pitchers: W, GS, CG, SHO, SV, IP, SO, BB, ERA.
+    - Rate stats use the same minimums as Baseball Golf.
+2. Inning 5: bats / throws.
+3. Inning 6: positions (pitchers: starter, reliever or closer).
+4. Inning 7: awards (All-Star, MVP, Cy Young, ROY, Gold Glove, Silver Slugger, WS MVP, Triple Crowns, World Series titles, Hall of Fame).
+5. Inning 8: years active.
+6. Inning 9: teams.
+
+- **Answer pool:** the top 150 in Baseball-Reference career WAR, kept in `scripts/data/career_war_top150.csv`.
+    - It leaves out players who debuted before 1890, because they aren't in this data.
+    - It also leaves out anyone who played in 2026, because the stats run through 2025 and their careers aren't complete.
+    - Update the CSV and its `active_2026` column when the WAR list or the data changes.
+- **Data file:** `scripts/build_reveal_data.py` writes `src/data/reveal.json`, which is server-only.
+- **Picking the player:** daily rounds walk through one fixed shuffle of the pool (`src/lib/reveal.ts`). Each round's player is saved in `reveal_rounds` the first time it's needed.
+- **Guessing:** `POST /api/reveal` takes the guesses so far. It returns only the clues they unlock, plus the answer once the round is over.
 
 ## Development
 

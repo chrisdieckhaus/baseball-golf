@@ -1,0 +1,277 @@
+.game {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.date {
+  margin: 0;
+  text-align: center;
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--chalk-dim);
+}
+
+/* The scoreboard */
+.board {
+  background: #0f2e1f;
+  border: 3px solid #2c5a42;
+  border-radius: 14px;
+  padding: 12px;
+  box-shadow: inset 0 0 0 2px #0a2116, 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 4px 10px;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--chalk-dim);
+}
+
+.lights {
+  display: flex;
+  gap: 5px;
+}
+
+.light {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #21402f;
+  border: 1px solid #2f5a44;
+}
+
+.now {
+  background: #ffcf4a;
+  box-shadow: 0 0 6px #ffcf4a;
+}
+
+.miss {
+  background: #e2553f;
+  box-shadow: 0 0 6px #e2553f;
+}
+
+.hit {
+  background: #5fd38d;
+  box-shadow: 0 0 6px #5fd38d;
+}
+
+.skipped {
+  background: #7d8f84;
+}
+
+.clues {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.clue {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 6px;
+}
+
+.num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  background: #0a2116;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  color: var(--chalk-dim);
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 46px;
+  padding: 7px 11px;
+  border-radius: 5px;
+  background: #0a2116;
+}
+
+.label {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--chalk-dim);
+}
+
+.value {
+  margin-top: 2px;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-weight: 700;
+  font-size: 1.05rem;
+  line-height: 1.35;
+  color: #ffcf4a;
+  overflow-wrap: anywhere;
+}
+
+.lockedClue .cell {
+  min-height: 28px;
+  padding: 4px 11px;
+  background: repeating-linear-gradient(45deg, #0a2116 0 8px, #0c271a 8px 16px);
+}
+
+.lockedClue .label {
+  opacity: 0.5;
+}
+
+.fresh .value {
+  animation: flip 0.45s ease;
+}
+
+@keyframes flip {
+  from {
+    transform: rotateX(90deg);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  background: #3a1c17;
+  color: #ffb3a6;
+  border: 1px solid #6b2d23;
+}
+
+.chipSkip {
+  background: #1f2f27;
+  color: var(--chalk-dim);
+  border-color: #2c5a42;
+}
+
+/* Guessing */
+.play {
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 14px;
+  padding: 14px 16px 16px;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.25), 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.play > div:first-child {
+  margin-top: 0;
+}
+
+.skip {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  font: inherit;
+  font-weight: 600;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink-dim);
+  cursor: pointer;
+}
+
+.skip:disabled {
+  opacity: 0.6;
+}
+
+.hint {
+  margin: 10px 0 0;
+  font-size: 0.82rem;
+  text-align: center;
+  color: var(--ink-dim);
+}
+
+.error {
+  margin: 10px 0 0;
+  color: var(--flag);
+}
+
+/* Result */
+.result {
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 14px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.25), 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.result h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+}
+
+.result p {
+  margin: 6px 0;
+  color: var(--ink-dim);
+}
+
+.result .who {
+  margin: 8px 0 2px;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--fairway);
+}
+
+.shareBtn {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 14px;
+  font: inherit;
+  font-weight: 700;
+  font-size: 1.05rem;
+  border: none;
+  border-radius: 10px;
+  background: var(--flag);
+  color: #fff;
+  cursor: pointer;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  font-size: 0.9rem;
+}
+
+.links a,
+.linkBtn {
+  color: var(--chalk);
+}
+
+.linkBtn {
+  font: inherit;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(248, 245, 236, 0.5);
+  background: transparent;
+  cursor: pointer;
+}

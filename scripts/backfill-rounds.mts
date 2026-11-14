@@ -15,6 +15,9 @@ import { playableDates } from "../src/lib/round";
 import { storeRoundIfMissing } from "../src/lib/rounds";
 import { RANK_LAUNCH_DATE } from "../src/lib/rank";
 import { storeRankRoundIfMissing } from "../src/lib/rank-rounds";
+import { REVEAL_LAUNCH_DATE } from "../src/lib/reveal";
+import { revealData } from "../src/lib/reveal-pool";
+import { storeRevealRoundIfMissing } from "../src/lib/reveal-rounds";
 
 const url = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
 if (!url) {
@@ -35,6 +38,12 @@ try {
   for (const date of rankDates) {
     if (await storeRankRoundIfMissing(client, leaderboards, date)) rankCreated++;
   }
+  let revealCreated = 0;
+  const revealDates = dates.filter((d) => d >= REVEAL_LAUNCH_DATE);
+  for (const date of revealDates) {
+    if (await storeRevealRoundIfMissing(client, revealData, date)) revealCreated++;
+  }
+  console.log(`[backfill-rounds] Sports Revealer: checked ${revealDates.length} round(s); saved ${revealCreated} new.`);
   console.log(`[backfill-rounds] Stats Ranker: checked ${rankDates.length} round(s); saved ${rankCreated} new.`);
   console.log(
     `[backfill-rounds] checked ${dates.length} daily round(s) through ${dates.at(-1)}; saved ${created} new.`,
