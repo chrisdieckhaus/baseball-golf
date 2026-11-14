@@ -55,6 +55,11 @@ CREATE TABLE IF NOT EXISTS rank_rounds (
   player_ids  text[] NOT NULL,
   created_at  timestamptz NOT NULL DEFAULT now()
 );
+
+-- TEMPORARY (remove before merging): redo the 2026-11-14 Stats Ranker round,
+-- which the preview saved with the old player picker. The backfill that runs
+-- right after this saves it again with the new picker.
+DELETE FROM rank_rounds WHERE round_date = '2026-11-14';
 `;
 
 const client = new pg.Client({ connectionString: url });
