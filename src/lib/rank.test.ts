@@ -4,6 +4,7 @@ import {
   buildRankShareText,
   generateStoredRankRound,
   isValidOrder,
+  lastName,
   RANK_MAX_SCORE,
   RANK_PLAYERS,
   RANK_POOL,
@@ -55,6 +56,16 @@ describe("Stats Ranker round", () => {
     }
     // A random shuffle is already right 1 time in 120.
     expect(inOrder).toBeLessThan(10);
+  });
+
+  it("shows the players alphabetically by last name", () => {
+    for (let i = 0; i < 100; i++) {
+      const r = rankRoundFromStored(leaderboards, date, generateStoredRankRound(leaderboards, date, `a${i}`));
+      const last = r.players.map((p) => lastName(p.name));
+      expect(last).toEqual([...last].sort((x, y) => x.localeCompare(y, "en")));
+    }
+    expect(lastName("Ken Griffey Jr.")).toBe("Griffey");
+    expect(lastName("Cal Ripken")).toBe("Ripken");
   });
 
   it("orders lower-is-better stats ascending", () => {

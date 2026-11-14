@@ -55,7 +55,8 @@ export interface RankReveal {
 /**
  * Pick the stat and five players: one from each fifth of the stat's top
  * RANK_POOL (ranks 1–60, 61–120, 121–180, 181–240, 241–300), so every round
- * spans the leaderboard. The five are then shuffled into the order they're shown.
+ * spans the leaderboard. They're shown alphabetically by last name (see
+ * rankRoundFromStored); the stored order is shuffled so it doesn't follow the bands.
  */
 export function generateStoredRankRound(data: LeaderboardData, date: string, practiceSeed?: string): StoredRankRound {
   const seedString = practiceSeed ? `stats-ranker:practice:${practiceSeed}` : `stats-ranker:${date}`;
@@ -109,8 +110,24 @@ export function rankRoundFromStored(
     group: stat.group,
     qualifier: stat.qualifier,
     lowerIsBetter: stat.lowerIsBetter,
-    players: stored.playerIds.map((id) => ({ id, name: names.get(id) ?? id })),
+    // Shown alphabetically by last name, so the starting order gives nothing away.
+    players: stored.playerIds
+      .map((id) => ({ id, name: names.get(id) ?? id }))
+      .sort((a, b) => compareByLastName(a.name, b.name)),
   };
+}
+
+const SUFFIX = /^(jr\.?|sr\.?|ii|iii|iv)$/i;
+
+/** "Ken Griffey Jr." -> "Griffey". */
+export function lastName(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  while (parts.length > 1 && SUFFIX.test(parts[parts.length - 1])) parts.pop();
+  return parts[parts.length - 1];
+}
+
+function compareByLastName(a: string, b: string): number {
+  return lastName(a).localeCompare(lastName(b), "en") || a.localeCompare(b, "en");
 }
 
 let nameCache: { data: LeaderboardData; names: Map<string, string> } | null = null;
