@@ -1,0 +1,74 @@
+import { describe, expect, it } from "vitest";
+import { leaderboards } from "./leaderboards";
+import {
+  buildRankShareText,
+  generateStoredRankRound,
+  isValidOrder,
+  RANK_MAX_SCORE,
+  RANK_PLAYERS,
+  RANK_POOL,
+  rankRoundFromStored,
+  scoreRankOrder,
+} from "./rank";
+
+const date = "2026-11-20";
+const round = rankRoundFromStored(leaderboards, date, generateStoredRankRound(leaderboards, date));
+const answer = scoreRankOrder(leaderboards, round, round.players.map((p) => p.id)).answer.map((a) => a.id);
+
+describe("Stats Ranker round", () => {
+  it("is the same for the same date and differs across dates", () => {
+    expect(generateStoredRankRound(leaderboards, date)).toEqual(generateStoredRankRound(leaderboards, date));
+    const keys = new Set(
+      Array.from({ length: 20 }, (_, i) => JSON.stringify(generateStoredRankRound(leaderboards, `2026-12-${String(i + 1).padStart(2, "0")}`))),
+    );
+    expect(keys.size).toBe(20);
+  });
+
+  it("picks five distinct top-300 players with distinct values, for many dates", () => {
+    for (let i = 0; i < 200; i++) {
+      const r = generateStoredRankRound(leaderboards, date, `t${i}`);
+      const stat = leaderboards.stats[r.statKey];
+      expect(r.playerIds).toHaveLength(RANK_PLAYERS);
+      const entries = r.playerIds.map((id) => stat.entries.find((e) => e.id === id)!);
+      expect(entries.every((e) => e && e.rank <= RANK_POOL)).toBe(true);
+      expect(new Set(entries.map((e) => e.value)).size).toBe(RANK_PLAYERS);
+    }
+  });
+
+  it("orders lower-is-better stats ascending", () => {
+    const stored = { statKey: "ERA", playerIds: leaderboards.stats.ERA.entries.slice(0, 5).map((e) => e.id).reverse() };
+    const r = rankRoundFromStored(leaderboards, date, stored);
+    const reveal = scoreRankOrder(leaderboards, r, stored.playerIds);
+    expect(reveal.answer.map((a) => a.rank)).toEqual([...reveal.answer.map((a) => a.rank)].sort((a, b) => a! - b!));
+  });
+});
+
+describe("Stats Ranker scoring", () => {
+  it("scores the right order 0 and the reversed order the maximum", () => {
+    expect(scoreRankOrder(leaderboards, round, answer).score).toBe(0);
+    expect(scoreRankOrder(leaderboards, round, [...answer].reverse()).score).toBe(RANK_MAX_SCORE);
+  });
+
+  it("adds up how far each player is from his spot", () => {
+    const swapped = [answer[1], answer[0], ...answer.slice(2)];
+    const reveal = scoreRankOrder(leaderboards, round, swapped);
+    expect(reveal.score).toBe(2);
+    expect(reveal.guess.map((g) => g.off)).toEqual([1, 1, 0, 0, 0]);
+  });
+
+  it("validates orders", () => {
+    expect(isValidOrder(round, answer)).toBe(true);
+    expect(isValidOrder(round, answer.slice(1))).toBe(false);
+    expect(isValidOrder(round, [answer[0], ...answer.slice(0, 4)])).toBe(false);
+    expect(isValidOrder(round, [...answer.slice(1), "nobody01"])).toBe(false);
+    expect(isValidOrder(round, "x")).toBe(false);
+  });
+
+  it("builds spoiler-free share text", () => {
+    const text = buildRankShareText(round, scoreRankOrder(leaderboards, round, answer), "https://example.com/rank");
+    expect(text).toContain("🟩🟩🟩🟩🟩");
+    expect(text).toContain("Perfect order!");
+    for (const p of round.players) expect(text).not.toContain(p.name);
+    expect(text).not.toContain(round.label);
+  });
+});

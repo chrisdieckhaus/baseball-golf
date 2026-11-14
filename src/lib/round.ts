@@ -47,7 +47,7 @@ export function playableDates(today: string = todayET()): string[] {
 }
 
 // FNV-1a string hash -> 32-bit seed
-function hashString(s: string): number {
+export function hashString(s: string): number {
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) {
     h ^= s.charCodeAt(i);
@@ -57,7 +57,7 @@ function hashString(s: string): number {
 }
 
 // mulberry32: small deterministic PRNG so every player gets the same round
-function mulberry32(seed: number): () => number {
+export function mulberry32(seed: number): () => number {
   let a = seed;
   return () => {
     a = (a + 0x6d2b79f5) | 0;

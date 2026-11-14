@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { connection } from "next/server";
 import Game from "@/components/Game";
 import { getRound, leaderboards } from "@/lib/data";
@@ -45,6 +46,9 @@ export default function Home({ searchParams }: { searchParams: SearchParams }) {
       </Suspense>
 
       <footer className={styles.footer}>
+        <p>
+          <Link href="/rank">New: play Stats Ranker →</Link>
+        </p>
         <p className={styles.dataNote}>
           Stats through the {leaderboards.throughSeason} season. Career totals include the
           1871–75 National Association and the 1920–48 Negro Leagues.
