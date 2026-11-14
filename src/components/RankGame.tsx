@@ -164,16 +164,21 @@ export default function RankGame({ round, isToday, practiceEnabled }: { round: R
 
   return (
     <div className={styles.game}>
-      <p className={styles.date}>
-        {round.practiceSeed
-          ? `Practice round #${round.practiceSeed}`
-          : `#${rankRoundNumber(round.date)} · ${new Date(`${round.date}T12:00:00Z`).toLocaleDateString("en-US", {
-              weekday: "long",
-              month: "long",
-              day: "numeric",
-              timeZone: "UTC",
-            })}`}
-      </p>
+      <div className={styles.dateBar}>
+        <p className={styles.date}>
+          {round.practiceSeed
+            ? `Practice round #${round.practiceSeed}`
+            : `#${rankRoundNumber(round.date)} · ${new Date(`${round.date}T12:00:00Z`).toLocaleDateString("en-US", {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+                timeZone: "UTC",
+              })}`}
+        </p>
+        <Link href="/rank/archive" className={styles.archiveLink}>
+          Play previous rounds
+        </Link>
+      </div>
 
       <section className={styles.card}>
         <p className={styles.kicker}>Career · {round.group}</p>
