@@ -22,6 +22,24 @@ export function isValidDate(date: string): boolean {
   return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === date;
 }
 
+/** The first daily round. Earlier dates have no round. */
+export const LAUNCH_DATE = "2026-11-13";
+
+/** A daily round exists for every date from launch through today (ET). Future rounds stay hidden. */
+export function isPlayableDate(date: unknown, today: string = todayET()): date is string {
+  return typeof date === "string" && isValidDate(date) && date >= LAUNCH_DATE && date <= today;
+}
+
+/** Every daily-round date from launch through `today`, oldest first. */
+export function playableDates(today: string = todayET()): string[] {
+  const dates: string[] = [];
+  const d = new Date(`${LAUNCH_DATE}T00:00:00Z`);
+  for (let s = LAUNCH_DATE; s <= today; d.setUTCDate(d.getUTCDate() + 1), s = d.toISOString().slice(0, 10)) {
+    dates.push(s);
+  }
+  return dates;
+}
+
 // FNV-1a string hash -> 32-bit seed
 function hashString(s: string): number {
   let h = 0x811c9dc5;
@@ -69,7 +87,9 @@ export function isValidSeed(seed: unknown): seed is string {
 }
 
 /**
- * Deterministically generate a round. The daily round is seeded by its date; a
+ * Deterministically generate a round. Daily rounds are generated once and then
+ * stored (see rounds.ts), so changing this function or the data only affects
+ * rounds that don't exist yet. The daily round is seeded by its date; a
  * practice round is seeded by its practice seed instead, so the same link always
  * gives the same practice round. Picks three different stats (never all three
  * from the same group) and a target rank for each.

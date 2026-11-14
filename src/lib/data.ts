@@ -1,34 +1,59 @@
 import "server-only";
-import raw from "@/data/leaderboards.json";
-import type { GuessResult, LeaderboardData, PlayState } from "./types";
+import type { GuessResult, PlayState, Round } from "./types";
 import type { StoredPlay } from "./plays";
+import { getDb } from "./db";
+import { leaderboards } from "./leaderboards";
 import { generateRound } from "./round";
-import { formatValue, scoreHole } from "./scoring";
+import { getOrCreateRound } from "./rounds";
+import { formatValue, scoreHole, targetPlayers } from "./scoring";
 
-export const leaderboards = raw as unknown as LeaderboardData;
+export { leaderboards };
 
-export function getRound(date: string, practiceSeed?: string) {
-  return generateRound(leaderboards, date, practiceSeed);
+// A stored round never changes and the data only changes with a deploy, so each
+// server instance keeps the rounds it has read.
+const roundCache = new Map<string, Round>();
+
+/**
+ * The daily round for a date. Its stats and target ranks are read from the
+ * database, and saved there the first time it's needed, so the round stays the
+ * same even if the generator changes. Without a database (local dev), it's
+ * generated on the fly.
+ */
+export async function getDailyRound(date: string): Promise<Round> {
+  const cached = roundCache.get(date);
+  if (cached) return cached;
+  const db = getDb();
+  if (!db) return generateRound(leaderboards, date);
+  try {
+    const round = await getOrCreateRound(db, leaderboards, date);
+    roundCache.set(date, round);
+    return round;
+  } catch (e) {
+    // Keep the game up if the database is briefly unreachable. Not cached, so the
+    // stored round is used again as soon as the database is back.
+    console.error(`[rounds] Couldn't load the round for ${date}; generating it instead.`, e);
+    return generateRound(leaderboards, date);
+  }
 }
 
-/** Score a guess for one hole of a round (the daily round, or a practice round if seeded). */
-export function scoreGuess(
-  date: string,
-  practiceSeed: string | undefined,
-  holeIndex: number,
-  playerId: string,
-  playerName: string,
-): GuessResult {
-  const hole = getRound(date, practiceSeed).holes[holeIndex];
+/** The daily round, or a practice round (never stored; generated from its seed). */
+export function getRound(date: string, practiceSeed?: string): Promise<Round> {
+  return practiceSeed ? Promise.resolve(generateRound(leaderboards, date, practiceSeed)) : getDailyRound(date);
+}
+
+/** Score a guess for one hole, against the current leaderboards. */
+export function scoreGuess(round: Round, holeIndex: number, playerId: string, playerName: string): GuessResult {
+  const hole = round.holes[holeIndex];
   const stat = leaderboards.stats[hole.statKey];
   const fmt = (v: number) => formatValue(v, stat.kind, stat.decimals);
 
   const guessEntry = stat.entries.find((e) => e.id === playerId) ?? null;
-  const targets = stat.entries.filter((e) => e.rank === hole.targetRank);
+  const targets = targetPlayers(stat.entries, hole.targetRank);
+  const hit = targets.some((e) => e.id === playerId);
 
   return {
     hole: holeIndex,
-    score: scoreHole(hole.targetRank, guessEntry ? guessEntry.rank : null),
+    score: hit ? 0 : scoreHole(hole.targetRank, guessEntry ? guessEntry.rank : null),
     guess: {
       id: playerId,
       name: guessEntry?.name ?? playerName,
@@ -42,11 +67,17 @@ export function scoreGuess(
   };
 }
 
-/** Rebuild the full reveal for each saved guess (stat values, the pin, etc.) from the leaderboards. */
-export function resultsFromPlay(date: string, play: StoredPlay | null): PlayState["results"] {
-  const holes = getRound(date).holes;
-  return holes.map((_, i) => {
+/**
+ * Rebuild the reveal for each saved guess. Ranks and values come from the current
+ * leaderboards, but the score is the one saved when the guess was made, so a
+ * finished round's score never changes after a data refresh.
+ */
+export function resultsFromPlay(round: Round, play: StoredPlay | null): PlayState["results"] {
+  return round.holes.map((_, i) => {
     const id = play?.guessIds[i];
-    return id ? scoreGuess(date, undefined, i, id, play!.guessNames[i] ?? id) : null;
+    if (!id) return null;
+    const result = scoreGuess(round, i, id, play!.guessNames[i] ?? id);
+    const saved = play!.holeScores[i];
+    return saved === null || saved === undefined ? result : { ...result, score: saved };
   });
 }

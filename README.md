@@ -29,6 +29,8 @@ python3 scripts/build_data.py /tmp/Lahman/data
 npm test
 ```
 
+Every round, old ones included, is scored against the current leaderboards, so a refresh updates the answers to past rounds too. Keep every stat that stored rounds use in the file, even if it's dropped from the pool for new rounds.
+
 ## Development
 
 ```bash
@@ -38,7 +40,7 @@ npm test        # unit tests (scoring, round generation, leaderboard sanity chec
 npm run build
 ```
 
-There's no database. It deploys to Vercel as a standard Next.js app.
+It deploys to Vercel as a standard Next.js app, with Neon Postgres (`DATABASE_URL`). `npm run build` first runs `scripts/migrate.mjs` (tables) and `scripts/backfill-rounds.mts` (saves any daily rounds not stored yet). Without `DATABASE_URL`, both skip and the game runs statelessly. Database tests run when `TEST_DATABASE_URL` points at a Postgres you can wipe.
 
 ### Practice rounds (testing)
 A **↻ New practice round** button loads a random round at `/?seed=<random>`. That round is seeded by the `seed` value, not the date, so the same link always gives the same round and testers can share them. Practice progress is saved separately from the daily round.
@@ -46,7 +48,8 @@ A **↻ New practice round** button loads a random round at `/?seed=<random>`. T
 To turn practice rounds off before launch, set the environment variable `DISABLE_PRACTICE=1` in Vercel and redeploy. That hides the button and makes the API reject practice rounds.
 
 ## How it works
-- `src/lib/round.ts` builds each day's round from a seed based on the date, so every player gets the same round without storing anything.
+- `src/lib/round.ts` generates each day's round from a seed based on the date, so every player gets the same round.
+  - Each daily round's stats and target ranks are saved in the `rounds` table (`src/lib/rounds.ts`) the first time it's needed. After that the saved round is used, so changing the generator never changes a round that already exists. Answers aren't saved: they always come from the current leaderboards. Practice rounds aren't saved.
   - A round never has three holes from the same group (batting or pitching).
   - It never targets a rank shared by more than three players.
 - `POST /api/guess` scores a guess on the server and returns the reveal: your player's rank and the player(s) at the target rank.

@@ -1,8 +1,8 @@
-import { resultsFromPlay, scoreGuess } from "@/lib/data";
+import { getRound, resultsFromPlay, scoreGuess } from "@/lib/data";
 import { getDb } from "@/lib/db";
 import { ensurePlayerId } from "@/lib/player-cookie";
 import { getRoundStats, recordGuess } from "@/lib/plays";
-import { HOLES_PER_ROUND, isValidDate, isValidSeed, practiceEnabled, todayET } from "@/lib/round";
+import { HOLES_PER_ROUND, isPlayableDate, isValidDate, isValidSeed, practiceEnabled, todayET } from "@/lib/round";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -25,9 +25,9 @@ export async function POST(request: Request) {
       return Response.json({ error: "Invalid practice round" }, { status: 400 });
     }
     practiceSeed = seed;
-  } else if (date > todayET()) {
-    // Don't let anyone peek at future daily rounds.
-    return Response.json({ error: "That round isn't available yet" }, { status: 400 });
+  } else if (!isPlayableDate(date)) {
+    // No peeking at future daily rounds, and no rounds from before launch.
+    return Response.json({ error: "There's no round for that date" }, { status: 400 });
   }
   if (typeof hole !== "number" || !Number.isInteger(hole) || hole < 0 || hole >= HOLES_PER_ROUND) {
     return Response.json({ error: "Invalid hole" }, { status: 400 });
@@ -37,7 +37,8 @@ export async function POST(request: Request) {
   }
   const name = typeof playerName === "string" ? playerName.slice(0, 80) : playerId;
 
-  const result = scoreGuess(date, practiceSeed, hole, playerId, name);
+  const round = await getRound(date, practiceSeed);
+  const result = scoreGuess(round, hole, playerId, name);
 
   // Practice rounds, and deployments without a database, stay stateless.
   const db = getDb();
@@ -65,7 +66,7 @@ export async function POST(request: Request) {
       {
         error: message,
         state: {
-          results: resultsFromPlay(date, outcome.play),
+          results: resultsFromPlay(round, outcome.play),
           stats: total === null ? null : await getRoundStats(db, date, me, total),
         },
       },

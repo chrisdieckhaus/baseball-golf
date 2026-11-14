@@ -34,6 +34,16 @@ CREATE TABLE IF NOT EXISTS plays (
 );
 CREATE INDEX IF NOT EXISTS plays_percentile_idx
   ON plays (round_date, total_score) WHERE is_live AND total_score IS NOT NULL;
+
+-- One row per daily round, saved the first time it's needed. Once saved, this row
+-- is the round, even if the generator changes later. Only each hole's stat and
+-- target rank are saved; answers always come from the current leaderboards.
+-- holes: [{"statKey": "RBI", "targetRank": 83}, ...]
+CREATE TABLE IF NOT EXISTS rounds (
+  round_date  date PRIMARY KEY,
+  holes       jsonb NOT NULL,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
 `;
 
 const client = new pg.Client({ connectionString: url });

@@ -13,7 +13,7 @@ async function TodaysRound({ searchParams }: { searchParams: SearchParams }) {
   const { seed } = await searchParams;
   const practice = practiceEnabled();
   const practiceSeed = practice && isValidSeed(seed) ? seed : undefined;
-  const round = getRound(todayET(), practiceSeed);
+  const round = await getRound(todayET(), practiceSeed);
   // key: remount (fresh state) when switching between rounds via client-side navigation
   return <Game key={practiceSeed ?? round.date} round={round} practiceEnabled={practice} />;
 }

@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/migrate.mjs && next build",
+    "build": "node scripts/migrate.mjs && tsx scripts/backfill-rounds.mts && next build",
     "db:migrate": "node scripts/migrate.mjs",
+    "db:backfill": "tsx scripts/backfill-rounds.mts",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
@@ -26,6 +27,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^5.1.0"
   }

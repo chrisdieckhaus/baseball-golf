@@ -1,3 +1,5 @@
+import type { LeaderboardEntry } from "./types";
+
 /** Maximum score for a single hole; also the score for an unranked guess. */
 export const MAX_HOLE_SCORE = 150;
 
@@ -35,4 +37,20 @@ export function ordinal(n: number): string {
     default:
       return `${n}th`;
   }
+}
+
+/**
+ * The player(s) at a target rank. Usually the players who hold that rank. After a
+ * data refresh, an old round's rank may no longer be held by anyone (two players
+ * tied at 47th fill 47th and 48th). Then the tied group covering that position
+ * is the target.
+ */
+export function targetPlayers(entries: LeaderboardEntry[], targetRank: number): LeaderboardEntry[] {
+  const exact = entries.filter((e) => e.rank === targetRank);
+  if (exact.length > 0) return exact;
+  const below = entries.filter((e) => e.rank < targetRank);
+  if (below.length === 0) return [];
+  const groupRank = Math.max(...below.map((e) => e.rank));
+  const group = entries.filter((e) => e.rank === groupRank);
+  return groupRank + group.length - 1 >= targetRank ? group : [];
 }
