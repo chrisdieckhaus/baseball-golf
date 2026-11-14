@@ -25,7 +25,7 @@ describe("Stats Ranker round", () => {
     expect(keys.size).toBe(20);
   });
 
-  it("picks five distinct top-300 players with distinct values, for many dates", () => {
+  it("picks five distinct top-pool players with distinct values, for many dates", () => {
     for (let i = 0; i < 200; i++) {
       const r = generateStoredRankRound(leaderboards, date, `t${i}`);
       const stat = leaderboards.stats[r.statKey];
@@ -36,7 +36,7 @@ describe("Stats Ranker round", () => {
     }
   });
 
-  it("takes one player from each fifth of the top 300", () => {
+  it("takes one player from each fifth of the top RANK_POOL", () => {
     for (let i = 0; i < 200; i++) {
       const r = generateStoredRankRound(leaderboards, date, `b${i}`);
       const stat = leaderboards.stats[r.statKey];

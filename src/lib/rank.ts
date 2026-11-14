@@ -12,7 +12,7 @@ import type { LeaderboardData, StatGroup } from "./types";
 
 export const RANK_PLAYERS = 5;
 /** Players are picked from this many ranks of the stat's leaderboard. */
-export const RANK_POOL = 300;
+export const RANK_POOL = 150;
 /** The worst possible score: the order exactly reversed. */
 export const RANK_MAX_SCORE = Math.floor((RANK_PLAYERS * RANK_PLAYERS) / 2);
 /** The first Stats Ranker round (#1). */
@@ -54,7 +54,7 @@ export interface RankReveal {
 
 /**
  * Pick the stat and five players: one from each fifth of the stat's top
- * RANK_POOL (ranks 1–60, 61–120, 121–180, 181–240, 241–300), so every round
+ * RANK_POOL (ranks 1–30, 31–60, 61–90, 91–120, 121–150), so every round
  * spans the leaderboard. They're shown alphabetically by last name (see
  * rankRoundFromStored); the stored order is shuffled so it doesn't follow the bands.
  */
