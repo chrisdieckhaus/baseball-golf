@@ -62,6 +62,12 @@ A third daily game on the same data. Each day everyone gets the same mystery pla
 - **Picking the player:** daily rounds walk through one fixed shuffle of the pool (`src/lib/reveal.ts`). Each round's player is saved in `reveal_rounds` the first time it's needed.
 - **Archive:** Stats Ranker (`/rank/archive`) and Sports Revealer (`/reveal/archive`) can replay any past round. Both number their rounds from Nov 1, 2026, like Baseball Golf, even though they went live on Nov 14. The build's backfill stores every round from Nov 1. A row's result comes from the browser's saved progress.
     - Sports Revealer's walk through the pool is still anchored at Nov 14, so the rounds already played kept their players. Nov 1–13 got the last 13 players in the shuffle.
+- **Saved plays:** Stats Ranker and Sports Revealer save each daily play in `rank_plays` and `reveal_plays`, keyed by the same anonymous `bg_player` cookie as Baseball Golf. Practice rounds aren't saved. The browser keeps a copy in localStorage.
+    - On load, each game takes the saved play from `GET /api/rank` or `GET /api/reveal`.
+    - If the browser has progress the database doesn't, for example from before plays were saved, the game uploads it.
+    - Ranker is one shot: the first order saved stands.
+    - Revealer only accepts guesses that extend the saved ones, which keeps it at one guess per inning even with two tabs open.
+    - The archives read results from these tables.
 - **Guessing:** `POST /api/reveal` takes the guesses so far. It returns only the clues they unlock, plus the answer once the round is over.
 
 ## Development
