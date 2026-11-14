@@ -129,7 +129,7 @@ function ShareButton({ round, isToday, results }: { round: Round; isToday: boole
 
 function PercentileLine({ stats, isToday }: { stats: RoundStats; isToday: boolean }) {
   // Everyone who has finished this round counts, whether they played it on its day or later.
-  const who = isToday ? "who finished today" : "who've finished this round";
+  const who = isToday ? "who finished today" : stats.others === 1 ? "who's finished this round" : "who've finished this round";
   if (stats.percentBeaten === null) {
     return (
       <p className={styles.percentile}>
@@ -145,6 +145,16 @@ function PercentileLine({ stats, isToday }: { stats: RoundStats; isToday: boolea
       {stats.tied > 0 && <> (tied with {stats.tied.toLocaleString("en-US")})</>}.
     </p>
   );
+}
+
+/** An average to one decimal place, dropping a trailing ".0" (12.4, 89). */
+function formatNumber(n: number): string {
+  return n.toFixed(1).replace(/\.0$/, "");
+}
+
+/** A hole average in the same style as a hole score: "ACE" for 0, otherwise "+12.4". */
+function formatAverage(avg: number): string {
+  return avg === 0 ? "ACE" : `+${formatNumber(avg)}`;
 }
 
 function formatDate(date: string): string {
@@ -208,6 +218,9 @@ export default function Game({
   const finished = current === -1;
   const usedIds = useMemo(() => new Set(results.filter(Boolean).map((r) => r!.guess.id)), [results]);
   const total = results.reduce((sum, r) => sum + (r?.score ?? 0), 0);
+  // Per-hole averages of everyone who has finished, shown once this round is finished.
+  const holeAverages = finished ? stats?.holeAverages : undefined;
+  const finishers = stats?.finishers ?? 0;
 
   async function guess(holeIndex: number, player: PlayerIndexEntry) {
     if (usedIds.has(player.id)) return;
@@ -280,11 +293,12 @@ export default function Game({
         {round.holes.map((hole, i) => {
           const result = results[i];
           const isCurrent = i === current;
-          const locked = !result && !isCurrent;
+          // Holes appear one at a time: the next hole shows up once the current one is played.
+          if (!result && !isCurrent) return null;
           return (
             <li
               key={hole.statKey}
-              className={`${styles.hole} ${isCurrent ? styles.holeCurrent : ""} ${locked ? styles.holeLocked : ""}`}
+              className={`${styles.hole} ${isCurrent ? styles.holeCurrent : ""}`}
             >
               <div className={styles.holeHead}>
                 <span className={styles.holeNum}>Hole {i + 1}</span>
@@ -332,6 +346,15 @@ export default function Game({
                       ))}
                       {result.target.players.length > 1 && <span className={styles.muted}> — tied</span>}
                     </p>
+                    {holeAverages?.[i] !== undefined && (
+                      <p>
+                        <span className={styles.resultLabel}>Average score</span>
+                        <strong>{formatAverage(holeAverages[i])}</strong>{" "}
+                        <span className={styles.muted}>
+                          across {finishers.toLocaleString("en-US")} {finishers === 1 ? "player" : "players"}
+                        </span>
+                      </p>
+                    )}
                   </div>
                   <div className={`${styles.score} ${result.score === 0 ? styles.ace : ""}`}>
                     <span className={styles.scoreNum}>{result.score === 0 ? "ACE" : `+${result.score}`}</span>
@@ -365,6 +388,15 @@ export default function Game({
               ))}
               <td className={styles.total}>{results.some(Boolean) ? total : "–"}</td>
             </tr>
+            {holeAverages && stats && (
+              <tr className={styles.avgRow}>
+                <th scope="row">Avg</th>
+                {holeAverages.map((a, i) => (
+                  <td key={i}>{formatNumber(a)}</td>
+                ))}
+                <td className={styles.total}>{formatNumber(stats.roundAverage)}</td>
+              </tr>
+            )}
           </tbody>
         </table>
         {finished && (

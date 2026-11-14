@@ -70,6 +70,9 @@ export interface RoundStats {
   worse: number; // of those, how many scored worse
   tied: number;
   percentBeaten: number | null; // null when nobody else has finished yet
+  finishers: number; // everyone who has finished this round, the player included
+  holeAverages: number[]; // average score on each hole among those finishers
+  roundAverage: number; // average round total among those finishers
 }
 
 /** A player's saved progress on a round, as returned by GET /api/play. */

@@ -71,8 +71,21 @@
   border-color: var(--flag);
 }
 
-.holeLocked {
-  opacity: 0.45;
+.holeCurrent {
+  animation: holeIn 0.25s ease-out;
+}
+
+@keyframes holeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .holeCurrent {
+    animation: none;
+  }
 }
 
 .holeHead {
@@ -314,6 +327,10 @@
 
 .total {
   font-weight: 700;
+}
+
+.avgRow td {
+  color: var(--ink-dim);
 }
 
 .final {

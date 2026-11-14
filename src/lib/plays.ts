@@ -117,7 +117,8 @@ export async function recordGuess(
 /**
  * How a finished score compares with everyone else who has finished this round,
  * whether they played it on its day or later from the archive. Guests count.
- * The player's own play is excluded from the comparison.
+ * The player's own play is excluded from the percentile, but included in the
+ * per-hole averages (the average of everyone who has finished the round).
  */
 export async function getRoundStats(
   db: Queryable,
@@ -125,18 +126,39 @@ export async function getRoundStats(
   playerId: string,
   totalScore: number,
 ): Promise<RoundStats> {
-  const { rows } = await db.query<{ others: string; worse: string; tied: string }>(
-    `SELECT count(*)                                  AS others,
-            count(*) FILTER (WHERE total_score > $3::smallint)  AS worse,
-            count(*) FILTER (WHERE total_score = $3::smallint)  AS tied
+  const { rows } = await db.query<{
+    others: string;
+    worse: string;
+    tied: string;
+    finishers: string;
+    hole_averages: (string | null)[];
+    round_average: string | null;
+  }>(
+    `SELECT count(*) FILTER (WHERE player_id <> $2)                                AS others,
+            count(*) FILTER (WHERE player_id <> $2 AND total_score > $3::smallint) AS worse,
+            count(*) FILTER (WHERE player_id <> $2 AND total_score = $3::smallint) AS tied,
+            count(*)                                                               AS finishers,
+            ARRAY[avg(hole_scores[1]), avg(hole_scores[2]), avg(hole_scores[3])]   AS hole_averages,
+            avg(total_score)                                                       AS round_average
        FROM plays
-      WHERE round_date = $1 AND total_score IS NOT NULL AND player_id <> $2`,
+      WHERE round_date = $1 AND total_score IS NOT NULL`,
     [roundDate, playerId, totalScore],
   );
-  const others = Number(rows[0].others);
-  const worse = Number(rows[0].worse);
-  return { others, worse, tied: Number(rows[0].tied), percentBeaten: percentBeaten(worse, others) };
+  const r = rows[0];
+  const others = Number(r.others);
+  const worse = Number(r.worse);
+  return {
+    others,
+    worse,
+    tied: Number(r.tied),
+    percentBeaten: percentBeaten(worse, others),
+    finishers: Number(r.finishers),
+    holeAverages: r.hole_averages.slice(0, HOLES_PER_ROUND).map((a) => oneDecimal(a)),
+    roundAverage: oneDecimal(r.round_average),
+  };
 }
+
+const oneDecimal = (v: string | null) => Math.round(Number(v ?? 0) * 10) / 10;
 
 /** Whole-number percent of other players beaten; never shows 0% or 100% unless literally true. */
 export function percentBeaten(worse: number, others: number): number | null {

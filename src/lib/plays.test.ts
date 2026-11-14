@@ -80,10 +80,16 @@ describe.skipIf(!url)("round tracking (Postgres)", () => {
 
     for (const [h, id] of ["p1", "p2", "p3"].entries()) await guess(A, h, id, h === 0 ? 45 : 0); // total 45
     const stats = await getRoundStats(db, D, A, 45);
-    expect(stats).toEqual({ others: 11, worse: 6, tied: 0, percentBeaten: 55 });
+    expect(stats).toMatchObject({ others: 11, worse: 6, tied: 0, percentBeaten: 55 });
+
+    // Hole averages cover everyone who finished, the player included: the ten others,
+    // the archive player and A. Hole 1: (10 + 20 + ... + 100 + 0 + 45) / 12 = 49.6.
+    expect(stats.finishers).toBe(12);
+    expect(stats.holeAverages).toEqual([49.6, 0, 0]);
+    expect(stats.roundAverage).toBe(49.6); // holes 2 and 3 were all 0
 
     // A different day is a separate pool.
-    expect((await getRoundStats(db, "2026-11-12", A, 45)).others).toBe(0);
+    expect(await getRoundStats(db, "2026-11-12", A, 45)).toMatchObject({ others: 0, finishers: 0 });
   });
 
   it("handles two simultaneous guesses on the same hole safely", async () => {
