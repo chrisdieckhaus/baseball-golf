@@ -55,6 +55,14 @@ CREATE TABLE IF NOT EXISTS rank_rounds (
   player_ids  text[] NOT NULL,
   created_at  timestamptz NOT NULL DEFAULT now()
 );
+
+-- Sports Revealer: one row per daily round (the mystery player), saved the first
+-- time it's needed. Clues aren't saved; they come from the current data.
+CREATE TABLE IF NOT EXISTS reveal_rounds (
+  round_date  date PRIMARY KEY,
+  player_id   text NOT NULL,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
 `;
 
 const client = new pg.Client({ connectionString: url });

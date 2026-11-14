@@ -277,6 +277,7 @@ export default function RankGame({ round, isToday, practiceEnabled }: { round: R
         )}
         {round.practiceSeed || !isToday ? <Link href="/rank">Today&apos;s round</Link> : null}
         <Link href="/">Play Baseball Golf →</Link>
+        <Link href="/reveal">Play Sports Revealer →</Link>
       </nav>
     </div>
   );

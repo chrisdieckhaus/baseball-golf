@@ -47,7 +47,10 @@ export default function Home({ searchParams }: { searchParams: SearchParams }) {
 
       <footer className={styles.footer}>
         <p>
-          <Link href="/rank">New: play Stats Ranker →</Link>
+          <Link href="/rank">Play Stats Ranker →</Link>
+        </p>
+        <p>
+          <Link href="/reveal">New: play Sports Revealer →</Link>
         </p>
         <p className={styles.dataNote}>
           Stats through the {leaderboards.throughSeason} season, for players who debuted in{" "}
