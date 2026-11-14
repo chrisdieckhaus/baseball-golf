@@ -152,11 +152,6 @@ function formatNumber(n: number): string {
   return n.toFixed(1).replace(/\.0$/, "");
 }
 
-/** A hole average in the same style as a hole score: "ACE" for 0, otherwise "+12.4". */
-function formatAverage(avg: number): string {
-  return avg === 0 ? "ACE" : `+${formatNumber(avg)}`;
-}
-
 function formatDate(date: string): string {
   return new Date(`${date}T12:00:00Z`).toLocaleDateString("en-US", {
     weekday: "long",
@@ -218,9 +213,8 @@ export default function Game({
   const finished = current === -1;
   const usedIds = useMemo(() => new Set(results.filter(Boolean).map((r) => r!.guess.id)), [results]);
   const total = results.reduce((sum, r) => sum + (r?.score ?? 0), 0);
-  // Per-hole averages of everyone who has finished, shown once this round is finished.
+  // Averages of everyone who has finished, shown in the scorecard once this round is finished.
   const holeAverages = finished ? stats?.holeAverages : undefined;
-  const finishers = stats?.finishers ?? 0;
 
   async function guess(holeIndex: number, player: PlayerIndexEntry) {
     if (usedIds.has(player.id)) return;
@@ -346,15 +340,6 @@ export default function Game({
                       ))}
                       {result.target.players.length > 1 && <span className={styles.muted}> — tied</span>}
                     </p>
-                    {holeAverages?.[i] !== undefined && (
-                      <p>
-                        <span className={styles.resultLabel}>Average score</span>
-                        <strong>{formatAverage(holeAverages[i])}</strong>{" "}
-                        <span className={styles.muted}>
-                          across {finishers.toLocaleString("en-US")} {finishers === 1 ? "player" : "players"}
-                        </span>
-                      </p>
-                    )}
                   </div>
                   <div className={`${styles.score} ${result.score === 0 ? styles.ace : ""}`}>
                     <span className={styles.scoreNum}>{result.score === 0 ? "ACE" : `+${result.score}`}</span>
