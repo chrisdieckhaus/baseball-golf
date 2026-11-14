@@ -12,8 +12,9 @@ A daily baseball trivia game. Each day everyone plays the same three holes. Each
 ## Data
 Stats come from the [Lahman Baseball Database](https://sabr.org/lahman-database/) (CC BY-SA 3.0), read from the [Lahman R package](https://github.com/cdalzell/Lahman) data files. They currently run through the 2025 season.
 
+- Only players who debuted in 1890 or later are included, with their full careers (`FIRST_DEBUT_YEAR` in `build_data.py`). That keeps Cy Young, who debuted in 1890 and is #1 in wins, while leaving out the 1870s–80s.
 - Only MLB-recognized leagues count:
-  - AL, NL, AA, UA, PL, FL and the 1871–75 NA
+  - AL, NL, AA, UA, PL and FL
   - the 1920–48 Negro Leagues
 - Pre-1920 Black baseball and independent teams are excluded, which matches Baseball-Reference.
 - `scripts/build_data.py` precomputes career leaderboards. It keeps ranks up to 300, because any rank past that always scores 150.

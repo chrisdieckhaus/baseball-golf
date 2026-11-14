@@ -23,6 +23,11 @@ import pyreadr
 # score is capped at 150, so any rank past 300 always scores 150 anyway.
 MAX_RANK = 300
 
+# Only players who debuted in this season or later are included, with their full
+# careers. 1890 keeps Cy Young (debut 1890, #1 in wins) while leaving out the
+# 1870s-80s careers people don't recognize.
+FIRST_DEBUT_YEAR = 1890
+
 MIN_PA = 3000  # Baseball-Reference career batting rate-stat minimum
 MIN_IP = 1000  # Baseball-Reference career pitching rate-stat minimum
 
@@ -49,8 +54,13 @@ def main(data_dir: Path) -> None:
     # Keep only MLB-recognized leagues so leaderboards line up with Baseball-Reference.
     batting = load(data_dir, "Batting").query("lgID in @MAJOR_LEAGUES")
     pitching = load(data_dir, "Pitching").query("lgID in @MAJOR_LEAGUES")
+    # Debut = first major-league season as a batter or pitcher.
+    debut = pd.concat([batting[["playerID", "yearID"]], pitching[["playerID", "yearID"]]]).groupby("playerID").yearID.min()
+    eligible = set(debut[debut >= FIRST_DEBUT_YEAR].index)
+    batting = batting[batting.playerID.isin(eligible)]
+    pitching = pitching[pitching.playerID.isin(eligible)]
     people = load(data_dir, "People")
-    appearances = load(data_dir, "Appearances").query("lgID in @MAJOR_LEAGUES")
+    appearances = load(data_dir, "Appearances").query("lgID in @MAJOR_LEAGUES and playerID in @eligible")
     last_year = int(max(batting.yearID.max(), pitching.yearID.max()))
 
     # ---- Career batting totals ----
@@ -178,6 +188,7 @@ def main(data_dir: Path) -> None:
     out = {
         "source": "Lahman Baseball Database",
         "throughSeason": last_year,
+        "firstDebutYear": FIRST_DEBUT_YEAR,
         "maxRank": MAX_RANK,
         "stats": leaderboards,
     }
