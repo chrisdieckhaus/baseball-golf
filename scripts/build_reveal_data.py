@@ -12,7 +12,7 @@ Each player gets nine clues, one per inning:
   6    positions (pitchers: starter / reliever)
   7    awards
   8    years active
-  9    teams
+  9    teams (each once, alphabetically)
 
 Output: src/data/reveal.json (server-only: it holds the answers).
 
@@ -221,12 +221,9 @@ def main(data_dir: Path) -> None:
         years = sorted(mine.yearID.unique())
         clues.append({"label": "Years active", "value": f"{years[0]}–{years[-1]} ({len(years)} seasons)"})
 
-        team_seq: list[str] = []
-        for y, t in zip(mine.yearID, mine.teamID):
-            n = team_name.get((y, t), t)
-            if not team_seq or team_seq[-1] != n:
-                team_seq.append(n)
-        clues.append({"label": "Teams", "value": " → ".join(team_seq)})
+        # Every team he played for, once each, alphabetically (not the order he played for them).
+        team_set = sorted({team_name.get((y, t), t) for y, t in zip(mine.yearID, mine.teamID)})
+        clues.append({"label": "Teams", "value": ", ".join(team_set)})
 
         players.append({
             "id": pid,
