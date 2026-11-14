@@ -54,6 +54,8 @@ describe("Stats Ranker scoring", () => {
     const reveal = scoreRankOrder(leaderboards, round, swapped);
     expect(reveal.score).toBe(2);
     expect(reveal.guess.map((g) => g.off)).toEqual([1, 1, 0, 0, 0]);
+    expect(reveal.guess.map((g) => g.dir)).toEqual([1, -1, 0, 0, 0]);
+    expect(buildRankShareText(round, reveal, "u").split("\n").slice(1, 6)).toEqual(["⬇️ 1", "⬆️ 1", "✅", "✅", "✅"]);
   });
 
   it("validates orders", () => {
@@ -66,7 +68,7 @@ describe("Stats Ranker scoring", () => {
 
   it("builds spoiler-free share text", () => {
     const text = buildRankShareText(round, scoreRankOrder(leaderboards, round, answer), "https://example.com/rank");
-    expect(text).toContain("🟩🟩🟩🟩🟩");
+    expect(text).toContain("✅\n✅\n✅\n✅\n✅");
     expect(text).toContain("Perfect order!");
     for (const p of round.players) expect(text).not.toContain(p.name);
     expect(text).not.toContain(round.label);

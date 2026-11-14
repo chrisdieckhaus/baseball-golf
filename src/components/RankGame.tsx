@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { buildRankShareText, RANK_MAX_SCORE, rankEmoji, rankRoundNumber, type RankReveal, type RankRound } from "@/lib/rank";
+import { buildRankShareText, RANK_MAX_SCORE, rankRoundNumber, rankShareLine, type RankReveal, type RankRound } from "@/lib/rank";
 import { ordinal } from "@/lib/scoring";
 import styles from "./RankGame.module.css";
 
@@ -161,7 +161,6 @@ export default function RankGame({ round, isToday, practiceEnabled }: { round: R
   }
 
   const offById = new Map(reveal?.guess.map((g) => [g.id, g.off]) ?? []);
-  const answerPos = new Map(reveal?.answer.map((a, i) => [a.id, i]) ?? []);
 
   return (
     <div className={styles.game}>
@@ -195,7 +194,6 @@ export default function RankGame({ round, isToday, practiceEnabled }: { round: R
           {order.map((id, i) => {
             const isDragging = drag?.id === id;
             const off = offById.get(id);
-            const truth = answerPos.get(id);
             const transform = isDragging ? `translateY(${drag!.dy}px)` : `translateY(${shiftFor(i)}px)`;
             return (
               <li
@@ -213,7 +211,7 @@ export default function RankGame({ round, isToday, practiceEnabled }: { round: R
                 <span className={styles.name}>{names.get(id)}</span>
                 {locked ? (
                   <span className={styles.result}>
-                    {off === 0 ? "✓" : `${rankEmoji(off!)} ${truth! + 1 < i + 1 ? "↑" : "↓"}${off}`}
+                    {rankShareLine(reveal!.guess[i])}
                   </span>
                 ) : (
                   <span className={styles.controls}>

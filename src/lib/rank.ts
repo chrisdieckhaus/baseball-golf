@@ -43,8 +43,11 @@ export interface RankRound {
 
 export interface RankReveal {
   score: number;
-  /** The player's guessed order, with how far off each one was. */
-  guess: { id: string; name: string; off: number }[];
+  /**
+   * The player's guessed order, with how far off each one was and which way he
+   * needed to move: -1 = up (should be higher in the list), 1 = down, 0 = right.
+   */
+  guess: { id: string; name: string; off: number; dir: -1 | 0 | 1 }[];
   /** The true order, best first. */
   answer: { id: string; name: string; value: string; rank: number | null }[];
 }
@@ -141,7 +144,8 @@ export function scoreRankOrder(data: LeaderboardData, round: RankRound, order: s
   const guess = order.map((id, pos) => {
     const [first, last] = span(id);
     const off = pos < first ? first - pos : pos > last ? pos - last : 0;
-    return { id, name: names.get(id) ?? id, off };
+    const dir: -1 | 0 | 1 = off === 0 ? 0 : pos > last ? -1 : 1;
+    return { id, name: names.get(id) ?? id, off, dir };
   });
 
   const fmt = (v: number) => formatValue(v, stat.kind, stat.decimals);
@@ -163,18 +167,21 @@ export function isValidOrder(round: RankRound, order: unknown): order is string[
 }
 
 /**
- * Spoiler-free share text, e.g.
+ * Spoiler-free share text: one line per spot, in the order you submitted,
+ * showing which way each player needed to move. e.g.
  *
  *   Stats Ranker #3 · Nov 16, 2026
- *   🟩🟩🟨🟧🟩
- *   Off by 4
+ *   ⬇️ 1
+ *   ⬆️ 1
+ *   ✅
+ *   ✅
+ *   ✅
+ *   Off by 2
  *   https://…/rank
  */
-export function rankEmoji(off: number): string {
-  if (off === 0) return "🟩";
-  if (off === 1) return "🟨";
-  if (off === 2) return "🟧";
-  return "🟥";
+export function rankShareLine(g: { off: number; dir: -1 | 0 | 1 }): string {
+  if (g.off === 0) return "✅";
+  return `${g.dir < 0 ? "⬆️" : "⬇️"} ${g.off}`;
 }
 
 export function buildRankShareText(round: RankRound, reveal: RankReveal, url: string): string {
@@ -188,5 +195,5 @@ export function buildRankShareText(round: RankRound, reveal: RankReveal, url: st
     ? `Stats Ranker · Practice #${round.practiceSeed}`
     : `Stats Ranker #${rankRoundNumber(round.date)} · ${date}`;
   const line = reveal.score === 0 ? "Perfect order!" : `Off by ${reveal.score}`;
-  return [title, reveal.guess.map((g) => rankEmoji(g.off)).join(""), line, url].join("\n");
+  return [title, ...reveal.guess.map(rankShareLine), line, url].join("\n");
 }
