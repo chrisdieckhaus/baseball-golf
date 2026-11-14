@@ -5,6 +5,9 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import pg from "pg";
 import {
   getRankPlay,
+  getRankStats,
+  getRevealStats,
+  revealResult,
   getRankProgress,
   getRevealPlay,
   getRevealProgress,
@@ -76,5 +79,32 @@ describe.skipIf(!url)("Stats Ranker and Sports Revealer plays (Postgres)", () =>
   it("locks a finished round", async () => {
     await reveal(A, ["henderi01"], true, true);
     expect((await reveal(A, ["henderi01", "skip"])).saved).toBe(false);
+  });
+
+  it("compares a Ranker score with everyone else's", async () => {
+    const C = "00000000-0000-4000-8000-00000000000c";
+    await recordRankPlay(db, { playerId: A, roundDate: D, order: ["a"], score: 2, isLive: true });
+    await recordRankPlay(db, { playerId: B, roundDate: D, order: ["a"], score: 0, isLive: true });
+    await recordRankPlay(db, { playerId: C, roundDate: D, order: ["a"], score: 6, isLive: false });
+    expect(await getRankStats(db, D, A, 2)).toEqual({
+      others: 2,
+      worse: 1,
+      tied: 0,
+      percentBeaten: 50,
+      finishers: 3,
+      averageScore: 2.7,
+      perfectPercent: 33,
+    });
+  });
+
+  it("compares a Revealer result with everyone else's, with a chart by inning", async () => {
+    const C = "00000000-0000-4000-8000-00000000000c";
+    await reveal(A, ["skip", "x1"], true, true); // solved in the 2nd
+    await reveal(B, ["x1"], true, true); // solved in the 1st
+    await reveal(C, Array(9).fill("skip"), false, true); // struck out
+    const stats = await getRevealStats(db, D, A, revealResult(2, true));
+    expect(stats).toMatchObject({ others: 2, worse: 1, tied: 0, percentBeaten: 50, finishers: 3, solvedPercent: 67 });
+    expect(stats.averageInning).toBe(1.5);
+    expect(stats.distribution).toEqual([1, 1, 0, 0, 0, 0, 0, 0, 0, 1]);
   });
 });

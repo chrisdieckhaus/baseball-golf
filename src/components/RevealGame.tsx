@@ -13,6 +13,8 @@ import {
   type RevealRound,
   type RevealState,
 } from "@/lib/reveal";
+import { RevealCompare } from "@/components/CompareStats";
+import type { RevealStats } from "@/lib/game-plays";
 import { ordinal } from "@/lib/scoring";
 import type { PlayerIndexEntry } from "@/lib/types";
 import styles from "./RevealGame.module.css";
@@ -24,6 +26,7 @@ interface ServerPlay {
   guesses: string[];
   names: string[];
   state: RevealState;
+  stats?: RevealStats | null;
 }
 
 interface Saved {
@@ -70,6 +73,7 @@ export default function RevealGame({ round, initial, isToday, practiceEnabled }:
   const [guesses, setGuesses] = useState<string[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
   const [state, setState] = useState<RevealState>(initial);
+  const [stats, setStats] = useState<RevealStats | null>(null);
   const [lastShown, setLastShown] = useState(initial.clues.length);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,6 +84,7 @@ export default function RevealGame({ round, initial, isToday, practiceEnabled }:
     setGuesses(next.guesses);
     setNames(nextNames);
     setState(next.state);
+    setStats(next.stats ?? null);
     save(key, { guesses: next.guesses, names: nextNames, state: next.state });
   }
 
@@ -286,6 +291,9 @@ export default function RevealGame({ round, initial, isToday, practiceEnabled }:
               ? `Solved in the ${inningName(guesses.length)} inning.`
               : "Nine innings, no runs. Better luck tomorrow."}
           </p>
+          {stats && (
+            <RevealCompare stats={stats} mine={state.solved ? guesses.length : 10} isToday={isToday} />
+          )}
           <button className={styles.shareBtn} onClick={share}>
             {copied ? "Copied to clipboard ✓" : "Share result"}
           </button>

@@ -1,5 +1,5 @@
 import { getDb } from "@/lib/db";
-import { getRankPlay, recordRankPlay } from "@/lib/game-plays";
+import { getRankPlay, getRankStats, recordRankPlay } from "@/lib/game-plays";
 import { leaderboards } from "@/lib/leaderboards";
 import { ensurePlayerId, readPlayerId } from "@/lib/player-cookie";
 import { isValidOrder, scoreRankOrder } from "@/lib/rank";
@@ -8,7 +8,7 @@ import { isValidDate, isValidSeed, practiceEnabled, todayET } from "@/lib/round"
 
 const noStore = { "Cache-Control": "private, no-store" };
 
-/** This browser's saved play on a daily round, if any: { play: { order, reveal } | null }. */
+/** This browser's saved play on a daily round, if any: { play: { order, reveal, stats } | null }. */
 export async function GET(request: Request) {
   const date = new URL(request.url).searchParams.get("date");
   if (!isPlayableRankDate(date)) return Response.json({ error: "Invalid date" }, { status: 400 });
@@ -18,8 +18,9 @@ export async function GET(request: Request) {
   const play = await getRankPlay(db, me, date);
   if (!play) return Response.json({ play: null }, { headers: noStore });
   const round = await getRankRound(date);
+  const stats = await getRankStats(db, date, me, play.score);
   return Response.json(
-    { play: { order: play.order, reveal: scoreRankOrder(leaderboards, round, play.order) } },
+    { play: { order: play.order, reveal: scoreRankOrder(leaderboards, round, play.order), stats } },
     { headers: noStore },
   );
 }
@@ -66,10 +67,12 @@ export async function POST(request: Request) {
       score: reveal.score,
       isLive: date === todayET(),
     });
+    const stats = await getRankStats(db, date, me, play.score);
     if (!created) {
       // Already played (another tab or device with this browser's id): the saved play stands.
-      return Response.json({ order: play.order, reveal: scoreRankOrder(leaderboards, round, play.order) });
+      return Response.json({ order: play.order, reveal: scoreRankOrder(leaderboards, round, play.order), stats });
     }
+    return Response.json({ order, reveal, stats });
   } catch (e) {
     console.error("[api/rank] Couldn't save the play", e);
   }
