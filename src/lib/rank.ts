@@ -16,7 +16,9 @@ export const RANK_POOL = 100;
 /** The worst possible score: the order exactly reversed. */
 export const RANK_MAX_SCORE = Math.floor((RANK_PLAYERS * RANK_PLAYERS) / 2);
 /** The first Stats Ranker round (#1). */
-export const RANK_LAUNCH_DATE = "2026-11-14";
+// Stats Ranker went live on Nov 14, 2026, with rounds generated back to Nov 1 so
+// its numbering matches Baseball Golf's (#1 = Nov 1).
+export const RANK_LAUNCH_DATE = "2026-11-01";
 
 export function rankRoundNumber(date: string): number {
   const days = (Date.parse(`${date}T00:00:00Z`) - Date.parse(`${RANK_LAUNCH_DATE}T00:00:00Z`)) / 86_400_000;

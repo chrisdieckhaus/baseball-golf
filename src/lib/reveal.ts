@@ -10,8 +10,17 @@
 import { hashString, mulberry32 } from "./round";
 
 export const INNINGS = 9;
-/** The first Sports Revealer round (#1). */
-export const REVEAL_LAUNCH_DATE = "2026-11-14";
+/**
+ * The first Sports Revealer round (#1). The game went live on Nov 14, 2026, with
+ * rounds generated back to Nov 1 so its numbering matches the other games.
+ */
+export const REVEAL_LAUNCH_DATE = "2026-11-01";
+/**
+ * Where the daily walk through the shuffled pool starts. Nov 14 (the day the
+ * game went live) keeps the first player in the shuffle, and Nov 1–13 take the
+ * last 13, so no player repeats until the whole pool has been used.
+ */
+const REVEAL_ORDER_START = "2026-11-14";
 export const SKIP = "skip";
 
 export interface RevealClue {
@@ -82,7 +91,9 @@ export function generateStoredRevealRound(data: RevealData, date: string, practi
     const j = Math.floor(rand() * (i + 1));
     [ids[i], ids[j]] = [ids[j], ids[i]];
   }
-  const n = revealRoundNumber(date) - 1;
+  const n = Math.round(
+    (Date.parse(`${date}T00:00:00Z`) - Date.parse(`${REVEAL_ORDER_START}T00:00:00Z`)) / 86_400_000,
+  );
   return { playerId: ids[((n % ids.length) + ids.length) % ids.length] };
 }
 

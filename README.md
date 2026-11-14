@@ -60,6 +60,8 @@ A third daily game on the same data. Each day everyone gets the same mystery pla
     - Update the CSV and its `active_2026` column when the WAR list or the data changes.
 - **Data file:** `scripts/build_reveal_data.py` writes `src/data/reveal.json`, which is server-only.
 - **Picking the player:** daily rounds walk through one fixed shuffle of the pool (`src/lib/reveal.ts`). Each round's player is saved in `reveal_rounds` the first time it's needed.
+- **Archive:** Stats Ranker (`/rank/archive`) and Sports Revealer (`/reveal/archive`) can replay any past round. Both number their rounds from Nov 1, 2026, like Baseball Golf, even though they went live on Nov 14. The build's backfill stores every round from Nov 1. A row's result comes from the browser's saved progress.
+    - Sports Revealer's walk through the pool is still anchored at Nov 14, so the rounds already played kept their players. Nov 1–13 got the last 13 players in the shuffle.
 - **Guessing:** `POST /api/reveal` takes the guesses so far. It returns only the clues they unlock, plus the answer once the round is over.
 
 ## Development

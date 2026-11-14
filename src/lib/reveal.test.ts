@@ -54,7 +54,7 @@ describe("Sports Revealer round", () => {
     const d = "2026-11-20";
     expect(generateStoredRevealRound(revealData, d)).toEqual(generateStoredRevealRound(revealData, d));
     const seen = new Set<string>();
-    const start = Date.parse("2026-11-14T00:00:00Z");
+    const start = Date.parse("2026-11-01T00:00:00Z");
     for (let i = 0; i < revealData.players.length; i++) {
       const date = new Date(start + i * 86_400_000).toISOString().slice(0, 10);
       seen.add(generateStoredRevealRound(revealData, date).playerId);
@@ -62,9 +62,14 @@ describe("Sports Revealer round", () => {
     expect(seen.size).toBe(revealData.players.length);
   });
 
+  it("keeps the players of rounds already played when the archive was added", () => {
+    expect(generateStoredRevealRound(revealData, "2026-11-14").playerId).toBe("beltrca01");
+    expect(generateStoredRevealRound(revealData, "2026-11-15").playerId).toBe("yastrca01");
+  });
+
   it("numbers rounds from launch", () => {
-    expect(revealRoundNumber("2026-11-14")).toBe(1);
-    expect(revealRoundNumber("2026-11-16")).toBe(3);
+    expect(revealRoundNumber("2026-11-01")).toBe(1);
+    expect(revealRoundNumber("2026-11-14")).toBe(14);
   });
 
   it("gives practice rounds a player from the pool", () => {
@@ -112,7 +117,7 @@ describe("guessing", () => {
     const round: RevealRound = { date: "2026-11-16", type: "hitter" };
     const guesses = ["ruthba01", SKIP, player.id];
     const text = buildRevealShareText(round, guesses, revealState(player, guesses), "https://x/reveal");
-    expect(text).toBe("Sports Revealer #3 · Nov 16, 2026\n🟥⬛🟩\nGot him in the 3rd inning\nhttps://x/reveal");
+    expect(text).toBe("Sports Revealer #16 · Nov 16, 2026\n🟥⬛🟩\nGot him in the 3rd inning\nhttps://x/reveal");
     expect(text).not.toContain("Henderson");
   });
 });
