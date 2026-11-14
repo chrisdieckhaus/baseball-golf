@@ -3,7 +3,7 @@
 import { execFileSync } from "node:child_process";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import pg from "pg";
-import { getPlay, getRoundStats, percentBeaten, recordGuess } from "./plays";
+import { getPlay, getPlayerProgress, getRoundStats, percentBeaten, recordGuess } from "./plays";
 
 const url = process.env.TEST_DATABASE_URL;
 
@@ -90,5 +90,16 @@ describe.skipIf(!url)("round tracking (Postgres)", () => {
     const results = await Promise.all([guess(A, 0, "p1", 4), guess(A, 0, "p2", 9)]);
     expect(results.filter((r) => r.ok)).toHaveLength(1);
     expect((await getPlay(db, A, D))?.guessIds.filter(Boolean)).toHaveLength(1);
+  });
+
+  it("lists a player's progress on every round they've started", async () => {
+    for (const [h, id] of ["p1", "p2", "p3"].entries()) await guess(A, h, id, 5);
+    await guess(A, 0, "p1", 7, false, "2026-11-02");
+    await guess(B, 0, "p1", 1, false, "2026-11-03"); // someone else's
+    const progress = await getPlayerProgress(db, A);
+    expect(Object.fromEntries(progress)).toEqual({
+      [D]: { holesPlayed: 3, totalScore: 15 },
+      "2026-11-02": { holesPlayed: 1, totalScore: null },
+    });
   });
 });

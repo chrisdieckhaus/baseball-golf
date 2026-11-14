@@ -22,8 +22,14 @@ export function isValidDate(date: string): boolean {
   return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === date;
 }
 
-/** The first daily round. Earlier dates have no round. */
-export const LAUNCH_DATE = "2026-11-13";
+/** The first daily round (round #1). Earlier dates have no round. */
+export const LAUNCH_DATE = "2026-11-01";
+
+/** A daily round's number: #1 on LAUNCH_DATE, counting up one per day. */
+export function roundNumber(date: string): number {
+  const days = (Date.parse(`${date}T00:00:00Z`) - Date.parse(`${LAUNCH_DATE}T00:00:00Z`)) / 86_400_000;
+  return Math.round(days) + 1;
+}
 
 /** A daily round exists for every date from launch through today (ET). Future rounds stay hidden. */
 export function isPlayableDate(date: unknown, today: string = todayET()): date is string {

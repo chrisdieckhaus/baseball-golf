@@ -4,7 +4,7 @@ import { execFileSync } from "node:child_process";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import pg from "pg";
 import { leaderboards } from "./leaderboards";
-import { generateRound, isPlayableDate, LAUNCH_DATE, playableDates } from "./round";
+import { generateRound, isPlayableDate, LAUNCH_DATE, playableDates, roundNumber } from "./round";
 import { generateStoredHoles, getOrCreateRound, getStoredHoles, roundFromStored, storeRoundIfMissing } from "./rounds";
 import { targetPlayers } from "./scoring";
 
@@ -13,7 +13,7 @@ describe("playable dates", () => {
     expect(isPlayableDate(LAUNCH_DATE, "2026-11-20")).toBe(true);
     expect(isPlayableDate("2026-11-20", "2026-11-20")).toBe(true);
     expect(isPlayableDate("2026-11-21", "2026-11-20")).toBe(false); // future
-    expect(isPlayableDate("2026-11-12", "2026-11-20")).toBe(false); // before launch
+    expect(isPlayableDate("2026-10-31", "2026-11-20")).toBe(false); // before launch
     expect(isPlayableDate("2026-02-30", "2027-01-01")).toBe(false);
     expect(isPlayableDate(undefined)).toBe(false);
   });
@@ -22,7 +22,15 @@ describe("playable dates", () => {
     const dates = playableDates("2027-01-02");
     expect(dates[0]).toBe(LAUNCH_DATE);
     expect(dates.slice(-4)).toEqual(["2026-12-30", "2026-12-31", "2027-01-01", "2027-01-02"]);
-    expect(dates).toHaveLength(51);
+    expect(dates).toHaveLength(63);
+  });
+});
+
+describe("roundNumber", () => {
+  it("counts from #1 on launch day", () => {
+    expect(roundNumber("2026-11-01")).toBe(1);
+    expect(roundNumber("2026-11-13")).toBe(13);
+    expect(roundNumber("2027-01-01")).toBe(62);
   });
 });
 

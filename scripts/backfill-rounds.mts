@@ -4,7 +4,8 @@
 //
 // Stored rounds are never changed, so running this again is harmless. It matters
 // most on the first deploy with the rounds table: it saves the rounds people
-// already played, using the generator they were played with. After that,
+// already played, using the generator they were played with, and adds the
+// rounds from launch day on that were never played live. After that,
 // changing the generator only affects rounds that don't exist yet.
 //
 // Skips quietly when no database is configured.

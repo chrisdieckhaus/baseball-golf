@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { GuessResult, PlayerIndexEntry, PlayState, Round, RoundStats } from "@/lib/types";
 import { MAX_HOLE_SCORE, ordinal } from "@/lib/scoring";
 import { buildShareText } from "@/lib/share";
-import { todayET } from "@/lib/round";
+import { roundNumber } from "@/lib/round";
 import PlayerSearch from "./PlayerSearch";
 import styles from "./Game.module.css";
 
@@ -68,14 +69,17 @@ async function copyText(text: string): Promise<boolean> {
 
 type ShareStatus = "idle" | "copied" | "failed";
 
-function ShareButton({ round, results }: { round: Round; results: GuessResult[] }) {
+function ShareButton({ round, isToday, results }: { round: Round; isToday: boolean; results: GuessResult[] }) {
   const [status, setStatus] = useState<ShareStatus>("idle");
   const [fallbackText, setFallbackText] = useState<string | null>(null);
 
   async function share() {
+    // Practice and previous rounds link to that exact round; today's round links to the site.
     const url = round.practiceSeed
       ? `${window.location.origin}/?seed=${round.practiceSeed}`
-      : window.location.origin;
+      : isToday
+        ? window.location.origin
+        : `${window.location.origin}/?date=${round.date}`;
     const text = buildShareText({
       date: round.date,
       practiceSeed: round.practiceSeed,
@@ -148,7 +152,15 @@ function formatDate(date: string): string {
   });
 }
 
-export default function Game({ round, practiceEnabled }: { round: Round; practiceEnabled: boolean }) {
+export default function Game({
+  round,
+  isToday,
+  practiceEnabled,
+}: {
+  round: Round;
+  isToday: boolean; // today's daily round (not a previous round or a practice round)
+  practiceEnabled: boolean;
+}) {
   const router = useRouter();
   const key = storageKey(round);
   const isPractice = Boolean(round.practiceSeed);
@@ -233,10 +245,23 @@ export default function Game({ round, practiceEnabled }: { round: Round; practic
 
   return (
     <section className={styles.game}>
-      {isPractice ? (
-        <p className={styles.date}>Practice round · #{round.practiceSeed}</p>
-      ) : (
-        <p className={styles.date}>{formatDate(round.date)}</p>
+      <div className={styles.dateBar}>
+        {isPractice ? (
+          <p className={styles.date}>Practice round · #{round.practiceSeed}</p>
+        ) : (
+          <p className={styles.date}>
+            Round #{roundNumber(round.date)} · {formatDate(round.date)}
+          </p>
+        )}
+        <Link href="/archive" className={styles.archiveBtn}>
+          Play previous rounds
+        </Link>
+      </div>
+      {!isPractice && !isToday && (
+        <p className={styles.pastNote}>
+          You&apos;re playing a previous round. It doesn&apos;t count toward that day&apos;s percentile.{" "}
+          <Link href="/">Play today&apos;s round</Link>
+        </p>
       )}
 
       {practiceEnabled && (
@@ -350,11 +375,13 @@ export default function Game({ round, practiceEnabled }: { round: Round; practic
               ? " — a perfect round!"
               : isPractice
                 ? ". Try another practice round?"
-                : ". Come back tomorrow for a new course."}
+                : isToday
+                  ? ". Come back tomorrow for a new course."
+                  : "."}
           </p>
         )}
-        {finished && !isPractice && stats && <PercentileLine stats={stats} isToday={round.date === todayET()} />}
-        {finished && <ShareButton round={round} results={results as GuessResult[]} />}
+        {finished && !isPractice && stats && <PercentileLine stats={stats} isToday={isToday} />}
+        {finished && <ShareButton round={round} isToday={isToday} results={results as GuessResult[]} />}
       </div>
     </section>
   );

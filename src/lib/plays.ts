@@ -43,6 +43,23 @@ export async function getPlay(db: Queryable, playerId: string, roundDate: string
   return rows[0] ? toPlay(rows[0]) : null;
 }
 
+export interface RoundProgress {
+  holesPlayed: number;
+  totalScore: number | null; // set once the round is finished
+}
+
+/** This player's progress on every daily round they've started, by date (YYYY-MM-DD). */
+export async function getPlayerProgress(db: Queryable, playerId: string): Promise<Map<string, RoundProgress>> {
+  const { rows } = await db.query<{ round_date: string; holes_played: number; total_score: number | null }>(
+    `SELECT round_date::text AS round_date,
+            cardinality(array_remove(guess_ids, NULL)) AS holes_played,
+            total_score
+       FROM plays WHERE player_id = $1`,
+    [playerId],
+  );
+  return new Map(rows.map((r) => [r.round_date, { holesPlayed: r.holes_played, totalScore: r.total_score }]));
+}
+
 /**
  * Save one guess. The database enforces the game rules, so they hold even if
  * the browser is tampered with: holes in order, one guess per hole, and no
