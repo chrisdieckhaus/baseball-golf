@@ -190,7 +190,8 @@ def main(data_dir: Path) -> None:
                  for rank, k, label in reversed(best4)]
 
         person = people.loc[pid]
-        clues.append({"label": "Bats / Throws", "value": f"Bats {person.bats}, throws {person.throws}"})
+        bats = "S" if person.bats == "B" else person.bats  # Lahman uses B for switch hitters
+        clues.append({"label": "Bats / Throws", "value": f"Bats {bats}, throws {person.throws}"})
 
         if is_pitcher:
             t = pit.loc[pid]

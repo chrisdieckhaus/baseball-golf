@@ -36,6 +36,12 @@ describe("Sports Revealer data", () => {
     }
   });
 
+  it("shows switch hitters as S", () => {
+    const values = revealData.players.map((p) => p.clues[4].value);
+    expect(values.every((v) => /^Bats [LRS], throws [LR]$/.test(v))).toBe(true);
+    expect(byId.get("rosepe01")!.clues[4].value).toBe("Bats S, throws R");
+  });
+
   it("knows Rickey Henderson's best stats", () => {
     const rickey = byId.get("henderi01")!;
     expect(rickey.clues.slice(2, 4).map((c) => c.label).sort()).toEqual(["Runs", "Stolen bases"]);
