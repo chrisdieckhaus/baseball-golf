@@ -1,9 +1,33 @@
+import { getDb } from "@/lib/db";
+import { getRankPlay, recordRankPlay } from "@/lib/game-plays";
 import { leaderboards } from "@/lib/leaderboards";
+import { ensurePlayerId, readPlayerId } from "@/lib/player-cookie";
 import { isValidOrder, scoreRankOrder } from "@/lib/rank";
 import { getRankRound, isPlayableRankDate } from "@/lib/rank-data";
-import { isValidDate, isValidSeed, practiceEnabled } from "@/lib/round";
+import { isValidDate, isValidSeed, practiceEnabled, todayET } from "@/lib/round";
 
-/** Score a submitted order. One shot: the client locks the round after this. */
+const noStore = { "Cache-Control": "private, no-store" };
+
+/** This browser's saved play on a daily round, if any: { play: { order, reveal } | null }. */
+export async function GET(request: Request) {
+  const date = new URL(request.url).searchParams.get("date");
+  if (!isPlayableRankDate(date)) return Response.json({ error: "Invalid date" }, { status: 400 });
+  const db = getDb();
+  const me = await readPlayerId();
+  if (!db || !me) return Response.json({ play: null }, { headers: noStore });
+  const play = await getRankPlay(db, me, date);
+  if (!play) return Response.json({ play: null }, { headers: noStore });
+  const round = await getRankRound(date);
+  return Response.json(
+    { play: { order: play.order, reveal: scoreRankOrder(leaderboards, round, play.order) } },
+    { headers: noStore },
+  );
+}
+
+/**
+ * Score a submitted order. One shot: a daily round's first order is saved for
+ * this browser, and a later submission gets that saved play back instead.
+ */
 export async function POST(request: Request) {
   let body: unknown;
   try {
@@ -29,5 +53,25 @@ export async function POST(request: Request) {
   if (!isValidOrder(round, order)) {
     return Response.json({ error: "Order must contain each of the round's players once" }, { status: 400 });
   }
-  return Response.json({ reveal: scoreRankOrder(leaderboards, round, order) });
+  const reveal = scoreRankOrder(leaderboards, round, order);
+
+  const db = getDb();
+  if (practiceSeed || !db) return Response.json({ order, reveal });
+  try {
+    const me = await ensurePlayerId();
+    const { created, play } = await recordRankPlay(db, {
+      playerId: me,
+      roundDate: date,
+      order,
+      score: reveal.score,
+      isLive: date === todayET(),
+    });
+    if (!created) {
+      // Already played (another tab or device with this browser's id): the saved play stands.
+      return Response.json({ order: play.order, reveal: scoreRankOrder(leaderboards, round, play.order) });
+    }
+  } catch (e) {
+    console.error("[api/rank] Couldn't save the play", e);
+  }
+  return Response.json({ order, reveal });
 }

@@ -56,6 +56,35 @@ CREATE TABLE IF NOT EXISTS rank_rounds (
   created_at  timestamptz NOT NULL DEFAULT now()
 );
 
+-- Stats Ranker plays: one per player per daily round. The game is one shot, so
+-- the first order submitted is the play; later submissions get this one back.
+CREATE TABLE IF NOT EXISTS rank_plays (
+  player_id     uuid NOT NULL REFERENCES players (id) ON DELETE CASCADE,
+  round_date    date NOT NULL,
+  guess_order   text[] NOT NULL,
+  score         smallint NOT NULL,
+  is_live       boolean NOT NULL,           -- played on the round's own day (ET), not later from the archive
+  completed_at  timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (player_id, round_date)
+);
+CREATE INDEX IF NOT EXISTS rank_plays_round_idx ON rank_plays (round_date, score);
+
+-- Sports Revealer plays: one per player per daily round, updated on every guess.
+-- guesses holds player ids and 'skip', in inning order; guess_names lines up with it.
+CREATE TABLE IF NOT EXISTS reveal_plays (
+  player_id     uuid NOT NULL REFERENCES players (id) ON DELETE CASCADE,
+  round_date    date NOT NULL,
+  guesses       text[] NOT NULL DEFAULT '{}',
+  guess_names   text[] NOT NULL DEFAULT '{}',
+  solved        boolean NOT NULL DEFAULT false,
+  done          boolean NOT NULL DEFAULT false,
+  is_live       boolean NOT NULL,
+  started_at    timestamptz NOT NULL DEFAULT now(),
+  completed_at  timestamptz,
+  PRIMARY KEY (player_id, round_date)
+);
+CREATE INDEX IF NOT EXISTS reveal_plays_round_idx ON reveal_plays (round_date) WHERE done;
+
 -- Sports Revealer: one row per daily round (the mystery player), saved the first
 -- time it's needed. Clues aren't saved; they come from the current data.
 CREATE TABLE IF NOT EXISTS reveal_rounds (

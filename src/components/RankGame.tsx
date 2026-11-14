@@ -71,7 +71,39 @@ export default function RankGame({ round, isToday, practiceEnabled }: { round: R
       setOrder(saved.order);
       setReveal(saved.reveal);
     }
-  }, [key]);
+    if (round.practiceSeed) return;
+
+    // The database has this browser's daily plays. Use the saved play if there
+    // is one; if only this browser has it (played before plays were saved), upload it.
+    let cancelled = false;
+    const apply = (next: { order: string[]; reveal: RankReveal }) => {
+      if (cancelled) return;
+      setOrder(next.order);
+      setReveal(next.reveal);
+      save(key, next);
+    };
+    fetch(`/api/rank?date=${round.date}`, { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((body: { play: { order: string[]; reveal: RankReveal } | null } | null) => {
+        if (!body || cancelled) return;
+        if (body.play) return apply(body.play);
+        if (saved) {
+          return fetch("/api/rank", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ date: round.date, seed: null, order: saved.order }),
+          })
+            .then((res) => (res.ok ? res.json() : null))
+            .then((b) => b && apply({ order: b.order, reveal: b.reveal }));
+        }
+      })
+      .catch(() => {
+        // Offline or server error: keep what this browser saved.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [key, round.date, round.practiceSeed]);
 
   const names = new Map(round.players.map((p) => [p.id, p.name]));
   const [topLabel, bottomLabel] = endLabels(round);
@@ -126,8 +158,11 @@ export default function RankGame({ round, isToday, practiceEnabled }: { round: R
       });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error ?? "Something went wrong");
+      // The server sends back the order it scored: a saved play wins over this one.
+      const finalOrder: string[] = body.order ?? order;
+      setOrder(finalOrder);
       setReveal(body.reveal);
-      save(key, { order, reveal: body.reveal });
+      save(key, { order: finalOrder, reveal: body.reveal });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {

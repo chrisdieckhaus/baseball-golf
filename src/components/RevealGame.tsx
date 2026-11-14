@@ -20,6 +20,12 @@ import styles from "./RevealGame.module.css";
 const storageKey = (round: RevealRound) =>
   round.practiceSeed ? `sports-revealer:practice:${round.practiceSeed}` : `sports-revealer:${round.date}`;
 
+interface ServerPlay {
+  guesses: string[];
+  names: string[];
+  state: RevealState;
+}
+
 interface Saved {
   guesses: string[];
   names: Record<string, string>;
@@ -69,6 +75,14 @@ export default function RevealGame({ round, initial, isToday, practiceEnabled }:
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  function apply(next: ServerPlay) {
+    const nextNames = Object.fromEntries(next.guesses.map((g, i) => [g, next.names[i] ?? g]));
+    setGuesses(next.guesses);
+    setNames(nextNames);
+    setState(next.state);
+    save(key, { guesses: next.guesses, names: nextNames, state: next.state });
+  }
+
   useEffect(() => {
     const saved = loadSaved(key);
     if (saved) {
@@ -78,7 +92,52 @@ export default function RevealGame({ round, initial, isToday, practiceEnabled }:
       setState(saved.state);
       setLastShown(saved.state.clues.length);
     }
-  }, [key]);
+    if (round.practiceSeed) return;
+
+    // The database has this browser's daily plays. Use whichever of the saved
+    // play and this browser's copy is further along; if this browser is ahead
+    // (say, it played before plays were saved), upload its guesses.
+    let cancelled = false;
+    const local = saved?.guesses ?? [];
+    fetch(`/api/reveal?date=${round.date}`, { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((body: { play: ServerPlay | null } | null) => {
+        if (!body || cancelled) return;
+        const server = body.play;
+        if (server && server.guesses.length >= local.length) {
+          setLastShown(server.state.clues.length);
+          return apply(server);
+        }
+        if (local.length > 0) {
+          return post(local, saved?.names ?? {}).then((b) => {
+            if (b && !cancelled) apply(b);
+          });
+        }
+      })
+      .catch(() => {
+        // Offline or server error: keep what this browser saved.
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per round
+  }, [key, round.date, round.practiceSeed]);
+
+  async function post(list: string[], nameMap: Record<string, string>): Promise<ServerPlay | null> {
+    const res = await fetch("/api/reveal", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        date: round.date,
+        seed: round.practiceSeed ?? null,
+        guesses: list,
+        names: list.map((g) => (g === SKIP ? "" : (nameMap[g] ?? g))),
+      }),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error ?? "Something went wrong");
+    return body;
+  }
 
   async function submit(guess: string, name?: string) {
     if (busy || state.done) return;
@@ -86,19 +145,10 @@ export default function RevealGame({ round, initial, isToday, practiceEnabled }:
     setError(null);
     const next = [...guesses, guess];
     try {
-      const res = await fetch("/api/reveal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: round.date, seed: round.practiceSeed ?? null, guesses: next }),
-      });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? "Something went wrong");
-      const nextNames = name ? { ...names, [guess]: name } : names;
+      const body = await post(next, name ? { ...names, [guess]: name } : names);
       setLastShown(state.clues.length);
-      setGuesses(next);
-      setNames(nextNames);
-      setState(body.state);
-      save(key, { guesses: next, names: nextNames, state: body.state });
+      // The server sends back the guesses it saved: a saved play wins over this one.
+      if (body) apply(body);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {

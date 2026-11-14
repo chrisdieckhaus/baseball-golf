@@ -11,9 +11,11 @@ interface Props {
   game: GameKey;
   /** Previous daily rounds, newest first. */
   rounds: { date: string; number: number; label: string }[];
+  /** This browser's saved plays from the database, by date. */
+  saved: Record<string, Status>;
 }
 
-type Status = { kind: "done" | "partial"; text: string; score?: number } | null;
+export type Status = { kind: "done" | "partial"; text: string; score?: number } | null;
 
 function read(key: string): unknown {
   try {
@@ -22,6 +24,13 @@ function read(key: string): unknown {
   } catch {
     return null;
   }
+}
+
+/** How Sports Revealer progress reads in the list. */
+export function revealStatus(innings: number, solved: boolean, done: boolean): Status {
+  if (innings === 0) return null;
+  if (done) return { kind: "done", text: solved ? `Solved in the ${inningName(innings)}` : "Struck out" };
+  return { kind: "partial", text: `In progress · ${inningName(innings + 1)} inning` };
 }
 
 /** This browser's result for a round, from what the game saved in localStorage. */
@@ -37,29 +46,22 @@ function statusFor(game: GameKey, date: string): Status {
     guesses?: string[];
     state?: { done?: boolean; solved?: boolean };
   } | null;
-  const n = saved?.guesses?.length ?? 0;
-  if (!saved?.state || n === 0) return null;
-  if (saved.state.done) {
-    return {
-      kind: "done",
-      text: saved.state.solved ? `Solved in the ${inningName(n)}` : "Struck out",
-    };
-  }
-  return { kind: "partial", text: `In progress · ${inningName(n + 1)} inning` };
+  if (!saved?.state) return null;
+  return revealStatus(saved.guesses?.length ?? 0, Boolean(saved.state.solved), Boolean(saved.state.done));
 }
 
 /**
- * The list of previous rounds for Stats Ranker or Sports Revealer. Those games
- * keep results in the browser, so each row's status comes from localStorage
- * after the page loads.
+ * The list of previous rounds for Stats Ranker or Sports Revealer. Each row's
+ * status comes from this browser's saved plays in the database, or, for rounds
+ * played before plays were saved, from localStorage after the page loads.
  */
-export default function LocalArchive({ game, rounds }: Props) {
-  const [statuses, setStatuses] = useState<Record<string, Status>>({});
+export default function LocalArchive({ game, rounds, saved }: Props) {
+  const [statuses, setStatuses] = useState<Record<string, Status>>(saved);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reading localStorage after hydration
-    setStatuses(Object.fromEntries(rounds.map((r) => [r.date, statusFor(game, r.date)])));
-  }, [game, rounds]);
+    setStatuses(Object.fromEntries(rounds.map((r) => [r.date, saved[r.date] ?? statusFor(game, r.date)])));
+  }, [game, rounds, saved]);
 
   if (rounds.length === 0) return <p className={styles.empty}>No previous rounds yet. Check back tomorrow.</p>;
 
