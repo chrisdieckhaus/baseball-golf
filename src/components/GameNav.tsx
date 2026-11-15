@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Logo from "./Logo";
 import styles from "./GameNav.module.css";
 
 const GAMES = [
@@ -18,6 +19,7 @@ export default function GameNav() {
   return (
     <nav className={styles.nav} aria-label="Games">
       <Link href="/" className={styles.brand}>
+        <Logo size={44} className={styles.logo} />
         Daily Dugout
       </Link>
       {GAMES.map((g) => (
