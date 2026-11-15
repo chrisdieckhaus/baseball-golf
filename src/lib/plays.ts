@@ -1,4 +1,5 @@
 import { HOLES_PER_ROUND } from "./round";
+import { MAX_HOLE_SCORE } from "./scoring";
 import type { RoundStats } from "./types";
 
 /** Anything with pg's query(): a Pool, a Client, or a transaction client. */
@@ -24,12 +25,25 @@ export type RecordOutcome =
 const PLAYER_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const isValidPlayerId = (id: unknown): id is string => typeof id === "string" && PLAYER_ID_RE.test(id);
 
+/**
+ * Plays saved before Nov 14, 2026 could score more than MAX_HOLE_SCORE on a
+ * hole (the cap used to be higher). Saved scores are left as they are and capped
+ * whenever they're read, here and in the SQL below, so old plays score on the
+ * same scale as new ones.
+ */
+const capHole = (s: number | null): number | null => (s === null ? null : Math.min(s, MAX_HOLE_SCORE));
+
+/** A play's total from its capped hole scores, in SQL. */
+const CAPPED_TOTAL_SQL = `(SELECT sum(LEAST(s, ${MAX_HOLE_SCORE})) FROM unnest(hole_scores) s)`;
+
 function toPlay(row: Record<string, unknown>): StoredPlay {
+  const holeScores = (row.hole_scores as (number | null)[]).map(capHole);
+  const finished = row.total_score !== null;
   return {
     guessIds: row.guess_ids as (string | null)[],
     guessNames: row.guess_names as (string | null)[],
-    holeScores: row.hole_scores as (number | null)[],
-    totalScore: row.total_score as number | null,
+    holeScores,
+    totalScore: finished ? holeScores.reduce<number>((sum, h) => sum + (h ?? 0), 0) : null,
     isLive: row.is_live as boolean,
   };
 }
@@ -53,7 +67,7 @@ export async function getPlayerProgress(db: Queryable, playerId: string): Promis
   const { rows } = await db.query<{ round_date: string; holes_played: number; total_score: number | null }>(
     `SELECT round_date::text AS round_date,
             cardinality(array_remove(guess_ids, NULL)) AS holes_played,
-            total_score
+            CASE WHEN total_score IS NULL THEN NULL ELSE ${CAPPED_TOTAL_SQL}::int END AS total_score
        FROM plays WHERE player_id = $1`,
     [playerId],
   );
@@ -134,14 +148,21 @@ export async function getRoundStats(
     hole_averages: (string | null)[];
     round_average: string | null;
   }>(
-    `SELECT count(*) FILTER (WHERE player_id <> $2)                                AS others,
-            count(*) FILTER (WHERE player_id <> $2 AND total_score > $3::smallint) AS worse,
-            count(*) FILTER (WHERE player_id <> $2 AND total_score = $3::smallint) AS tied,
-            count(*)                                                               AS finishers,
-            ARRAY[avg(hole_scores[1]), avg(hole_scores[2]), avg(hole_scores[3])]   AS hole_averages,
-            avg(total_score)                                                       AS round_average
-       FROM plays
-      WHERE round_date = $1 AND total_score IS NOT NULL`,
+    `WITH capped AS (
+       SELECT player_id,
+              ARRAY[LEAST(hole_scores[1], ${MAX_HOLE_SCORE}), LEAST(hole_scores[2], ${MAX_HOLE_SCORE}),
+                    LEAST(hole_scores[3], ${MAX_HOLE_SCORE})] AS holes,
+              ${CAPPED_TOTAL_SQL} AS total
+         FROM plays
+        WHERE round_date = $1 AND total_score IS NOT NULL
+     )
+     SELECT count(*) FILTER (WHERE player_id <> $2)                          AS others,
+            count(*) FILTER (WHERE player_id <> $2 AND total > $3::int)       AS worse,
+            count(*) FILTER (WHERE player_id <> $2 AND total = $3::int)       AS tied,
+            count(*)                                                         AS finishers,
+            ARRAY[avg(holes[1]), avg(holes[2]), avg(holes[3])]               AS hole_averages,
+            avg(total)                                                       AS round_average
+       FROM capped`,
     [roundDate, playerId, totalScore],
   );
   const r = rows[0];

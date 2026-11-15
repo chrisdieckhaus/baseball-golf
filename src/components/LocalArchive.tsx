@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import styles from "@/app/archive.module.css";
 import { HOLES_PER_ROUND } from "@/lib/round";
+import { scoreLabel } from "@/lib/share";
 
 type GameKey = "golf" | "rank" | "roster";
 
@@ -18,7 +19,7 @@ interface Props {
   saved: Record<string, Status>;
 }
 
-export type Status = { kind: "done" | "partial"; text: string; score?: number } | null;
+export type Status = { kind: "done" | "partial"; text: string; score?: number | string } | null;
 
 function read(key: string): unknown {
   try {
@@ -31,7 +32,7 @@ function read(key: string): unknown {
 
 /** How Baseball Golf progress reads in the list. */
 export function golfStatus(holesPlayed: number, totalScore: number | null, holes = HOLES_PER_ROUND): Status {
-  if (totalScore !== null) return { kind: "done", text: "Score", score: totalScore };
+  if (totalScore !== null) return { kind: "done", text: "Score", score: scoreLabel(totalScore) };
   if (holesPlayed > 0) return { kind: "partial", text: `In progress · ${holesPlayed}/${holes}` };
   return null;
 }

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { GuessResult, PlayerIndexEntry, PlayState, Round, RoundStats } from "@/lib/types";
 import { MAX_HOLE_SCORE, ordinal } from "@/lib/scoring";
-import { buildShareText, holeLabel } from "@/lib/share";
+import { buildShareText, holeLabel, scoreLabel } from "@/lib/share";
 import { formatRoundDate, LAUNCH_DATE, roundNumber } from "@/lib/round";
 import DayNav from "./DayNav";
 import { GolfCompare } from "./CompareStats";
@@ -43,11 +43,6 @@ function GolfShare({ round, isToday, results }: { round: Round; isToday: boolean
   return (
     <ShareButton getText={getText} label="Share result" className={styles.shareBtn} />
   );
-}
-
-/** An average to one decimal place, dropping a trailing ".0" (12.4, 89). */
-function formatNumber(n: number): string {
-  return n.toFixed(1).replace(/\.0$/, "");
 }
 
 export default function Game({
@@ -226,7 +221,7 @@ export default function Game({
       <div className={styles.card} aria-label="Scorecard">
         {finished && (
           <p className={styles.headline}>
-            {total === 0 ? "Perfect round!" : `Total: ${total}`}
+            {total === 0 ? "Perfect round!" : `Total: ${scoreLabel(total)}`}
             <span> / {MAX_HOLE_SCORE * round.holes.length} max</span>
           </p>
         )}
@@ -248,13 +243,13 @@ export default function Game({
               {results.map((r, i) => (
                 <td key={i}>{r ? holeLabel(r.score) : "–"}</td>
               ))}
-              <td className={styles.total}>{results.some(Boolean) ? total : "–"}</td>
+              <td className={styles.total}>{results.some(Boolean) ? scoreLabel(total) : "–"}</td>
             </tr>
             {holeAverages && stats && (
               <tr className={styles.avgRow}>
                 <th scope="row">Avg</th>
                 {holeAverages.map((a, i) => (
-                  <td key={i}>{formatNumber(a)}</td>
+                  <td key={i}>{scoreLabel(a)}</td>
                 ))}
                 {/* The round average is in the compare panel below. */}
                 <td className={styles.total} />

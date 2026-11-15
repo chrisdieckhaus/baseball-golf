@@ -18,6 +18,16 @@ export function holeLabel(score: number): string {
   return score === 0 ? "ACE" : `+${score}`;
 }
 
+/**
+ * Any other Baseball Golf score (a round total or an average), with the same
+ * "+" as the holes: "+82", "+32.3". Averages keep one decimal, dropping ".0".
+ * Zero is "0".
+ */
+export function scoreLabel(score: number): string {
+  const n = score.toFixed(1).replace(/\.0$/, "");
+  return score === 0 ? "0" : `+${n}`;
+}
+
 function shortDate(date: string): string {
   return new Date(`${date}T12:00:00Z`).toLocaleDateString("en-US", {
     month: "short",
@@ -38,13 +48,13 @@ export interface ShareInput {
  *
  *   Baseball Golf #13 · Nov 13, 2026
  *   🟩 +4  🟨 +12  ⛳ ACE
- *   Total: 16
+ *   Total: +16
  *   https://baseball-golf.vercel.app
  */
 export function buildShareText({ date, scores, url }: ShareInput): string {
   const title = `Baseball Golf #${roundNumber(date)} · ${shortDate(date)}`;
   const holes = scores.map((s) => `${holeEmoji(s)} ${holeLabel(s)}`).join("  ");
   const total = scores.reduce((a, b) => a + b, 0);
-  const totalLine = total === 0 ? "Total: 0 — perfect round!" : `Total: ${total}`;
+  const totalLine = total === 0 ? "Total: 0 — perfect round!" : `Total: ${scoreLabel(total)}`;
   return [title, holes, totalLine, url].join("\n");
 }

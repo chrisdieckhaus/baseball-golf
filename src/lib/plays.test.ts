@@ -92,6 +92,20 @@ describe.skipIf(!url)("round tracking (Postgres)", () => {
     expect(await getRoundStats(db, "2026-11-12", A, 45)).toMatchObject({ others: 0, finishers: 0 });
   });
 
+  it("caps hole scores saved before the 100 cap, everywhere they're read", async () => {
+    // An old play: 150 on hole 1 was possible before Nov 14, 2026.
+    for (const [h, id] of ["p1", "p2", "p3"].entries()) await guess(B, h, id, h === 0 ? 150 : 10); // 170 saved, 120 capped
+    for (const [h, id] of ["p1", "p2", "p3"].entries()) await guess(A, h, id, h === 0 ? 100 : 15); // 130
+
+    expect(await getPlay(db, B, D)).toMatchObject({ holeScores: [100, 10, 10], totalScore: 120 });
+    expect((await getPlayerProgress(db, B)).get(D)).toEqual({ holesPlayed: 3, totalScore: 120 });
+
+    // B's capped 120 beats A's 130 (uncapped, B's 170 would have lost).
+    expect(await getRoundStats(db, D, A, 130)).toMatchObject({ others: 1, worse: 0, percentBeaten: 0 });
+    const stats = await getRoundStats(db, D, B, 120);
+    expect(stats).toMatchObject({ worse: 1, percentBeaten: 100, holeAverages: [100, 12.5, 12.5], roundAverage: 125 });
+  });
+
   it("handles two simultaneous guesses on the same hole safely", async () => {
     const results = await Promise.all([guess(A, 0, "p1", 4), guess(A, 0, "p2", 9)]);
     expect(results.filter((r) => r.ok)).toHaveLength(1);

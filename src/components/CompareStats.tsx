@@ -1,5 +1,6 @@
 import type { RankStats, RosterStats } from "@/lib/game-plays";
 import { LINEUP_SIZE } from "@/lib/roster";
+import { scoreLabel } from "@/lib/share";
 import type { RoundStats } from "@/lib/types";
 import styles from "./CompareStats.module.css";
 
@@ -39,7 +40,7 @@ export function GolfCompare({ stats, isToday }: { stats: RoundStats; isToday: bo
       <dl className={styles.facts}>
         <div>
           <dt>Average</dt>
-          <dd>{avg(stats.roundAverage)}</dd>
+          <dd>{scoreLabel(stats.roundAverage)}</dd>
         </div>
         <div>
           <dt>Played</dt>
