@@ -5,7 +5,7 @@ import RankGame from "@/components/RankGame";
 import { leaderboards } from "@/lib/leaderboards";
 import { getRankRound, isPlayableRankDate } from "@/lib/rank-data";
 import { todayET } from "@/lib/round";
-import styles from "../page.module.css";
+import styles from "@/app/page.module.css";
 
 export const metadata: Metadata = {
   title: "Stats Ranker",

@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import styles from "@/app/archive/archive.module.css";
+import styles from "@/app/archive.module.css";
 import { HOLES_PER_ROUND } from "@/lib/round";
 
 type GameKey = "golf" | "rank" | "roster";
 
 /** Where each game's rounds live: Baseball Golf is at the site root. */
-const PATHS: Record<GameKey, string> = { golf: "/", rank: "/rank", roster: "/roster" };
+const PATHS: Record<GameKey, string> = { golf: "/golf", rank: "/rank", roster: "/roster" };
 
 interface Props {
   game: GameKey;

@@ -8,7 +8,7 @@ import { getRosterProgress } from "@/lib/game-plays";
 import { readPlayerId } from "@/lib/player-cookie";
 import { ROSTER_LAUNCH_DATE, rosterRoundNumber } from "@/lib/roster";
 import { playableDates, todayET } from "@/lib/round";
-import styles from "../../archive/archive.module.css";
+import styles from "@/app/archive.module.css";
 
 export const metadata: Metadata = {
   title: "Roster Reveal archive",

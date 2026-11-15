@@ -6,7 +6,7 @@ import { rosterState } from "@/lib/roster";
 import { getRosterRound, isPlayableRosterDate } from "@/lib/roster-data";
 import { rosterData } from "@/lib/roster-pool";
 import { todayET } from "@/lib/round";
-import styles from "../page.module.css";
+import styles from "@/app/page.module.css";
 
 export const metadata: Metadata = {
   title: "Roster Reveal",
@@ -41,7 +41,7 @@ export default function RosterPage({ searchParams }: { searchParams: SearchParam
           Roster <span>Reveal</span>
         </h1>
         <p className={styles.tagline}>
-          You get the year. Name the team from its lineup, one player at a time. One guess, so make it count.
+          You get the year. Name the team from its lineup, one player at a time. One guess. Fewest players wins.
         </p>
       </header>
 

@@ -168,7 +168,7 @@ export default function RosterGame({ round, initial, isToday, today }: Props) {
       </div>
 
       <section className={`${styles.card} ${synced ? "" : "syncing"}`} aria-busy={!synced}>
-        <p className={styles.kicker}>Starting lineup</p>
+        <p className={styles.kicker}>Lineup card</p>
         <h2 className={styles.question}>Who&apos;s this {round.year} team?</h2>
         <ol className={styles.names}>
           {shown.map((p, i) => (
@@ -229,7 +229,7 @@ export default function RosterGame({ round, initial, isToday, today }: Props) {
                     Keep revealing
                   </button>
                   <button className={styles.primary} onClick={lockIn} disabled={busy || !pick}>
-                    Lock in guess
+                    Lock it in
                   </button>
                 </div>
                 <p className={styles.warn}>One guess. A wrong team ends the round.</p>

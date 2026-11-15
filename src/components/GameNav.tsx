@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import styles from "./GameNav.module.css";
 
 const GAMES = [
-  { href: "/", label: "Golf" },
+  { href: "/golf", label: "Golf" },
   { href: "/rank", label: "Ranker" },
   { href: "/roster", label: "Roster" },
 ];
@@ -13,8 +13,8 @@ const GAMES = [
 /** The Daily Dugout name and links to every game, shown at the top of each page. The current game is highlighted. */
 export default function GameNav() {
   const pathname = usePathname();
-  // Each game's archive counts as that game; /archive is Baseball Golf's.
-  const current = pathname.startsWith("/rank") ? "/rank" : pathname.startsWith("/roster") ? "/roster" : "/";
+  // Each game's archive counts as that game. "/" redirects to Baseball Golf.
+  const current = pathname.startsWith("/rank") ? "/rank" : pathname.startsWith("/roster") ? "/roster" : "/golf";
   return (
     <nav className={styles.nav} aria-label="Games">
       <Link href="/" className={styles.brand}>
