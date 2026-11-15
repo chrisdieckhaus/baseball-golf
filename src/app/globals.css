@@ -37,3 +37,18 @@ body {
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
 }
+
+/*
+ * A game waiting for this browser's saved play. Input is off right away; the
+ * dimming waits a moment so a quick load doesn't flicker.
+ */
+.syncing {
+  pointer-events: none;
+  animation: syncing-fade 0.2s ease 0.25s forwards;
+}
+
+@keyframes syncing-fade {
+  to {
+    opacity: 0.45;
+  }
+}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { buildRankShareText, RANK_LAUNCH_DATE, RANK_MAX_SCORE, rankRoundNumber, rankShareLine, type RankReveal, type RankRound } from "@/lib/rank";
 import { RankCompare } from "@/components/CompareStats";
 import DayNav from "@/components/DayNav";
+import ShareButton from "@/components/ShareButton";
 import type { RankStats } from "@/lib/game-plays";
 import { ordinal } from "@/lib/scoring";
 import styles from "./RankGame.module.css";
@@ -70,7 +71,7 @@ export default function RankGame({
   const [drag, setDrag] = useState<Drag | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [synced, setSynced] = useState(false);
   const listRef = useRef<HTMLOListElement>(null);
 
   useEffect(() => {
@@ -108,6 +109,10 @@ export default function RankGame({
       })
       .catch(() => {
         // Offline or server error: keep what this browser saved.
+      })
+      .finally(() => {
+        // Ready to play once this browser's saved play (if any) is in.
+        if (!cancelled) setSynced(true);
       });
     return () => {
       cancelled = true;
@@ -121,7 +126,10 @@ export default function RankGame({
   const targetIndex = (d: Drag) => Math.max(0, Math.min(order.length - 1, d.from + Math.round(d.dy / d.rowH)));
 
   function onPointerDown(e: React.PointerEvent<HTMLLIElement>, id: string, index: number) {
-    if (locked || (e.target as HTMLElement).closest("button")) return;
+    const target = e.target as HTMLElement;
+    if (locked || !synced || target.closest("button")) return;
+    // Touch drags start only from the grip; elsewhere a swipe scrolls the page.
+    if (e.pointerType !== "mouse" && !target.closest(`.${styles.grip}`)) return;
     const li = e.currentTarget;
     const next = li.nextElementSibling as HTMLElement | null;
     const rowH = next ? next.offsetTop - li.offsetTop : li.offsetHeight + 8;
@@ -142,6 +150,7 @@ export default function RankGame({
   }
 
   function nudge(index: number, delta: number) {
+    if (!synced) return;
     const to = index + delta;
     if (to < 0 || to >= order.length) return;
     setOrder(moveItem(order, index, to));
@@ -157,6 +166,7 @@ export default function RankGame({
   }
 
   async function submit() {
+    if (!synced) return;
     setSubmitting(true);
     setError(null);
     try {
@@ -180,25 +190,9 @@ export default function RankGame({
     }
   }
 
-  async function share() {
-    if (!reveal) return;
+  function shareText(): string {
     const url = isToday ? `${window.location.origin}/rank` : `${window.location.origin}/rank?date=${round.date}`;
-    const text = buildRankShareText(round, reveal, url);
-    if (typeof navigator.share === "function" && window.matchMedia?.("(pointer: coarse)").matches) {
-      try {
-        await navigator.share({ text });
-        return;
-      } catch (e) {
-        if (e instanceof DOMException && e.name === "AbortError") return;
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      window.prompt("Copy your result:", text);
-    }
+    return buildRankShareText(round, reveal!, url);
   }
 
   const offById = new Map(reveal?.guess.map((g) => [g.id, g.off]) ?? []);
@@ -220,7 +214,7 @@ export default function RankGame({
         </Link>
       </div>
 
-      <section className={styles.card}>
+      <section className={`${styles.card} ${synced ? "" : "syncing"}`} aria-busy={!synced}>
         <p className={styles.kicker}>Career · {round.group}</p>
         <h2 className={styles.stat}>{round.label}</h2>
         {round.qualifier && <p className={styles.qualifier}>{round.qualifier}</p>}
@@ -306,9 +300,7 @@ export default function RankGame({
               </li>
             ))}
           </ol>
-          <button className={styles.submit} onClick={share}>
-            {copied ? "Copied to clipboard ✓" : "Share result"}
-          </button>
+          <ShareButton getText={shareText} label="Share result" className={styles.submit} />
         </section>
       )}
 

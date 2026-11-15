@@ -28,6 +28,12 @@ describe("formatting", () => {
     expect(formatValue(1.816, "rate", 2)).toBe("1.82");
     expect(formatValue(4256, "count", 0)).toBe("4,256");
   });
+  it("writes innings pitched in thirds, with a comma", () => {
+    expect(formatValue(4710.3, "count", 1)).toBe("4,710.1");
+    expect(formatValue(5914.7, "count", 1)).toBe("5,914.2");
+    expect(formatValue(7356.0, "count", 1)).toBe("7,356.0");
+    expect(formatValue(999.99, "count", 1)).toBe("1,000.0");
+  });
   it("makes ordinals", () => {
     expect([1, 2, 3, 4, 11, 12, 13, 21, 83, 112].map(ordinal)).toEqual([
       "1st", "2nd", "3rd", "4th", "11th", "12th", "13th", "21st", "83rd", "112th",

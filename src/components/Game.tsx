@@ -7,6 +7,7 @@ import { MAX_HOLE_SCORE, ordinal } from "@/lib/scoring";
 import { buildShareText } from "@/lib/share";
 import { roundNumber } from "@/lib/round";
 import PlayerSearch from "./PlayerSearch";
+import ShareButton from "./ShareButton";
 import styles from "./Game.module.css";
 
 /** Progress is saved per round, by date. */
@@ -29,89 +30,17 @@ function save(key: string, results: (GuessResult | null)[]) {
   }
 }
 
-/** Phones and tablets get the native share sheet; desktops copy to the clipboard. */
-function prefersShareSheet(): boolean {
-  return (
-    typeof navigator.share === "function" &&
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(pointer: coarse)").matches
-  );
-}
-
-async function copyText(text: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    // Older browsers / insecure contexts: fall back to a hidden textarea.
-    try {
-      const el = document.createElement("textarea");
-      el.value = text;
-      el.setAttribute("readonly", "");
-      el.style.position = "fixed";
-      el.style.opacity = "0";
-      document.body.appendChild(el);
-      el.select();
-      const ok = document.execCommand("copy");
-      document.body.removeChild(el);
-      return ok;
-    } catch {
-      return false;
-    }
-  }
-}
-
-type ShareStatus = "idle" | "copied" | "failed";
-
-function ShareButton({ round, isToday, results }: { round: Round; isToday: boolean; results: GuessResult[] }) {
-  const [status, setStatus] = useState<ShareStatus>("idle");
-  const [fallbackText, setFallbackText] = useState<string | null>(null);
-
-  async function share() {
-    // Previous rounds link to that exact round; today's round links to the site.
-    const url = isToday ? window.location.origin : `${window.location.origin}/?date=${round.date}`;
-    const text = buildShareText({
+function GolfShare({ round, isToday, results }: { round: Round; isToday: boolean; results: GuessResult[] }) {
+  // Previous rounds link to that exact round; today's round links to the site.
+  const getText = () =>
+    buildShareText({
       date: round.date,
       scores: results.map((r) => r.score),
-      url,
+      url: isToday ? window.location.origin : `${window.location.origin}/?date=${round.date}`,
     });
-
-    if (prefersShareSheet()) {
-      try {
-        await navigator.share({ text });
-        return;
-      } catch (e) {
-        if (e instanceof DOMException && e.name === "AbortError") return; // user closed the sheet
-        // otherwise fall through to copying
-      }
-    }
-
-    if (await copyText(text)) {
-      setStatus("copied");
-      setFallbackText(null);
-      setTimeout(() => setStatus("idle"), 2000);
-    } else {
-      // Couldn't reach the clipboard: show the text so it can be copied by hand.
-      setStatus("failed");
-      setFallbackText(text);
-    }
-  }
-
   return (
     <div className={styles.share}>
-      <button className={styles.shareBtn} onClick={share}>
-        {status === "copied" ? "Copied to clipboard ✓" : "Share score"}
-      </button>
-      {fallbackText && (
-        <textarea
-          className={styles.shareFallback}
-          readOnly
-          value={fallbackText}
-          rows={fallbackText.split("\n").length}
-          onFocus={(e) => e.currentTarget.select()}
-          aria-label="Share text"
-        />
-      )}
+      <ShareButton getText={getText} label="Share score" className={styles.shareBtn} />
     </div>
   );
 }
@@ -163,6 +92,7 @@ export default function Game({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<RoundStats | null>(null);
+  const [synced, setSynced] = useState(false);
 
   // Restore progress after hydration. localStorage isn't available during server
   // rendering, so this has to happen in an effect to avoid a hydration mismatch.
@@ -187,6 +117,10 @@ export default function Game({
       })
       .catch(() => {
         // Offline or server error: keep whatever was saved in this browser.
+      })
+      .finally(() => {
+        // Ready to play once this browser's saved play (if any) is in.
+        if (!cancelled) setSynced(true);
       });
     return () => {
       cancelled = true;
@@ -249,7 +183,7 @@ export default function Game({
         </Link>
       </div>
 
-      <ol className={styles.holes}>
+      <ol className={`${styles.holes} ${synced ? "" : "syncing"}`} aria-busy={!synced}>
         {round.holes.map((hole, i) => {
           const result = results[i];
           const isCurrent = i === current;
@@ -275,7 +209,7 @@ export default function Game({
                   <PlayerSearch
                     key={`search-${i}`}
                     usedIds={usedIds}
-                    disabled={pending}
+                    disabled={pending || !synced}
                     onSubmit={(p) => guess(i, p)}
                   />
                   {error && <p className={styles.error}>{error}</p>}
@@ -361,7 +295,7 @@ export default function Game({
           </p>
         )}
         {finished && stats && <PercentileLine stats={stats} isToday={isToday} />}
-        {finished && <ShareButton round={round} isToday={isToday} results={results as GuessResult[]} />}
+        {finished && <GolfShare round={round} isToday={isToday} results={results as GuessResult[]} />}
       </div>
     </section>
   );

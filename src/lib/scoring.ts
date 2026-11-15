@@ -18,9 +18,24 @@ export function scoreHole(targetRank: number, guessRank: number | null): number 
   return Math.min(Math.abs(targetRank - guessRank), MAX_HOLE_SCORE);
 }
 
+/**
+ * Innings in baseball notation: thirds of an inning are written .1 and .2, so
+ * 4710⅓ innings is "4,710.1" (not "4710.3").
+ */
+export function formatInnings(innings: number): string {
+  let whole = Math.floor(innings);
+  let thirds = Math.round((innings - whole) * 3);
+  if (thirds === 3) {
+    whole += 1;
+    thirds = 0;
+  }
+  return `${whole.toLocaleString("en-US")}.${thirds}`;
+}
+
 export function formatValue(value: number, kind: "count" | "rate", decimals: number): string {
   if (kind === "count") {
-    return decimals > 0 ? value.toFixed(decimals) : Math.round(value).toLocaleString("en-US");
+    // The only count stat with decimals is Innings Pitched (outs / 3).
+    return decimals > 0 ? formatInnings(value) : Math.round(value).toLocaleString("en-US");
   }
   const s = value.toFixed(decimals);
   // Baseball convention: .366 rather than 0.366

@@ -341,18 +341,6 @@
   filter: brightness(1.08);
 }
 
-.shareFallback {
-  width: 100%;
-  font: inherit;
-  font-size: 0.9rem;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fff;
-  color: var(--ink);
-  resize: none;
-}
-
 .percentile {
   margin: 8px 0 0;
   text-align: center;

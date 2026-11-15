@@ -74,7 +74,6 @@
   border: 2px solid var(--line);
   border-radius: 10px;
   cursor: grab;
-  touch-action: none;
   user-select: none;
   position: relative;
 }
@@ -88,7 +87,6 @@
 
 .locked {
   cursor: default;
-  touch-action: auto;
 }
 
 .right {
@@ -126,6 +124,7 @@
 
 .controls {
   display: flex;
+  align-self: stretch;
   align-items: center;
   gap: 4px;
 }
@@ -147,9 +146,16 @@
 }
 
 .grip {
-  padding: 0 4px 0 6px;
+  /* On touch screens a drag starts only here, so the rest of the row still scrolls the page. */
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  margin: -8px -10px -8px 0;
+  padding: 0 12px 0 10px;
   font-size: 1.3rem;
   color: var(--ink-dim);
+  touch-action: none;
+  cursor: grab;
 }
 
 .result {
