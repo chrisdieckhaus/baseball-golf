@@ -341,7 +341,7 @@ export default function RankGame({
           </>
         )}
         <Link href="/">Play Baseball Golf →</Link>
-        <Link href="/reveal">Play Sports Revealer →</Link>
+        <Link href="/roster">Play Roster Reveal →</Link>
       </nav>
     </div>
   );

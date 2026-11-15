@@ -57,7 +57,7 @@ export default function Home({ searchParams }: { searchParams: SearchParams }) {
           <Link href="/rank">Play Stats Ranker →</Link>
         </p>
         <p>
-          <Link href="/reveal">New: play Sports Revealer →</Link>
+          <Link href="/roster">New: play Roster Reveal →</Link>
         </p>
         <p className={styles.dataNote}>
           Stats through the {leaderboards.throughSeason} season, for players who debuted in{" "}

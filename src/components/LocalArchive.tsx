@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { inningName } from "@/lib/reveal";
 import styles from "@/app/archive/archive.module.css";
 
-type GameKey = "rank" | "reveal";
+type GameKey = "rank" | "roster";
 
 interface Props {
   game: GameKey;
@@ -26,11 +25,10 @@ function read(key: string): unknown {
   }
 }
 
-/** How Sports Revealer progress reads in the list. */
-export function revealStatus(innings: number, solved: boolean, done: boolean): Status {
-  if (innings === 0) return null;
-  if (done) return { kind: "done", text: solved ? `Solved in the ${inningName(innings)}` : "Struck out" };
-  return { kind: "partial", text: `In progress · ${inningName(innings + 1)} inning` };
+/** How Roster Reveal progress reads in the list. */
+export function rosterStatus(revealed: number, correct: boolean, done: boolean): Status {
+  if (done) return { kind: "done", text: correct ? `Got it after ${revealed}` : "Missed" };
+  return { kind: "partial", text: `In progress · ${revealed} revealed` };
 }
 
 /** This browser's result for a round, from what the game saved in localStorage. */
@@ -42,16 +40,13 @@ function statusFor(game: GameKey, date: string): Status {
     const score = saved?.reveal?.score;
     return typeof score === "number" ? { kind: "done", text: "Score", score } : null;
   }
-  const saved = read(`sports-revealer:${date}`) as {
-    guesses?: string[];
-    state?: { done?: boolean; solved?: boolean };
-  } | null;
-  if (!saved?.state) return null;
-  return revealStatus(saved.guesses?.length ?? 0, Boolean(saved.state.solved), Boolean(saved.state.done));
+  const saved = read(`roster-reveal:${date}`) as { revealed?: unknown[]; done?: boolean; correct?: boolean } | null;
+  if (!saved?.revealed) return null;
+  return rosterStatus(saved.revealed.length, Boolean(saved.correct), Boolean(saved.done));
 }
 
 /**
- * The list of previous rounds for Stats Ranker or Sports Revealer. Each row's
+ * The list of previous rounds for Stats Ranker or Roster Reveal. Each row's
  * status comes from this browser's saved plays in the database, or, for rounds
  * played before plays were saved, from localStorage after the page loads.
  */

@@ -4,7 +4,7 @@ Quick daily sports stats games, all in one app:
 
 - **Baseball Golf** (`/`): name the player at each all-time career rank.
 - **Stats Ranker** (`/rank`): put five players in order of one career stat.
-- **Sports Revealer** (`/reveal`): name the mystery player from his stats, one clue per inning.
+- **Roster Reveal** (`/roster`): you get the year; name the team from its starting lineup, revealed one player at a time.
 
 ## Baseball Golf
 
@@ -41,34 +41,25 @@ npm test
 
 Every round, old ones included, is scored against the current leaderboards, so a refresh updates the answers to past rounds too. Keep every stat that stored rounds use in the file, even if it's dropped from the pool for new rounds.
 
-## Sports Revealer (`/reveal`)
-A third daily game on the same data. Each day everyone gets the same mystery player and has nine innings to name him, with one guess per inning. A wrong guess or a skip reveals the next clue:
+## Roster Reveal (`/roster`)
+A third daily game on the same data, replacing Sports Revealer (`/reveal` now redirects here). Each day everyone gets the same team-season. You're told the year, and the team's starting lineup is revealed one player at a time, from the most obscure player to the most famous. Reveal as many as you like, then make **one** guess: the team. Fewer players revealed is a better score, and a wrong team loses the round.
 
-1. Innings 1–4: his four best career stats by all-time rank, from his 4th-best up to his best. Each shows its rank, for example "1,406 (1st)".
-    - Hitters: R, H, 2B, 3B, HR, RBI, SB, BB, SO, AVG.
-    - Pitchers: W, GS, CG, SHO, SV, IP, SO, BB, ERA.
-    - Rate stats use the same minimums as Baseball Golf.
-2. Inning 5: bats / throws.
-3. Inning 6: positions (pitchers: starter, reliever or closer).
-4. Inning 7: awards (All-Star, MVP, Cy Young, ROY, Gold Glove, Silver Slugger, WS MVP, Triple Crowns, World Series titles, Hall of Fame).
-5. Inning 8: years active.
-6. Inning 9: teams, each listed once, alphabetically.
+- **The lineup is ten players.**
+    - The main starter at each of the eight fielding positions: the most games there, no one twice.
+    - Teams that used a DH regularly add the DH and the ace (most starts). Teams without a DH add the top two starting pitchers.
+    - Cutoffs scale for short seasons like 2020.
+- **Ordering:** obscure to famous, by All-Star selections, MVPs and Cy Youngs, the Hall of Fame and career length.
+- **Teams:** every AL and NL team since 1901, plus the 1914–15 Federal League. That's 2,722 team-seasons. The Negro Leagues and earlier independent teams are in the data but left out of this game, because they'd crowd the team picker.
+- **Data file:** `scripts/build_roster_data.py` writes `src/data/roster.json`, which is server-only.
+- **Picking the round:** daily rounds walk through one fixed shuffle of every team-season (`src/lib/roster.ts`), so nothing repeats for years. Each day's team-season is saved in `roster_rounds` the first time it's needed. Rounds are numbered from Nov 1, 2026, like the other games, and `/roster/archive` replays any past round.
+- **Playing:** `POST /api/roster` takes `{ date, seed, revealed, guess? }` and returns only the players revealed, plus the answer once the guess is in.
+- **Saved plays:** daily plays are saved in `roster_plays`. `revealed` only goes up, the score uses the most players ever revealed, and the first guess stands. `GET /api/roster` returns this browser's saved play, and the game restores it or uploads browser-only progress.
+- **Comparison:** finished rounds show how you compare: percent beaten, percent who got it, average players needed, and a chart of players needed.
 
-- **Answer pool:** the top 150 in Baseball-Reference career WAR, kept in `scripts/data/career_war_top150.csv`.
-    - It leaves out players who debuted before 1890, because they aren't in this data.
-    - It also leaves out anyone who played in 2026, because the stats run through 2025 and their careers aren't complete.
-    - Update the CSV and its `active_2026` column when the WAR list or the data changes.
-- **Data file:** `scripts/build_reveal_data.py` writes `src/data/reveal.json`, which is server-only.
-- **Picking the player:** daily rounds walk through one fixed shuffle of the pool (`src/lib/reveal.ts`). Each round's player is saved in `reveal_rounds` the first time it's needed.
-- **Archive:** Stats Ranker (`/rank/archive`) and Sports Revealer (`/reveal/archive`) can replay any past round. Both number their rounds from Nov 1, 2026, like Baseball Golf, even though they went live on Nov 14. The build's backfill stores every round from Nov 1. A row's result comes from the browser's saved progress.
-    - Sports Revealer's walk through the pool is still anchored at Nov 14, so the rounds already played kept their players. Nov 1–13 got the last 13 players in the shuffle.
-- **Saved plays:** Stats Ranker and Sports Revealer save each daily play in `rank_plays` and `reveal_plays`, keyed by the same anonymous `bg_player` cookie as Baseball Golf. Practice rounds aren't saved. The browser keeps a copy in localStorage.
-    - On load, each game takes the saved play from `GET /api/rank` or `GET /api/reveal`.
-    - If the browser has progress the database doesn't, for example from before plays were saved, the game uploads it.
-    - Ranker is one shot: the first order saved stands.
-    - Revealer only accepts guesses that extend the saved ones, which keeps it at one guess per inning even with two tabs open.
-    - The archives read results from these tables.
-- **Guessing:** `POST /api/reveal` takes the guesses so far. It returns only the clues they unlock, plus the answer once the round is over.
+## Stats Ranker and Roster Reveal archives and plays
+- Both games number their rounds from Nov 1, 2026, like Baseball Golf. The build's backfill stores every round from then on.
+- Both save each daily play (`rank_plays`, `roster_plays`), keyed by the same anonymous `bg_player` cookie as Baseball Golf. Practice rounds aren't saved. The archives read results from those tables, falling back to localStorage.
+- Sports Revealer's old `reveal_rounds` and `reveal_plays` tables are no longer used.
 
 ## Development
 

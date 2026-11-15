@@ -1,5 +1,4 @@
-import type { RankStats, RevealStats } from "@/lib/game-plays";
-import { inningName } from "@/lib/reveal";
+import type { RankStats, RosterStats } from "@/lib/game-plays";
 import styles from "./CompareStats.module.css";
 
 const fmt = (n: number) => n.toLocaleString("en-US");
@@ -55,32 +54,32 @@ export function RankCompare({ stats, isToday }: { stats: RankStats; isToday: boo
 }
 
 /**
- * Sports Revealer: your percentile, how many solved it, and a Wordle-style
- * chart of the inning everyone solved it in (or struck out), with yours marked.
+ * Roster Reveal: your percentile, how many got it, and a Wordle-style chart of
+ * how many players everyone needed (or missed), with yours marked.
  */
-export function RevealCompare({ stats, mine, isToday }: { stats: RevealStats; mine: number; isToday: boolean }) {
+export function RosterCompare({ stats, mine, isToday }: { stats: RosterStats; mine: number; isToday: boolean }) {
   const max = Math.max(1, ...stats.distribution);
   return (
     <div className={styles.compare}>
       <PercentileLine stats={stats} isToday={isToday} />
       <dl className={styles.facts}>
         <div>
-          <dt>Solved it</dt>
-          <dd>{stats.solvedPercent}%</dd>
+          <dt>Got it</dt>
+          <dd>{stats.correctPercent}%</dd>
         </div>
         <div>
           <dt>Average</dt>
-          <dd>{stats.averageInning === null ? "—" : `${avg(stats.averageInning)} innings`}</dd>
+          <dd>{stats.averageRevealed === null ? "—" : `${avg(stats.averageRevealed)} players`}</dd>
         </div>
         <div>
           <dt>Players</dt>
           <dd>{fmt(stats.finishers)}</dd>
         </div>
       </dl>
-      <ol className={styles.chart} aria-label="How many players solved it in each inning">
+      <ol className={styles.chart} aria-label="How many players everyone needed">
         {stats.distribution.map((n, i) => {
-          const label = i < 9 ? String(i + 1) : "✗";
-          const title = i < 9 ? `${inningName(i + 1)} inning` : "Struck out";
+          const label = i < 10 ? String(i + 1) : "✗";
+          const title = i < 10 ? `Got it after ${i + 1}` : "Missed";
           return (
             <li key={i} className={i + 1 === mine ? styles.mine : undefined} title={`${title}: ${n}`}>
               <span className={styles.barLabel}>{label}</span>

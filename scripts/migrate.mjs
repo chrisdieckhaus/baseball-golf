@@ -69,27 +69,29 @@ CREATE TABLE IF NOT EXISTS rank_plays (
 );
 CREATE INDEX IF NOT EXISTS rank_plays_round_idx ON rank_plays (round_date, score);
 
--- Sports Revealer plays: one per player per daily round, updated on every guess.
--- guesses holds player ids and 'skip', in inning order; guess_names lines up with it.
-CREATE TABLE IF NOT EXISTS reveal_plays (
+-- Roster Reveal plays: one per player per daily round. revealed only goes up;
+-- the one guess (a franchise id) ends the round.
+CREATE TABLE IF NOT EXISTS roster_plays (
   player_id     uuid NOT NULL REFERENCES players (id) ON DELETE CASCADE,
   round_date    date NOT NULL,
-  guesses       text[] NOT NULL DEFAULT '{}',
-  guess_names   text[] NOT NULL DEFAULT '{}',
-  solved        boolean NOT NULL DEFAULT false,
+  revealed      smallint NOT NULL DEFAULT 1,
+  guess         text,
+  correct       boolean NOT NULL DEFAULT false,
   done          boolean NOT NULL DEFAULT false,
-  is_live       boolean NOT NULL,
+  is_live       boolean NOT NULL,           -- played on the round's own day (ET), not later from the archive
   started_at    timestamptz NOT NULL DEFAULT now(),
   completed_at  timestamptz,
   PRIMARY KEY (player_id, round_date)
 );
-CREATE INDEX IF NOT EXISTS reveal_plays_round_idx ON reveal_plays (round_date) WHERE done;
+CREATE INDEX IF NOT EXISTS roster_plays_round_idx ON roster_plays (round_date) WHERE done;
 
--- Sports Revealer: one row per daily round (the mystery player), saved the first
--- time it's needed. Clues aren't saved; they come from the current data.
-CREATE TABLE IF NOT EXISTS reveal_rounds (
+-- Roster Reveal: one row per daily round (the team-season), saved the first time
+-- it's needed. The lineup isn't saved; it comes from the current data.
+-- (Sports Revealer's reveal_rounds and reveal_plays tables are no longer used.)
+CREATE TABLE IF NOT EXISTS roster_rounds (
   round_date  date PRIMARY KEY,
-  player_id   text NOT NULL,
+  franchise   text NOT NULL,
+  year        smallint NOT NULL,
   created_at  timestamptz NOT NULL DEFAULT now()
 );
 `;

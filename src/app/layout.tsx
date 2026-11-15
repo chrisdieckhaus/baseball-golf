@@ -5,7 +5,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: { default: "Daily Dugout", template: "%s · Daily Dugout" },
-  description: "Daily Dugout: quick daily sports stats games. Baseball Golf, Stats Ranker and Sports Revealer.",
+  description: "Daily Dugout: quick daily sports stats games. Baseball Golf, Stats Ranker and Roster Reveal.",
   applicationName: "Daily Dugout",
 };
 
