@@ -29,6 +29,7 @@ async function TodaysRound({ searchParams }: { searchParams: SearchParams }) {
       round={round}
       initial={revealState(player, [])}
       isToday={!practiceSeed && round.date === today}
+      today={today}
       practiceEnabled={practice}
     />
   );

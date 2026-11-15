@@ -27,6 +27,7 @@ async function TodaysRound({ searchParams }: { searchParams: SearchParams }) {
       key={practiceSeed ?? round.date}
       round={round}
       isToday={!practiceSeed && round.date === today}
+      today={today}
       practiceEnabled={practice}
     />
   );

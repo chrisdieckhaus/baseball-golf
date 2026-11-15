@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { buildRankShareText, RANK_MAX_SCORE, rankRoundNumber, rankShareLine, type RankReveal, type RankRound } from "@/lib/rank";
+import { buildRankShareText, RANK_LAUNCH_DATE, RANK_MAX_SCORE, rankRoundNumber, rankShareLine, type RankReveal, type RankRound } from "@/lib/rank";
 import { RankCompare } from "@/components/CompareStats";
+import DayNav from "@/components/DayNav";
 import type { RankStats } from "@/lib/game-plays";
 import { ordinal } from "@/lib/scoring";
 import styles from "./RankGame.module.css";
@@ -55,7 +56,17 @@ interface Drag {
   rowH: number; // row height + gap
 }
 
-export default function RankGame({ round, isToday, practiceEnabled }: { round: RankRound; isToday: boolean; practiceEnabled: boolean }) {
+export default function RankGame({
+  round,
+  isToday,
+  today,
+  practiceEnabled,
+}: {
+  round: RankRound;
+  isToday: boolean;
+  today: string;
+  practiceEnabled: boolean;
+}) {
   const router = useRouter();
   const key = storageKey(round);
   const [order, setOrder] = useState<string[]>(round.players.map((p) => p.id));
@@ -313,15 +324,22 @@ export default function RankGame({ round, isToday, practiceEnabled }: { round: R
       )}
 
       <nav className={styles.links}>
-        {practiceEnabled && (
-          <button
-            className={styles.linkBtn}
-            onClick={() => router.push(`/rank?seed=${Math.random().toString(36).slice(2, 10)}`)}
-          >
-            ↻ New practice round
-          </button>
+        {locked && !round.practiceSeed ? (
+          // Finished a daily round: step to the day before or after.
+          <DayNav path="/rank" date={round.date} today={today} firstDate={RANK_LAUNCH_DATE} className={styles.linkBtn} />
+        ) : (
+          <>
+            {practiceEnabled && (
+              <button
+                className={styles.linkBtn}
+                onClick={() => router.push(`/rank?seed=${Math.random().toString(36).slice(2, 10)}`)}
+              >
+                ↻ New practice round
+              </button>
+            )}
+            {round.practiceSeed || !isToday ? <Link href="/rank">Today&apos;s round</Link> : null}
+          </>
         )}
-        {round.practiceSeed || !isToday ? <Link href="/rank">Today&apos;s round</Link> : null}
         <Link href="/">Play Baseball Golf →</Link>
         <Link href="/reveal">Play Sports Revealer →</Link>
       </nav>
