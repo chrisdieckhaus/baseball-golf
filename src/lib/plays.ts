@@ -139,6 +139,8 @@ export async function getRoundStats(
   roundDate: string,
   playerId: string,
   totalScore: number,
+  /** Rank mode's plays, or Player mode's (/golf/player). Same columns. */
+  table: "plays" | "player_golf_plays" = "plays",
 ): Promise<RoundStats> {
   const { rows } = await db.query<{
     others: string;
@@ -153,7 +155,7 @@ export async function getRoundStats(
               ARRAY[LEAST(hole_scores[1], ${MAX_HOLE_SCORE}), LEAST(hole_scores[2], ${MAX_HOLE_SCORE}),
                     LEAST(hole_scores[3], ${MAX_HOLE_SCORE})] AS holes,
               ${CAPPED_TOTAL_SQL} AS total
-         FROM plays
+         FROM ${table === "player_golf_plays" ? "player_golf_plays" : "plays"}
         WHERE round_date = $1 AND total_score IS NOT NULL
      )
      SELECT count(*) FILTER (WHERE player_id <> $2)                          AS others,

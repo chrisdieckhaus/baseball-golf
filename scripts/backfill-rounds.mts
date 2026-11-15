@@ -18,6 +18,9 @@ import { storeRankRoundIfMissing } from "../src/lib/rank-rounds";
 import { ROSTER_LAUNCH_DATE } from "../src/lib/roster";
 import { rosterData } from "../src/lib/roster-pool";
 import { storeRosterRoundIfMissing } from "../src/lib/roster-rounds";
+import playerMeta from "../src/data/player-meta.json";
+import { PLAYER_GOLF_LAUNCH_DATE, type PlayerMeta } from "../src/lib/player-golf";
+import { storePlayerRoundIfMissing } from "../src/lib/player-golf-rounds";
 
 const url = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
 if (!url) {
@@ -43,6 +46,12 @@ try {
   for (const date of rosterDates) {
     if (await storeRosterRoundIfMissing(client, rosterData, date)) rosterCreated++;
   }
+  let playerCreated = 0;
+  const playerDates = dates.filter((d) => d >= PLAYER_GOLF_LAUNCH_DATE);
+  for (const date of playerDates) {
+    if (await storePlayerRoundIfMissing(client, leaderboards, playerMeta as unknown as PlayerMeta, date)) playerCreated++;
+  }
+  console.log(`[backfill-rounds] Baseball Golf Player mode: checked ${playerDates.length} round(s); saved ${playerCreated} new.`);
   console.log(`[backfill-rounds] Roster Reveal: checked ${rosterDates.length} round(s); saved ${rosterCreated} new.`);
   console.log(`[backfill-rounds] Stats Ranker: checked ${rankDates.length} round(s); saved ${rankCreated} new.`);
   console.log(

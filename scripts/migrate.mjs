@@ -94,6 +94,30 @@ CREATE TABLE IF NOT EXISTS roster_rounds (
   year        smallint NOT NULL,
   created_at  timestamptz NOT NULL DEFAULT now()
 );
+-- Baseball Golf, Player mode (/golf/player): one row per daily round, saved the
+-- first time it's needed. holes: [{"statKey": "HR", "playerId": "ortizda01"}, ...].
+-- Ranks aren't saved; they come from the current leaderboards.
+CREATE TABLE IF NOT EXISTS player_golf_rounds (
+  round_date  date PRIMARY KEY,
+  holes       jsonb NOT NULL,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+
+-- Player mode plays: one row per player per daily round, like plays. guesses are
+-- the ranks guessed (1-100), one per hole, in order.
+CREATE TABLE IF NOT EXISTS player_golf_plays (
+  player_id     uuid NOT NULL REFERENCES players (id) ON DELETE CASCADE,
+  round_date    date NOT NULL,
+  guesses       smallint[] NOT NULL DEFAULT ARRAY[NULL, NULL, NULL]::smallint[],
+  hole_scores   smallint[] NOT NULL DEFAULT ARRAY[NULL, NULL, NULL]::smallint[],
+  total_score   smallint,
+  is_live       boolean NOT NULL,           -- started on the round's own day (ET), not later from the archive
+  started_at    timestamptz NOT NULL DEFAULT now(),
+  completed_at  timestamptz,
+  PRIMARY KEY (player_id, round_date)
+);
+CREATE INDEX IF NOT EXISTS player_golf_plays_round_scores_idx
+  ON player_golf_plays (round_date, total_score) WHERE total_score IS NOT NULL;
 `;
 
 const client = new pg.Client({ connectionString: url });

@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import Game from "@/components/Game";
+import ModeSwitch from "@/components/ModeSwitch";
 import { getRound, leaderboards } from "@/lib/data";
 import { isPlayableDate, todayET } from "@/lib/round";
 import styles from "@/app/page.module.css";
@@ -33,6 +34,7 @@ export default function Home({ searchParams }: { searchParams: SearchParams }) {
         <h1 className={styles.title}>
           Baseball <span>Golf</span>
         </h1>
+        <ModeSwitch current="rank" />
         <p className={styles.tagline}>
           Three holes. Name the player at each all-time rank, as close to the pin as you can. Lowest score wins.
         </p>
