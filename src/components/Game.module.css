@@ -176,13 +176,13 @@
   padding: 0 20px;
   border: none;
   border-radius: 10px;
-  background: var(--fairway);
+  background: var(--flag);
   color: #fff;
   cursor: pointer;
 }
 
 .swing:disabled {
-  background: #9aa59d;
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
@@ -298,11 +298,6 @@
   color: var(--ink-dim);
 }
 
-.final {
-  margin: 12px 0 0;
-  text-align: center;
-}
-
 @media (max-width: 520px) {
   .prompt {
     font-size: 1.2rem;
@@ -316,41 +311,33 @@
   }
 }
 
-/* ---- Share ---- */
-.share {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  margin-top: 12px;
+/* ---- Result: same look as Stats Ranker and Roster Reveal ---- */
+.headline {
+  margin: 0 0 12px;
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.headline span {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 400;
 }
 
 .shareBtn {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 14px;
   font: inherit;
   font-weight: 700;
-  padding: 10px 22px;
-  border-radius: 999px;
+  font-size: 1.05rem;
   border: none;
+  border-radius: 10px;
   background: var(--flag);
-  color: var(--chalk);
+  color: #fff;
   cursor: pointer;
-  min-width: 12rem;
-}
-
-.shareBtn:hover {
-  filter: brightness(1.08);
-}
-
-.shareFallback {
-  width: 100%;
-  font: inherit;
-  font-size: 0.9rem;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fff;
-  color: var(--ink);
-  resize: none;
 }
 
 .percentile {
@@ -367,13 +354,12 @@
 
 .dateBar {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  gap: 8px 14px;
+  gap: 8px;
 }
 
-.archiveBtn {
+.archiveLink {
   font-size: 0.8rem;
   font-weight: 600;
   padding: 5px 12px;
@@ -384,7 +370,37 @@
   white-space: nowrap;
 }
 
-.archiveBtn:hover {
+.archiveLink:hover {
   background: rgba(248, 245, 236, 0.1);
 }
 
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  font-size: 0.9rem;
+}
+
+.links:empty {
+  display: none;
+}
+
+.links a,
+.linkBtn {
+  color: var(--chalk);
+}
+
+.linkBtn {
+  font: inherit;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(248, 245, 236, 0.5);
+  background: transparent;
+  cursor: pointer;
+}
+
+a.linkBtn {
+  text-decoration: none;
+}

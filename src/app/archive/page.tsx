@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import LocalArchive, { golfStatus, type Status } from "@/components/LocalArchive";
 import { getDb } from "@/lib/db";
 import { readPlayerId } from "@/lib/player-cookie";
-import { getPlayerProgress, type RoundProgress } from "@/lib/plays";
+import { getPlayerProgress } from "@/lib/plays";
 import { playableDates, roundNumber, todayET } from "@/lib/round";
 import styles from "./archive.module.css";
 
@@ -23,56 +24,28 @@ function formatDate(date: string): string {
   });
 }
 
-async function loadProgress(): Promise<Map<string, RoundProgress>> {
+async function loadSaved(): Promise<Record<string, Status>> {
   const db = getDb();
   const me = await readPlayerId();
-  if (!db || !me) return new Map();
+  if (!db || !me) return {};
   try {
-    return await getPlayerProgress(db, me);
+    const progress = await getPlayerProgress(db, me);
+    return Object.fromEntries([...progress].map(([date, p]) => [date, golfStatus(p.holesPlayed, p.totalScore)]));
   } catch (e) {
     console.error("[archive] Couldn't load this player's progress", e);
-    return new Map();
+    return {};
   }
-}
-
-function Status({ progress }: { progress: RoundProgress | undefined }) {
-  if (progress?.totalScore != null) {
-    return (
-      <span className={styles.done}>
-        Score <strong>{progress.totalScore}</strong>
-      </span>
-    );
-  }
-  if (progress && progress.holesPlayed > 0) {
-    return <span className={styles.partial}>In progress · {progress.holesPlayed}/3</span>;
-  }
-  return <span className={styles.play}>Play →</span>;
 }
 
 async function RoundList() {
   // Render per request so the list rolls over at midnight Eastern.
   await connection();
   const today = todayET();
-  const dates = playableDates(today)
+  const rounds = playableDates(today)
     .filter((d) => d < today)
-    .reverse();
-  const progress = await loadProgress();
-
-  if (dates.length === 0) return <p className={styles.empty}>No previous rounds yet. Check back tomorrow.</p>;
-
-  return (
-    <ol className={styles.list}>
-      {dates.map((date) => (
-        <li key={date}>
-          <Link href={`/?date=${date}`} className={styles.row}>
-            <span className={styles.num}>#{roundNumber(date)}</span>
-            <span className={styles.date}>{formatDate(date)}</span>
-            <Status progress={progress.get(date)} />
-          </Link>
-        </li>
-      ))}
-    </ol>
-  );
+    .reverse()
+    .map((date) => ({ date, number: roundNumber(date), label: formatDate(date) }));
+  return <LocalArchive game="golf" rounds={rounds} saved={await loadSaved()} />;
 }
 
 export default function ArchivePage() {
@@ -80,11 +53,9 @@ export default function ArchivePage() {
     <main className={styles.main}>
       <header className={styles.header}>
         <h1 className={styles.title}>
-          Previous <span>rounds</span>
+          Baseball <span>Golf</span>
         </h1>
-        <p className={styles.tagline}>
-          Play any round you missed, and see how you stack up against everyone who&apos;s played it.
-        </p>
+        <p className={styles.tagline}>Previous rounds. Play any one you missed.</p>
         <Link href="/" className={styles.back}>
           ← Today&apos;s round
         </Link>

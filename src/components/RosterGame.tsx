@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { RosterCompare } from "@/components/CompareStats";
 import DayNav from "@/components/DayNav";
+import ShareButton from "@/components/ShareButton";
 import type { RosterStats } from "@/lib/game-plays";
 import {
   buildRosterShareText,
@@ -13,6 +14,7 @@ import {
   type RosterRound,
   type RosterState,
 } from "@/lib/roster";
+import { formatRoundDate } from "@/lib/round";
 import styles from "./RosterGame.module.css";
 
 const storageKey = (round: RosterRound) => `roster-reveal:${round.date}`;
@@ -57,8 +59,8 @@ export default function RosterGame({ round, initial, isToday, today }: Props) {
   const [guessing, setGuessing] = useState(false);
   const [pick, setPick] = useState("");
   const [busy, setBusy] = useState(false);
+  const [synced, setSynced] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
   const [fresh, setFresh] = useState(-1);
 
   function apply(next: RosterState, nextStats?: RosterStats | null) {
@@ -103,6 +105,10 @@ export default function RosterGame({ round, initial, isToday, today }: Props) {
       })
       .catch(() => {
         // Offline or server error: keep what this browser saved.
+      })
+      .finally(() => {
+        // Ready to play once this browser's saved play (if any) is in.
+        if (!cancelled) setSynced(true);
       });
     return () => {
       cancelled = true;
@@ -111,7 +117,7 @@ export default function RosterGame({ round, initial, isToday, today }: Props) {
   }, [key, round.date]);
 
   async function reveal() {
-    if (busy || state.done || state.revealed.length >= LINEUP_SIZE) return;
+    if (busy || !synced || state.done || state.revealed.length >= LINEUP_SIZE) return;
     setBusy(true);
     setError(null);
     try {
@@ -126,7 +132,7 @@ export default function RosterGame({ round, initial, isToday, today }: Props) {
   }
 
   async function lockIn() {
-    if (busy || state.done || !pick) return;
+    if (busy || !synced || state.done || !pick) return;
     setBusy(true);
     setError(null);
     try {
@@ -140,24 +146,9 @@ export default function RosterGame({ round, initial, isToday, today }: Props) {
     }
   }
 
-  async function share() {
+  function shareText(): string {
     const url = isToday ? `${window.location.origin}/roster` : `${window.location.origin}/roster?date=${round.date}`;
-    const text = buildRosterShareText(round, state, url);
-    if (typeof navigator.share === "function" && window.matchMedia?.("(pointer: coarse)").matches) {
-      try {
-        await navigator.share({ text });
-        return;
-      } catch (e) {
-        if (e instanceof DOMException && e.name === "AbortError") return;
-      }
-    }
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      window.prompt("Copy your result:", text);
-    }
+    return buildRosterShareText(round, state, url);
   }
 
   const shown = state.done && state.answer ? state.answer.lineup : state.revealed;
@@ -169,19 +160,14 @@ export default function RosterGame({ round, initial, isToday, today }: Props) {
       <div className={styles.dateBar}>
         <p className={styles.date}>
           #{rosterRoundNumber(round.date)} ·{" "}
-          {new Date(`${round.date}T12:00:00Z`).toLocaleDateString("en-US", {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-            timeZone: "UTC",
-          })}
+          {formatRoundDate(round.date)}
         </p>
         <Link href="/roster/archive" className={styles.archiveLink}>
           Play previous rounds
         </Link>
       </div>
 
-      <section className={styles.card}>
+      <section className={`${styles.card} ${synced ? "" : "syncing"}`} aria-busy={!synced}>
         <p className={styles.kicker}>Starting lineup</p>
         <h2 className={styles.question}>Who&apos;s this {round.year} team?</h2>
         <ol className={styles.names}>
@@ -217,7 +203,7 @@ export default function RosterGame({ round, initial, isToday, today }: Props) {
                 <button className={styles.secondary} onClick={reveal} disabled={busy || n >= LINEUP_SIZE}>
                   Reveal next player
                 </button>
-                <button className={styles.primary} onClick={() => setGuessing(true)} disabled={busy}>
+                <button className={styles.primary} onClick={() => synced && setGuessing(true)} disabled={busy}>
                   I know it
                 </button>
               </div>
@@ -270,9 +256,7 @@ export default function RosterGame({ round, initial, isToday, today }: Props) {
               : `You guessed the ${round.year} ${teamName(state.guess)} after ${n} ${n === 1 ? "player" : "players"}.`}
           </p>
           {stats && <RosterCompare stats={stats} mine={state.correct ? n : LINEUP_SIZE + 1} isToday={isToday} />}
-          <button className={styles.shareBtn} onClick={share}>
-            {copied ? "Copied to clipboard ✓" : "Share result"}
-          </button>
+          <ShareButton getText={shareText} label="Share result" className={styles.shareBtn} />
         </section>
       )}
 
@@ -289,8 +273,6 @@ export default function RosterGame({ round, initial, isToday, today }: Props) {
         ) : !isToday ? (
           <Link href="/roster">Today&apos;s round</Link>
         ) : null}
-        <Link href="/">Play Baseball Golf →</Link>
-        <Link href="/rank">Play Stats Ranker →</Link>
       </nav>
     </div>
   );

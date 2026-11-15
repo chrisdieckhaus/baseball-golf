@@ -121,7 +121,7 @@ export default function PlayerSearch({ usedIds, disabled, onSubmit }: Props) {
             aria-controls={listId}
             aria-autocomplete="list"
             aria-label="Search for a player"
-            placeholder={loadError ? "Couldn't load players — refresh to retry" : "Start typing a player's name…"}
+            placeholder={loadError ? "Couldn't load players — refresh to retry" : "Type a player's name…"}
             value={query}
             disabled={disabled || loadError}
             autoComplete="off"
