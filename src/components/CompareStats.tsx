@@ -1,6 +1,6 @@
 import type { RankStats, RosterStats } from "@/lib/game-plays";
 import { LINEUP_SIZE } from "@/lib/roster";
-import { scoreLabel } from "@/lib/share";
+import { ordinal } from "@/lib/scoring";
 import type { RoundStats } from "@/lib/types";
 import styles from "./CompareStats.module.css";
 
@@ -32,15 +32,18 @@ function PercentileLine({
   );
 }
 
-/** Baseball Golf: your percentile, the average round and how many have played. */
+/**
+ * Baseball Golf: your percentile and how many have played. The average round
+ * is in the scorecard's Avg row.
+ */
 export function GolfCompare({ stats, isToday }: { stats: RoundStats; isToday: boolean }) {
   return (
     <div className={styles.compare}>
       <PercentileLine stats={stats} isToday={isToday} />
       <dl className={styles.facts}>
         <div>
-          <dt>Average</dt>
-          <dd>{scoreLabel(stats.roundAverage)}</dd>
+          <dt>Percentile</dt>
+          <dd>{stats.percentBeaten === null ? "–" : ordinal(stats.percentBeaten)}</dd>
         </div>
         <div>
           <dt>Played</dt>
