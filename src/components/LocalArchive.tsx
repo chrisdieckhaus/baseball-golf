@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import styles from "@/app/archive.module.css";
-import { HOLES_PER_ROUND } from "@/lib/round";
-import { scoreLabel } from "@/lib/share";
+import { golfStatus, rankStatus, rosterStatus, type Status } from "@/lib/archive-status";
 
 type GameKey = "golf" | "player" | "rank" | "roster";
 
@@ -19,7 +18,6 @@ interface Props {
   saved: Record<string, Status>;
 }
 
-export type Status = { kind: "done" | "partial"; text: string; score?: number | string } | null;
 
 function read(key: string): unknown {
   try {
@@ -28,24 +26,6 @@ function read(key: string): unknown {
   } catch {
     return null;
   }
-}
-
-/** How Baseball Golf progress reads in the list. */
-export function golfStatus(holesPlayed: number, totalScore: number | null, holes = HOLES_PER_ROUND): Status {
-  if (totalScore !== null) return { kind: "done", text: "Score", score: scoreLabel(totalScore) };
-  if (holesPlayed > 0) return { kind: "partial", text: `In progress · ${holesPlayed}/${holes}` };
-  return null;
-}
-
-/** How a Stats Ranker result reads in the list, in the game's own words: "Off by 3" or "Perfect". */
-export function rankStatus(score: number): Status {
-  return score === 0 ? { kind: "done", text: "Perfect" } : { kind: "done", text: "Off by", score };
-}
-
-/** How Roster Reveal progress reads in the list. */
-export function rosterStatus(revealed: number, correct: boolean, done: boolean): Status {
-  if (done) return { kind: "done", text: correct ? `Got it after ${revealed}` : "Missed" };
-  return { kind: "partial", text: `In progress · ${revealed} revealed` };
 }
 
 /** This browser's result for a round, from what the game saved in localStorage. */
