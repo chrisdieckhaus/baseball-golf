@@ -294,8 +294,11 @@
     flex-direction: column;
     align-items: stretch;
   }
-  .optMeta {
-    display: none;
+  /* Stack the years/position under the name instead of hiding them —
+     it's the only way to tell same-named players apart (e.g. three Luis Gonzalezes). */
+  .option {
+    flex-direction: column;
+    gap: 1px;
   }
 }
 
