@@ -6,11 +6,16 @@
 // No "server-only" import, so scripts/backfill-rounds.mts can use this file.
 import type { Queryable } from "./plays";
 import { generateStoredPlayerRound, type PlayerMeta, type StoredPlayerHole } from "./player-golf";
+import { table, type Sport } from "./sport";
 import type { LeaderboardData } from "./types";
 
-export async function getStoredPlayerRound(db: Queryable, date: string): Promise<StoredPlayerHole[] | null> {
+export async function getStoredPlayerRound(
+  db: Queryable,
+  date: string,
+  sport: Sport = "mlb",
+): Promise<StoredPlayerHole[] | null> {
   const { rows } = await db.query<{ holes: StoredPlayerHole[] }>(
-    `SELECT holes FROM player_golf_rounds WHERE round_date = $1`,
+    `SELECT holes FROM ${table(sport, "player_golf_rounds")} WHERE round_date = $1`,
     [date],
   );
   return rows[0]?.holes ?? null;
@@ -22,10 +27,12 @@ export async function storePlayerRoundIfMissing(
   data: LeaderboardData,
   meta: PlayerMeta,
   date: string,
+  sport: Sport = "mlb",
 ): Promise<boolean> {
   const { rowCount } = await db.query(
-    `INSERT INTO player_golf_rounds (round_date, holes) VALUES ($1, $2::jsonb) ON CONFLICT (round_date) DO NOTHING`,
-    [date, JSON.stringify(generateStoredPlayerRound(data, meta, date))],
+    `INSERT INTO ${table(sport, "player_golf_rounds")} (round_date, holes) VALUES ($1, $2::jsonb)
+     ON CONFLICT (round_date) DO NOTHING`,
+    [date, JSON.stringify(generateStoredPlayerRound(data, meta, date, sport))],
   );
   return (rowCount ?? 0) > 0;
 }
@@ -35,11 +42,12 @@ export async function getOrCreateStoredPlayerRound(
   data: LeaderboardData,
   meta: PlayerMeta,
   date: string,
+  sport: Sport = "mlb",
 ): Promise<StoredPlayerHole[]> {
-  let holes = await getStoredPlayerRound(db, date);
+  let holes = await getStoredPlayerRound(db, date, sport);
   if (!holes) {
-    await storePlayerRoundIfMissing(db, data, meta, date);
-    holes = await getStoredPlayerRound(db, date);
+    await storePlayerRoundIfMissing(db, data, meta, date, sport);
+    holes = await getStoredPlayerRound(db, date, sport);
     if (!holes) throw new Error(`Player round for ${date} could not be stored`);
   }
   return holes;

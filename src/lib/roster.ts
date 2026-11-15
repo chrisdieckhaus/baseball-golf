@@ -8,6 +8,7 @@
 // No "server-only" import, so scripts can use this file. The answer and the
 // players not yet revealed never leave the server.
 import { hashString, mulberry32 } from "./round";
+import { COPY, namespaced, type Sport } from "./sport";
 
 export const LINEUP_SIZE = 10;
 /** Round #1. Rounds are numbered from Nov 1, 2026, like the other games. */
@@ -16,7 +17,7 @@ export const ROSTER_LAUNCH_DATE = "2026-11-01";
 export interface LineupPlayer {
   id: string;
   name: string;
-  /** C, 1B, 2B, 3B, SS, LF, CF, RF, DH or SP. */
+  /** Baseball: C, 1B, 2B, 3B, SS, LF, CF, RF, DH or SP. NBA: PG, SG, SF, PF or C (G/F/C before 1952). */
   pos: string;
 }
 
@@ -75,9 +76,9 @@ const keyOf = (r: { franchise: string; year: number }) => `${r.year}-${r.franchi
  * team-season, so nothing repeats for years. Daily rounds are stored the first time they're
  * needed (roster-rounds.ts), so a data refresh never changes a round that exists.
  */
-export function generateStoredRosterRound(data: RosterData, date: string): StoredRosterRound {
+export function generateStoredRosterRound(data: RosterData, date: string, sport: Sport = "mlb"): StoredRosterRound {
   const keys = data.rounds.map(keyOf).sort();
-  const rand = mulberry32(hashString("roster-reveal:order"));
+  const rand = mulberry32(hashString(namespaced(sport, "roster-reveal:order")));
   for (let i = keys.length - 1; i > 0; i--) {
     const j = Math.floor(rand() * (i + 1));
     [keys[i], keys[j]] = [keys[j], keys[i]];
@@ -139,16 +140,17 @@ export const rosterResult = (revealed: number, correct: boolean) => (correct ? r
  *   Got it after 4 players
  *   https://…/roster
  */
-export function buildRosterShareText(round: RosterRound, state: RosterState, url: string): string {
+export function buildRosterShareText(round: RosterRound, state: RosterState, url: string, sport: Sport = "mlb"): string {
   const date = new Date(`${round.date}T12:00:00Z`).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
     timeZone: "UTC",
   });
-  const title = `Roster Reveal #${rosterRoundNumber(round.date)} · ${date}`;
+  const name = sport === "nba" ? "Roster Reveal · NBA" : "Roster Reveal";
+  const title = `${name} #${rosterRoundNumber(round.date)} · ${date}`;
   const n = state.revealed.length;
   const squares = "🟦".repeat(n - 1) + (state.correct ? "✅" : "❌");
-  const line = state.correct ? `Got it after ${n} ${n === 1 ? "player" : "players"}` : "Swing and a miss";
+  const line = state.correct ? `Got it after ${n} ${n === 1 ? "player" : "players"}` : COPY[sport].rosterMiss;
   return [title, squares, line, url].join("\n");
 }

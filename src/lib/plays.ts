@@ -1,5 +1,6 @@
 import { HOLES_PER_ROUND } from "./round";
 import { MAX_HOLE_SCORE } from "./scoring";
+import { table as sportTable, type Sport } from "./sport";
 import type { RoundStats } from "./types";
 
 /** Anything with pg's query(): a Pool, a Client, or a transaction client. */
@@ -48,10 +49,15 @@ function toPlay(row: Record<string, unknown>): StoredPlay {
   };
 }
 
-export async function getPlay(db: Queryable, playerId: string, roundDate: string): Promise<StoredPlay | null> {
+export async function getPlay(
+  db: Queryable,
+  playerId: string,
+  roundDate: string,
+  sport: Sport = "mlb",
+): Promise<StoredPlay | null> {
   const { rows } = await db.query(
     `SELECT guess_ids, guess_names, hole_scores, total_score, is_live
-       FROM plays WHERE player_id = $1 AND round_date = $2`,
+       FROM ${sportTable(sport, "plays")} WHERE player_id = $1 AND round_date = $2`,
     [playerId, roundDate],
   );
   return rows[0] ? toPlay(rows[0]) : null;
@@ -63,12 +69,16 @@ export interface RoundProgress {
 }
 
 /** This player's progress on every daily round they've started, by date (YYYY-MM-DD). */
-export async function getPlayerProgress(db: Queryable, playerId: string): Promise<Map<string, RoundProgress>> {
+export async function getPlayerProgress(
+  db: Queryable,
+  playerId: string,
+  sport: Sport = "mlb",
+): Promise<Map<string, RoundProgress>> {
   const { rows } = await db.query<{ round_date: string; holes_played: number; total_score: number | null }>(
     `SELECT round_date::text AS round_date,
             cardinality(array_remove(guess_ids, NULL)) AS holes_played,
             CASE WHEN total_score IS NULL THEN NULL ELSE ${CAPPED_TOTAL_SQL}::int END AS total_score
-       FROM plays WHERE player_id = $1`,
+       FROM ${sportTable(sport, "plays")} WHERE player_id = $1`,
     [playerId],
   );
   return new Map(rows.map((r) => [r.round_date, { holesPlayed: r.holes_played, totalScore: r.total_score }]));
@@ -90,18 +100,20 @@ export async function recordGuess(
     score: number;
     isLive: boolean;
   },
+  sport: Sport = "mlb",
 ): Promise<RecordOutcome> {
   const { playerId, roundDate, hole, guessId, guessName, score, isLive } = args;
   const h = hole + 1; // Postgres arrays are 1-based
+  const plays = sportTable(sport, "plays");
 
   await db.query(`INSERT INTO players (id) VALUES ($1) ON CONFLICT DO NOTHING`, [playerId]);
   await db.query(
-    `INSERT INTO plays (player_id, round_date, is_live) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
+    `INSERT INTO ${plays} (player_id, round_date, is_live) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
     [playerId, roundDate, isLive],
   );
 
   const { rows } = await db.query(
-    `UPDATE plays p SET
+    `UPDATE ${plays} p SET
         guess_ids[$3::int]   = $4::text,
         guess_names[$3::int] = $5::text,
         hole_scores[$3::int] = $6::smallint,
@@ -118,7 +130,7 @@ export async function recordGuess(
   if (rows[0]) return { ok: true, play: toPlay(rows[0]) };
 
   // Rejected: report why, with the current state so the browser can catch up.
-  const play = (await getPlay(db, playerId, roundDate))!;
+  const play = (await getPlay(db, playerId, roundDate, sport))!;
   const reason =
     play.guessIds[hole] !== null
       ? "already_guessed"
@@ -141,6 +153,7 @@ export async function getRoundStats(
   totalScore: number,
   /** Rank mode's plays, or Player mode's (/golf/player). Same columns. */
   table: "plays" | "player_golf_plays" = "plays",
+  sport: Sport = "mlb",
 ): Promise<RoundStats> {
   const { rows } = await db.query<{
     others: string;
@@ -155,7 +168,7 @@ export async function getRoundStats(
               ARRAY[LEAST(hole_scores[1], ${MAX_HOLE_SCORE}), LEAST(hole_scores[2], ${MAX_HOLE_SCORE}),
                     LEAST(hole_scores[3], ${MAX_HOLE_SCORE})] AS holes,
               ${CAPPED_TOTAL_SQL} AS total
-         FROM ${table === "player_golf_plays" ? "player_golf_plays" : "plays"}
+         FROM ${sportTable(sport, table === "player_golf_plays" ? "player_golf_plays" : "plays")}
         WHERE round_date = $1 AND total_score IS NOT NULL
      )
      SELECT count(*) FILTER (WHERE player_id <> $2)                          AS others,

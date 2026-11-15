@@ -10,7 +10,10 @@
 //
 // Skips quietly when no database is configured.
 import pg from "pg";
-import { leaderboards } from "../src/lib/leaderboards";
+import { leaderboards, leaderboardsFor } from "../src/lib/leaderboards";
+import { isNbaEnabled } from "../src/lib/nba-flag";
+import { playerMetaFor } from "../src/lib/player-meta";
+import { rosterDataFor } from "../src/lib/roster-pool";
 import { playableDates } from "../src/lib/round";
 import { storeRoundIfMissing } from "../src/lib/rounds";
 import { RANK_LAUNCH_DATE } from "../src/lib/rank";
@@ -50,6 +53,22 @@ try {
   const playerDates = dates.filter((d) => d >= PLAYER_GOLF_LAUNCH_DATE);
   for (const date of playerDates) {
     if (await storePlayerRoundIfMissing(client, leaderboards, playerMeta as unknown as PlayerMeta, date)) playerCreated++;
+  }
+  // NBA (only while the NBA kill switch is on; otherwise its rounds are made the first time they're needed).
+  if (isNbaEnabled()) {
+    const nba = leaderboardsFor("nba");
+    const counts = { golf: 0, player: 0, rank: 0, roster: 0 };
+    for (const date of dates) {
+      if (await storeRoundIfMissing(client, nba, date, "nba")) counts.golf++;
+      if (date >= PLAYER_GOLF_LAUNCH_DATE && (await storePlayerRoundIfMissing(client, nba, playerMetaFor("nba"), date, "nba")))
+        counts.player++;
+      if (date >= RANK_LAUNCH_DATE && (await storeRankRoundIfMissing(client, nba, date, "nba"))) counts.rank++;
+      if (date >= ROSTER_LAUNCH_DATE && (await storeRosterRoundIfMissing(client, rosterDataFor("nba"), date, "nba")))
+        counts.roster++;
+    }
+    console.log(`[backfill-rounds] NBA: checked ${dates.length} date(s); saved new rounds ${JSON.stringify(counts)}.`);
+  } else {
+    console.log("[backfill-rounds] NBA is off (NBA_ENABLED isn't set); skipping NBA rounds.");
   }
   console.log(`[backfill-rounds] Baseball Golf Player mode: checked ${playerDates.length} round(s); saved ${playerCreated} new.`);
   console.log(`[backfill-rounds] Roster Reveal: checked ${rosterDates.length} round(s); saved ${rosterCreated} new.`);

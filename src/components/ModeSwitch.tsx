@@ -1,17 +1,19 @@
 import Link from "next/link";
+import { basePath, COPY, type Sport } from "@/lib/sport";
 import styles from "./ModeSwitch.module.css";
 
 /**
  * Baseball Golf's two modes. Rank (/golf) gives a rank and asks for the player;
  * Player (/golf/player) gives a player and asks for his rank.
  */
-export default function ModeSwitch({ current }: { current: "rank" | "player" }) {
+export default function ModeSwitch({ current, sport = "mlb" }: { current: "rank" | "player"; sport?: Sport }) {
+  const base = basePath(sport);
   const modes = [
-    { key: "rank", href: "/golf", label: "Rank" },
-    { key: "player", href: "/golf/player", label: "Player" },
+    { key: "rank", href: `${base}/golf`, label: "Rank" },
+    { key: "player", href: `${base}/golf/player`, label: "Player" },
   ] as const;
   return (
-    <nav className={styles.switch} aria-label="Baseball Golf mode">
+    <nav className={styles.switch} aria-label={`${COPY[sport].golfName} mode`}>
       {modes.map((m) => (
         <Link
           key={m.key}

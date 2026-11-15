@@ -6,6 +6,7 @@ import type { GuessResult, PlayerIndexEntry, PlayState, Round, RoundStats } from
 import { MAX_HOLE_SCORE, ordinal } from "@/lib/scoring";
 import { buildShareText, holeLabel, scoreLabel } from "@/lib/share";
 import { formatRoundDate, LAUNCH_DATE, roundNumber } from "@/lib/round";
+import { apiUrl, basePath, namespaced, type Sport } from "@/lib/sport";
 import DayNav from "./DayNav";
 import { GolfCompare } from "./CompareStats";
 import PlayerSearch from "./PlayerSearch";
@@ -13,7 +14,7 @@ import ShareButton from "./ShareButton";
 import styles from "./Game.module.css";
 
 /** Progress is saved per round, by date. */
-const storageKey = (round: Round) => `baseball-golf:${round.date}`;
+const storageKey = (round: Round, sport: Sport) => namespaced(sport, `baseball-golf:${round.date}`);
 
 function loadSaved(key: string): (GuessResult | null)[] | null {
   try {
@@ -32,14 +33,27 @@ function save(key: string, results: (GuessResult | null)[]) {
   }
 }
 
-function GolfShare({ round, isToday, results }: { round: Round; isToday: boolean; results: GuessResult[] }) {
+function GolfShare({
+  round,
+  isToday,
+  results,
+  sport,
+}: {
+  round: Round;
+  isToday: boolean;
+  results: GuessResult[];
+  sport: Sport;
+}) {
   // Previous rounds link to that exact round; today's round links to the game.
-  const getText = () =>
-    buildShareText({
+  const getText = () => {
+    const page = `${window.location.origin}${basePath(sport)}/golf`;
+    return buildShareText({
       date: round.date,
       scores: results.map((r) => r.score),
-      url: isToday ? `${window.location.origin}/golf` : `${window.location.origin}/golf?date=${round.date}`,
+      url: isToday ? page : `${page}?date=${round.date}`,
+      sport,
     });
+  };
   return (
     <ShareButton getText={getText} label="Share result" className={styles.shareBtn} />
   );
@@ -49,12 +63,15 @@ export default function Game({
   round,
   isToday,
   today,
+  sport = "mlb",
 }: {
   round: Round;
   isToday: boolean; // today's daily round (not a previous round)
   today: string;
+  sport?: Sport;
 }) {
-  const key = storageKey(round);
+  const key = storageKey(round, sport);
+  const base = basePath(sport);
   const [results, setResults] = useState<(GuessResult | null)[]>(() => round.holes.map(() => null));
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +88,7 @@ export default function Game({
     if (saved && saved.length === round.holes.length) setResults(saved);
 
     let cancelled = false;
-    fetch(`/api/play?date=${round.date}`, { cache: "no-store" })
+    fetch(apiUrl(sport, "/api/play", { date: round.date }), { cache: "no-store" })
       .then((res) => (res.ok ? (res.json() as Promise<PlayState>) : null))
       .then((state) => {
         if (cancelled || !state) return;
@@ -92,7 +109,7 @@ export default function Game({
     return () => {
       cancelled = true;
     };
-  }, [key, round.date, round.holes.length]);
+  }, [key, round.date, round.holes.length, sport]);
 
   const current = results.findIndex((r) => r === null);
   const finished = current === -1;
@@ -114,6 +131,7 @@ export default function Game({
           hole: holeIndex,
           playerId: player.id,
           playerName: player.n,
+          sport,
         }),
       });
       const data = await res.json();
@@ -145,7 +163,7 @@ export default function Game({
         <p className={styles.date}>
           #{roundNumber(round.date)} · {formatRoundDate(round.date)}
         </p>
-        <Link href="/golf/archive" className={styles.archiveLink}>
+        <Link href={`${base}/golf/archive`} className={styles.archiveLink}>
           Play previous rounds
         </Link>
       </div>
@@ -174,6 +192,7 @@ export default function Game({
                 <>
                   <PlayerSearch
                     key={`search-${i}`}
+                    sport={sport}
                     usedIds={usedIds}
                     disabled={pending || !synced}
                     onSubmit={(p) => guess(i, p)}
@@ -257,15 +276,15 @@ export default function Game({
           </tbody>
         </table>
         {finished && stats && <GolfCompare stats={stats} isToday={isToday} />}
-        {finished && <GolfShare round={round} isToday={isToday} results={results as GuessResult[]} />}
+        {finished && <GolfShare round={round} isToday={isToday} results={results as GuessResult[]} sport={sport} />}
       </div>
 
       <nav className={styles.links}>
         {finished ? (
           // Finished the round: step to the day before or after.
-          <DayNav path="/golf" date={round.date} today={today} firstDate={LAUNCH_DATE} className={styles.linkBtn} />
+          <DayNav path={`${base}/golf`} date={round.date} today={today} firstDate={LAUNCH_DATE} className={styles.linkBtn} />
         ) : !isToday ? (
-          <Link href="/golf">Today&apos;s round</Link>
+          <Link href={`${base}/golf`}>Today&apos;s round</Link>
         ) : null}
       </nav>
     </section>

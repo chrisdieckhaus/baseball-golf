@@ -9,9 +9,10 @@ import ShareButton from "@/components/ShareButton";
 import type { RankStats } from "@/lib/game-plays";
 import { ordinal } from "@/lib/scoring";
 import { formatRoundDate } from "@/lib/round";
+import { apiUrl, basePath, namespaced, type Sport } from "@/lib/sport";
 import styles from "./RankGame.module.css";
 
-const storageKey = (round: RankRound) => `stats-ranker:${round.date}`;
+const storageKey = (round: RankRound, sport: Sport) => namespaced(sport, `stats-ranker:${round.date}`);
 
 interface Saved {
   order: string[];
@@ -66,12 +67,15 @@ export default function RankGame({
   round,
   isToday,
   today,
+  sport = "mlb",
 }: {
   round: RankRound;
   isToday: boolean;
   today: string;
+  sport?: Sport;
 }) {
-  const key = storageKey(round);
+  const key = storageKey(round, sport);
+  const base = basePath(sport);
   const [order, setOrder] = useState<string[]>(round.players.map((p) => p.id));
   const [reveal, setReveal] = useState<RankReveal | null>(null);
   const [stats, setStats] = useState<RankStats | null>(null);
@@ -99,7 +103,7 @@ export default function RankGame({
       setStats(next.stats ?? null);
       save(key, { order: next.order, reveal: next.reveal });
     };
-    fetch(`/api/rank?date=${round.date}`, { cache: "no-store" })
+    fetch(apiUrl(sport, "/api/rank", { date: round.date }), { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
       .then((body: { play: { order: string[]; reveal: RankReveal; stats: RankStats | null } | null } | null) => {
         if (!body || cancelled) return;
@@ -108,7 +112,7 @@ export default function RankGame({
           return fetch("/api/rank", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ date: round.date, order: saved.order }),
+            body: JSON.stringify({ date: round.date, order: saved.order, sport }),
           })
             .then((res) => (res.ok ? res.json() : null))
             .then((b) => b && apply(b));
@@ -124,7 +128,7 @@ export default function RankGame({
     return () => {
       cancelled = true;
     };
-  }, [key, round.date]);
+  }, [key, round.date, sport]);
 
   const names = new Map(round.players.map((p) => [p.id, p.name]));
   const [topLabel, bottomLabel] = endLabels(round);
@@ -180,7 +184,7 @@ export default function RankGame({
       const res = await fetch("/api/rank", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: round.date, order }),
+        body: JSON.stringify({ date: round.date, order, sport }),
       });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error ?? "Something went wrong");
@@ -198,8 +202,9 @@ export default function RankGame({
   }
 
   function shareText(): string {
-    const url = isToday ? `${window.location.origin}/rank` : `${window.location.origin}/rank?date=${round.date}`;
-    return buildRankShareText(round, reveal!, url);
+    const page = `${window.location.origin}${base}/rank`;
+    const url = isToday ? page : `${page}?date=${round.date}`;
+    return buildRankShareText(round, reveal!, url, sport);
   }
 
   const offById = new Map(reveal?.guess.map((g) => [g.id, g.off]) ?? []);
@@ -211,7 +216,7 @@ export default function RankGame({
           #{rankRoundNumber(round.date)} ·{" "}
           {formatRoundDate(round.date)}
         </p>
-        <Link href="/rank/archive" className={styles.archiveLink}>
+        <Link href={`${base}/rank/archive`} className={styles.archiveLink}>
           Play previous rounds
         </Link>
       </div>
@@ -312,9 +317,9 @@ export default function RankGame({
       <nav className={styles.links}>
         {locked ? (
           // Finished the round: step to the day before or after.
-          <DayNav path="/rank" date={round.date} today={today} firstDate={RANK_LAUNCH_DATE} className={styles.linkBtn} />
+          <DayNav path={`${base}/rank`} date={round.date} today={today} firstDate={RANK_LAUNCH_DATE} className={styles.linkBtn} />
         ) : !isToday ? (
-          <Link href="/rank">Today&apos;s round</Link>
+          <Link href={`${base}/rank`}>Today&apos;s round</Link>
         ) : null}
       </nav>
     </div>

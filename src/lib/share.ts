@@ -1,5 +1,6 @@
 import { roundNumber } from "./round";
 import { MAX_HOLE_SCORE } from "./scoring";
+import { COPY, type Sport } from "./sport";
 
 /**
  * Spoiler-free emoji for a hole score. Only the score is shared — never the stat,
@@ -43,6 +44,8 @@ export interface ShareInput {
   url: string; // where friends can play: the site root, or the previous round's link
   /** Player mode (/golf/player) adds "Player" to the title. */
   mode?: "rank" | "player";
+  /** NBA rounds are "Basketball Golf". */
+  sport?: Sport;
 }
 
 /**
@@ -53,8 +56,9 @@ export interface ShareInput {
  *   Total: +16
  *   https://baseball-golf.vercel.app
  */
-export function buildShareText({ date, scores, url, mode = "rank" }: ShareInput): string {
-  const name = mode === "player" ? "Baseball Golf · Player" : "Baseball Golf";
+export function buildShareText({ date, scores, url, mode = "rank", sport = "mlb" }: ShareInput): string {
+  const golf = COPY[sport].golfName;
+  const name = mode === "player" ? `${golf} · Player` : golf;
   const title = `${name} #${roundNumber(date)} · ${shortDate(date)}`;
   const holes = scores.map((s) => `${holeEmoji(s)} ${holeLabel(s)}`).join("  ");
   const total = scores.reduce((a, b) => a + b, 0);

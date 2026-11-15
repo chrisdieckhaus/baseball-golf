@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import GameNav from "@/components/GameNav";
+import { isNbaEnabled } from "@/lib/nba-flag";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,7 +14,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en">
       <body>
-        <GameNav />
+        <GameNav nbaEnabled={isNbaEnabled()} />
         {children}
         <Analytics />
       </body>
