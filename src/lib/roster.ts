@@ -75,18 +75,74 @@ export function rosterRoundNumber(date: string): number {
 const keyOf = (r: { franchise: string; year: number }) => `${r.year}-${r.franchise}`;
 
 /**
- * Pick the team-season. Daily rounds walk through one fixed shuffle of every
- * team-season, so nothing repeats for years. Daily rounds are stored the first time they're
- * needed (roster-rounds.ts), so a data refresh never changes a round that exists.
+ * Rounds before this date walk the original even shuffle of every team-season;
+ * from this date on, they walk an order weighted toward recent seasons. Rounds
+ * are stored the first time they're needed, so this must stay after the date
+ * the change shipped: the weighted order skips every team-season the even
+ * shuffle used before this date, so nothing repeats.
  */
-export function generateStoredRosterRound(data: RosterData, date: string, sport: Sport = "mlb"): StoredRosterRound {
+export const ROSTER_WEIGHTED_FROM = "2026-11-18";
+/** A season's weight halves for every this many years before RECENCY_ANCHOR. */
+export const RECENCY_HALF_LIFE = 25;
+/** Fixed (not the data's last year), so a data refresh doesn't reshuffle the order. */
+const RECENCY_ANCHOR = 2026;
+
+/** The original order: one even Fisher–Yates shuffle of every team-season. */
+function evenOrder(data: RosterData, sport: Sport): string[] {
   const keys = data.rounds.map(keyOf).sort();
   const rand = mulberry32(hashString(namespaced(sport, "roster-reveal:order")));
   for (let i = keys.length - 1; i > 0; i--) {
     const j = Math.floor(rand() * (i + 1));
     [keys[i], keys[j]] = [keys[j], keys[i]];
   }
-  const n = rosterRoundNumber(date) - 1;
+  return keys;
+}
+
+/**
+ * Every team-season in an order tilted toward recent seasons: a weighted shuffle
+ * (Efraimidis–Spirakis), where a season's weight halves every RECENCY_HALF_LIFE
+ * years. About half of the first few years of rounds come from the last 25
+ * seasons, and older teams still turn up. Each team-season's random draw comes
+ * from its own key, so adding a new season doesn't reorder the others.
+ * Team-seasons the even order used before ROSTER_WEIGHTED_FROM are left out.
+ */
+function weightedOrder(data: RosterData, sport: Sport): string[] {
+  const used = new Set(evenOrder(data, sport).slice(0, rosterRoundNumber(ROSTER_WEIGHTED_FROM) - 1));
+  const seed = namespaced(sport, "roster-reveal:recent:");
+  return data.rounds
+    .map(keyOf)
+    .filter((k) => !used.has(k))
+    .map((k) => {
+      const u = (hashString(seed + k) + 0.5) / 4294967296; // (0, 1)
+      const weight = 2 ** ((Number(k.split("-")[0]) - RECENCY_ANCHOR) / RECENCY_HALF_LIFE);
+      // u^(1/w), compared in log space: log(u) / w. Higher comes first.
+      return { k, score: Math.log(u) / weight };
+    })
+    .sort((a, b) => b.score - a.score || (a.k < b.k ? -1 : 1))
+    .map((x) => x.k);
+}
+
+const orderCache = new WeakMap<RosterData, Map<string, string[]>>();
+function cachedOrder(data: RosterData, sport: Sport, kind: "even" | "weighted"): string[] {
+  let byKind = orderCache.get(data);
+  if (!byKind) orderCache.set(data, (byKind = new Map()));
+  const id = `${sport}:${kind}`;
+  let order = byKind.get(id);
+  if (!order) byKind.set(id, (order = kind === "even" ? evenOrder(data, sport) : weightedOrder(data, sport)));
+  return order;
+}
+
+/**
+ * Pick the team-season. Daily rounds walk through one fixed order of every
+ * team-season, so nothing repeats for years: an even shuffle before
+ * ROSTER_WEIGHTED_FROM, then one weighted toward recent seasons. Daily rounds
+ * are stored the first time they're needed (roster-rounds.ts), so a data
+ * refresh never changes a round that exists.
+ */
+export function generateStoredRosterRound(data: RosterData, date: string, sport: Sport = "mlb"): StoredRosterRound {
+  const weighted = date >= ROSTER_WEIGHTED_FROM;
+  const keys = cachedOrder(data, sport, weighted ? "weighted" : "even");
+  const n = rosterRoundNumber(date) - (weighted ? rosterRoundNumber(ROSTER_WEIGHTED_FROM) : 1);
   const key = keys[((n % keys.length) + keys.length) % keys.length];
   const [year, franchise] = key.split("-");
   return { franchise, year: Number(year) };
