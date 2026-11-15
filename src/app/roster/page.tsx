@@ -1,33 +1,34 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { connection } from "next/server";
-import RevealGame from "@/components/RevealGame";
-import { revealState } from "@/lib/reveal";
-import { getRevealRound, isPlayableRevealDate } from "@/lib/reveal-data";
-import { revealData } from "@/lib/reveal-pool";
+import RosterGame from "@/components/RosterGame";
+import { rosterState } from "@/lib/roster";
+import { getRosterRound, isPlayableRosterDate } from "@/lib/roster-data";
+import { rosterData } from "@/lib/roster-pool";
 import { isValidSeed, practiceEnabled, todayET } from "@/lib/round";
 import styles from "../page.module.css";
 
 export const metadata: Metadata = {
-  title: "Sports Revealer",
-  description: "A daily baseball game: name the mystery player from his stats, one clue per inning.",
+  title: "Roster Reveal",
+  description: "A daily baseball game: you get the year, name the team from its starting lineup, revealed one player at a time.",
 };
 
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
 
 async function TodaysRound({ searchParams }: { searchParams: SearchParams }) {
+  // Render per request so the round rolls over at midnight Eastern.
   await connection();
   const { seed, date } = await searchParams;
   const practice = practiceEnabled();
   const practiceSeed = practice && isValidSeed(seed) ? seed : undefined;
   const today = todayET();
-  const roundDate = !practiceSeed && isPlayableRevealDate(date, today) ? date : today;
-  const { round, player } = await getRevealRound(roundDate, practiceSeed);
+  const roundDate = !practiceSeed && isPlayableRosterDate(date, today) ? date : today;
+  const { round, teamSeason } = await getRosterRound(roundDate, practiceSeed);
   return (
-    <RevealGame
+    <RosterGame
       key={practiceSeed ?? round.date}
       round={round}
-      initial={revealState(player, [])}
+      initial={rosterState(teamSeason, 1, null)}
       isToday={!practiceSeed && round.date === today}
       today={today}
       practiceEnabled={practice}
@@ -35,25 +36,27 @@ async function TodaysRound({ searchParams }: { searchParams: SearchParams }) {
   );
 }
 
-export default function RevealPage({ searchParams }: { searchParams: SearchParams }) {
+export default function RosterPage({ searchParams }: { searchParams: SearchParams }) {
   return (
     <main className={styles.main}>
       <header className={styles.header}>
         <h1 className={styles.title}>
-          Sports <span>Revealer</span>
+          Roster <span>Reveal</span>
         </h1>
-        <p className={styles.tagline}>Name the mystery player. One clue per inning, one guess per clue.</p>
+        <p className={styles.tagline}>
+          You get the year. Name the team from its lineup, one player at a time. One guess, so make it count.
+        </p>
       </header>
 
-      <Suspense fallback={<p className={styles.loading}>Warming up the scoreboard…</p>}>
+      <Suspense fallback={<p className={styles.loading}>Filling out the lineup card…</p>}>
         <TodaysRound searchParams={searchParams} />
       </Suspense>
 
       <footer className={styles.footer}>
         <p className={styles.dataNote}>
-          Mystery players come from the top 150 in career WAR (Baseball-Reference). Stats through the{" "}
-          {revealData.throughSeason} season, for players who debuted in {revealData.firstDebutYear} or later.
-          Ranks in parentheses are all-time career ranks.
+          Every AL and NL team from {rosterData.firstYear} through {rosterData.lastYear}, plus the 1914–15 Federal
+          League. The lineup is the main starter at each position, plus the DH and the ace, or the top two starters for
+          teams without a DH, from the most obscure player to the most famous.
         </p>
         <p>
           Data:{" "}
