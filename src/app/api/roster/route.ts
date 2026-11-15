@@ -3,7 +3,7 @@ import { getRosterPlay, getRosterStats, recordRosterGuess, recordRosterReveal } 
 import { ensurePlayerId, readPlayerId } from "@/lib/player-cookie";
 import { isValidGuess, isValidRevealed, rosterResult, rosterState } from "@/lib/roster";
 import { getRosterRound, isPlayableRosterDate } from "@/lib/roster-data";
-import { isValidDate, isValidSeed, practiceEnabled, todayET } from "@/lib/round";
+import { isValidDate, todayET } from "@/lib/round";
 
 const noStore = { "Cache-Control": "private, no-store" };
 
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
 /**
  * Reveal more players, or make the one guess.
  *
- * Body: { date, seed, revealed, guess? }. Without a guess, returns the first
+ * Body: { date, revealed, guess? }. Without a guess, returns the first
  * `revealed` players. With a guess, ends the round and returns the answer.
  * Daily rounds are saved for this browser: reveals only go up, the score uses
  * the most players ever revealed, and a second guess gets the saved play back.
@@ -37,21 +37,16 @@ export async function POST(request: Request) {
   } catch {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
-  const { date, seed, revealed, guess } = (body ?? {}) as Record<string, unknown>;
+  const { date, revealed, guess } = (body ?? {}) as Record<string, unknown>;
 
   if (typeof date !== "string" || !isValidDate(date)) {
     return Response.json({ error: "Invalid date" }, { status: 400 });
   }
-  let practiceSeed: string | undefined;
-  if (seed !== undefined && seed !== null) {
-    if (!practiceEnabled()) return Response.json({ error: "Practice rounds are turned off" }, { status: 400 });
-    if (!isValidSeed(seed)) return Response.json({ error: "Invalid practice round" }, { status: 400 });
-    practiceSeed = seed;
-  } else if (!isPlayableRosterDate(date)) {
+  if (!isPlayableRosterDate(date)) {
     return Response.json({ error: "There's no round for that date" }, { status: 400 });
   }
 
-  const { round, teamSeason } = await getRosterRound(date, practiceSeed);
+  const { round, teamSeason } = await getRosterRound(date);
   if (!isValidRevealed(revealed)) return Response.json({ error: "Invalid reveal count" }, { status: 400 });
   if (guess !== undefined && guess !== null && !isValidGuess(round, guess)) {
     return Response.json({ error: "That team didn't play that season" }, { status: 400 });
@@ -59,7 +54,7 @@ export async function POST(request: Request) {
   const theGuess = typeof guess === "string" ? guess : null;
 
   const db = getDb();
-  if (practiceSeed || !db) return Response.json({ state: rosterState(teamSeason, revealed, theGuess), stats: null });
+  if (!db) return Response.json({ state: rosterState(teamSeason, revealed, theGuess), stats: null });
 
   try {
     const me = await ensurePlayerId();

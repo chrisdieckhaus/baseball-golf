@@ -12,11 +12,8 @@ export function isPlayableRankDate(date: unknown, today: string = todayET()): da
   return typeof date === "string" && isValidDate(date) && date >= RANK_LAUNCH_DATE && date <= today;
 }
 
-/** The daily round (stored on first use) or a practice round (generated from its seed, never stored). */
-export async function getRankRound(date: string, practiceSeed?: string): Promise<RankRound> {
-  if (practiceSeed) {
-    return rankRoundFromStored(leaderboards, date, generateStoredRankRound(leaderboards, date, practiceSeed), practiceSeed);
-  }
+/** The daily round, stored the first time it's needed. */
+export async function getRankRound(date: string): Promise<RankRound> {
   const cached = cache.get(date);
   if (cached) return cached;
   const db = getDb();

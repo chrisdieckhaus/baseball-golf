@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { buildRankShareText, RANK_LAUNCH_DATE, RANK_MAX_SCORE, rankRoundNumber, rankShareLine, type RankReveal, type RankRound } from "@/lib/rank";
 import { RankCompare } from "@/components/CompareStats";
 import DayNav from "@/components/DayNav";
@@ -10,8 +9,7 @@ import type { RankStats } from "@/lib/game-plays";
 import { ordinal } from "@/lib/scoring";
 import styles from "./RankGame.module.css";
 
-const storageKey = (round: RankRound) =>
-  round.practiceSeed ? `stats-ranker:practice:${round.practiceSeed}` : `stats-ranker:${round.date}`;
+const storageKey = (round: RankRound) => `stats-ranker:${round.date}`;
 
 interface Saved {
   order: string[];
@@ -60,14 +58,11 @@ export default function RankGame({
   round,
   isToday,
   today,
-  practiceEnabled,
 }: {
   round: RankRound;
   isToday: boolean;
   today: string;
-  practiceEnabled: boolean;
 }) {
-  const router = useRouter();
   const key = storageKey(round);
   const [order, setOrder] = useState<string[]>(round.players.map((p) => p.id));
   const [reveal, setReveal] = useState<RankReveal | null>(null);
@@ -85,7 +80,6 @@ export default function RankGame({
       setOrder(saved.order);
       setReveal(saved.reveal);
     }
-    if (round.practiceSeed) return;
 
     // The database has this browser's daily plays. Use the saved play if there
     // is one; if only this browser has it (played before plays were saved), upload it.
@@ -106,7 +100,7 @@ export default function RankGame({
           return fetch("/api/rank", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ date: round.date, seed: null, order: saved.order }),
+            body: JSON.stringify({ date: round.date, order: saved.order }),
           })
             .then((res) => (res.ok ? res.json() : null))
             .then((b) => b && apply(b));
@@ -118,7 +112,7 @@ export default function RankGame({
     return () => {
       cancelled = true;
     };
-  }, [key, round.date, round.practiceSeed]);
+  }, [key, round.date]);
 
   const names = new Map(round.players.map((p) => [p.id, p.name]));
   const [topLabel, bottomLabel] = endLabels(round);
@@ -169,7 +163,7 @@ export default function RankGame({
       const res = await fetch("/api/rank", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: round.date, seed: round.practiceSeed ?? null, order }),
+        body: JSON.stringify({ date: round.date, order }),
       });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error ?? "Something went wrong");
@@ -188,11 +182,7 @@ export default function RankGame({
 
   async function share() {
     if (!reveal) return;
-    const url = round.practiceSeed
-      ? `${window.location.origin}/rank?seed=${round.practiceSeed}`
-      : isToday
-        ? `${window.location.origin}/rank`
-        : `${window.location.origin}/rank?date=${round.date}`;
+    const url = isToday ? `${window.location.origin}/rank` : `${window.location.origin}/rank?date=${round.date}`;
     const text = buildRankShareText(round, reveal, url);
     if (typeof navigator.share === "function" && window.matchMedia?.("(pointer: coarse)").matches) {
       try {
@@ -217,14 +207,13 @@ export default function RankGame({
     <div className={styles.game}>
       <div className={styles.dateBar}>
         <p className={styles.date}>
-          {round.practiceSeed
-            ? `Practice round #${round.practiceSeed}`
-            : `#${rankRoundNumber(round.date)} · ${new Date(`${round.date}T12:00:00Z`).toLocaleDateString("en-US", {
-                weekday: "long",
-                month: "long",
-                day: "numeric",
-                timeZone: "UTC",
-              })}`}
+          #{rankRoundNumber(round.date)} ·{" "}
+          {new Date(`${round.date}T12:00:00Z`).toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+            timeZone: "UTC",
+          })}
         </p>
         <Link href="/rank/archive" className={styles.archiveLink}>
           Play previous rounds
@@ -324,22 +313,12 @@ export default function RankGame({
       )}
 
       <nav className={styles.links}>
-        {locked && !round.practiceSeed ? (
-          // Finished a daily round: step to the day before or after.
+        {locked ? (
+          // Finished the round: step to the day before or after.
           <DayNav path="/rank" date={round.date} today={today} firstDate={RANK_LAUNCH_DATE} className={styles.linkBtn} />
-        ) : (
-          <>
-            {practiceEnabled && (
-              <button
-                className={styles.linkBtn}
-                onClick={() => router.push(`/rank?seed=${Math.random().toString(36).slice(2, 10)}`)}
-              >
-                ↻ New practice round
-              </button>
-            )}
-            {round.practiceSeed || !isToday ? <Link href="/rank">Today&apos;s round</Link> : null}
-          </>
-        )}
+        ) : !isToday ? (
+          <Link href="/rank">Today&apos;s round</Link>
+        ) : null}
         <Link href="/">Play Baseball Golf →</Link>
         <Link href="/roster">Play Roster Reveal →</Link>
       </nav>

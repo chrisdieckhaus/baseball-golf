@@ -36,9 +36,9 @@ export async function getDailyRound(date: string): Promise<Round> {
   }
 }
 
-/** The daily round, or a practice round (never stored; generated from its seed). */
-export function getRound(date: string, practiceSeed?: string): Promise<Round> {
-  return practiceSeed ? Promise.resolve(generateRound(leaderboards, date, practiceSeed)) : getDailyRound(date);
+/** The daily round for a date. */
+export function getRound(date: string): Promise<Round> {
+  return getDailyRound(date);
 }
 
 /** Score a guess for one hole, against the current leaderboards. */

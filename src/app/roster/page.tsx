@@ -5,7 +5,7 @@ import RosterGame from "@/components/RosterGame";
 import { rosterState } from "@/lib/roster";
 import { getRosterRound, isPlayableRosterDate } from "@/lib/roster-data";
 import { rosterData } from "@/lib/roster-pool";
-import { isValidSeed, practiceEnabled, todayET } from "@/lib/round";
+import { todayET } from "@/lib/round";
 import styles from "../page.module.css";
 
 export const metadata: Metadata = {
@@ -18,20 +18,17 @@ type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
 async function TodaysRound({ searchParams }: { searchParams: SearchParams }) {
   // Render per request so the round rolls over at midnight Eastern.
   await connection();
-  const { seed, date } = await searchParams;
-  const practice = practiceEnabled();
-  const practiceSeed = practice && isValidSeed(seed) ? seed : undefined;
+  const { date } = await searchParams;
   const today = todayET();
-  const roundDate = !practiceSeed && isPlayableRosterDate(date, today) ? date : today;
-  const { round, teamSeason } = await getRosterRound(roundDate, practiceSeed);
+  const roundDate = isPlayableRosterDate(date, today) ? date : today;
+  const { round, teamSeason } = await getRosterRound(roundDate);
   return (
     <RosterGame
-      key={practiceSeed ?? round.date}
+      key={round.date}
       round={round}
       initial={rosterState(teamSeason, 1, null)}
-      isToday={!practiceSeed && round.date === today}
+      isToday={round.date === today}
       today={today}
-      practiceEnabled={practice}
     />
   );
 }

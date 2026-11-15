@@ -4,7 +4,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import Game from "@/components/Game";
 import { getRound, leaderboards } from "@/lib/data";
-import { isPlayableDate, isValidSeed, practiceEnabled, todayET } from "@/lib/round";
+import { isPlayableDate, todayET } from "@/lib/round";
 import styles from "./page.module.css";
 
 export const metadata: Metadata = {
@@ -18,22 +18,13 @@ type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
 async function TodaysRound({ searchParams }: { searchParams: SearchParams }) {
   // Render per request so the round rolls over at midnight Eastern.
   await connection();
-  const { seed, date } = await searchParams;
-  const practice = practiceEnabled();
-  const practiceSeed = practice && isValidSeed(seed) ? seed : undefined;
+  const { date } = await searchParams;
   const today = todayET();
   // ?date=YYYY-MM-DD plays a previous daily round; anything else is today's round.
-  const roundDate = !practiceSeed && isPlayableDate(date, today) ? date : today;
-  const round = await getRound(roundDate, practiceSeed);
+  const roundDate = isPlayableDate(date, today) ? date : today;
+  const round = await getRound(roundDate);
   // key: remount (fresh state) when switching between rounds via client-side navigation
-  return (
-    <Game
-      key={practiceSeed ?? round.date}
-      round={round}
-      isToday={!practiceSeed && round.date === today}
-      practiceEnabled={practice}
-    />
-  );
+  return <Game key={round.date} round={round} isToday={round.date === today} />;
 }
 
 export default function Home({ searchParams }: { searchParams: SearchParams }) {

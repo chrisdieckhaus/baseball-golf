@@ -28,9 +28,8 @@ function shortDate(date: string): string {
 
 export interface ShareInput {
   date: string; // YYYY-MM-DD
-  practiceSeed?: string;
   scores: number[];
-  url: string; // where friends can play: the site root, or the practice link
+  url: string; // where friends can play: the site root, or the previous round's link
 }
 
 /**
@@ -41,8 +40,8 @@ export interface ShareInput {
  *   Total: 16
  *   https://baseball-golf.vercel.app
  */
-export function buildShareText({ date, practiceSeed, scores, url }: ShareInput): string {
-  const title = practiceSeed ? `Baseball Golf · Practice #${practiceSeed}` : `Baseball Golf · ${shortDate(date)}`;
+export function buildShareText({ date, scores, url }: ShareInput): string {
+  const title = `Baseball Golf · ${shortDate(date)}`;
   const holes = scores.map((s) => `${holeEmoji(s)} ${holeLabel(s)}`).join("  ");
   const total = scores.reduce((a, b) => a + b, 0);
   const totalLine = total === 0 ? "Total: 0 — perfect round!" : `Total: ${total}`;

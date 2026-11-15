@@ -34,7 +34,6 @@ export interface StoredRankRound {
 /** A round as the browser sees it: no values, no ranks. */
 export interface RankRound {
   date: string;
-  practiceSeed?: string;
   statKey: string;
   label: string;
   group: StatGroup;
@@ -60,9 +59,8 @@ export interface RankReveal {
  * spans the leaderboard. They're shown alphabetically by last name (see
  * rankRoundFromStored); the stored order is shuffled so it doesn't follow the bands.
  */
-export function generateStoredRankRound(data: LeaderboardData, date: string, practiceSeed?: string): StoredRankRound {
-  const seedString = practiceSeed ? `stats-ranker:practice:${practiceSeed}` : `stats-ranker:${date}`;
-  const rand = mulberry32(hashString(seedString));
+export function generateStoredRankRound(data: LeaderboardData, date: string): StoredRankRound {
+  const rand = mulberry32(hashString(`stats-ranker:${date}`));
   const pick = <T,>(arr: T[]): T => arr[Math.floor(rand() * arr.length)];
   const keys = Object.keys(data.stats).sort();
   const bandSize = RANK_POOL / RANK_PLAYERS;
@@ -99,14 +97,12 @@ export function rankRoundFromStored(
   data: LeaderboardData,
   date: string,
   stored: StoredRankRound,
-  practiceSeed?: string,
 ): RankRound {
   const stat = data.stats[stored.statKey];
   if (!stat) throw new Error(`Rank round ${date} uses stat "${stored.statKey}", which is missing from the leaderboards`);
   const names = playerNames(data);
   return {
     date,
-    ...(practiceSeed ? { practiceSeed } : {}),
     statKey: stat.key,
     label: stat.label,
     group: stat.group,
@@ -221,9 +217,7 @@ export function buildRankShareText(round: RankRound, reveal: RankReveal, url: st
     year: "numeric",
     timeZone: "UTC",
   });
-  const title = round.practiceSeed
-    ? `Stats Ranker · Practice #${round.practiceSeed}`
-    : `Stats Ranker #${rankRoundNumber(round.date)} · ${date}`;
+  const title = `Stats Ranker #${rankRoundNumber(round.date)} · ${date}`;
   const line = reveal.score === 0 ? "Perfect order!" : `Off by ${reveal.score}`;
   return [title, ...reveal.guess.map(rankShareLine), line, url].join("\n");
 }

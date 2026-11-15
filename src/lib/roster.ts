@@ -48,7 +48,6 @@ export interface StoredRosterRound {
 /** A round as the browser sees it: the year and the teams to pick from, no answer. */
 export interface RosterRound {
   date: string;
-  practiceSeed?: string;
   year: number;
   teams: [string, string][];
 }
@@ -73,25 +72,18 @@ const keyOf = (r: { franchise: string; year: number }) => `${r.year}-${r.franchi
 
 /**
  * Pick the team-season. Daily rounds walk through one fixed shuffle of every
- * team-season, so nothing repeats for years. A practice round is a random pick
- * seeded by its practice seed. Daily rounds are stored the first time they're
+ * team-season, so nothing repeats for years. Daily rounds are stored the first time they're
  * needed (roster-rounds.ts), so a data refresh never changes a round that exists.
  */
-export function generateStoredRosterRound(data: RosterData, date: string, practiceSeed?: string): StoredRosterRound {
+export function generateStoredRosterRound(data: RosterData, date: string): StoredRosterRound {
   const keys = data.rounds.map(keyOf).sort();
-  let key: string;
-  if (practiceSeed) {
-    const rand = mulberry32(hashString(`roster-reveal:practice:${practiceSeed}`));
-    key = keys[Math.floor(rand() * keys.length)];
-  } else {
-    const rand = mulberry32(hashString("roster-reveal:order"));
-    for (let i = keys.length - 1; i > 0; i--) {
-      const j = Math.floor(rand() * (i + 1));
-      [keys[i], keys[j]] = [keys[j], keys[i]];
-    }
-    const n = rosterRoundNumber(date) - 1;
-    key = keys[((n % keys.length) + keys.length) % keys.length];
+  const rand = mulberry32(hashString("roster-reveal:order"));
+  for (let i = keys.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [keys[i], keys[j]] = [keys[j], keys[i]];
   }
+  const n = rosterRoundNumber(date) - 1;
+  const key = keys[((n % keys.length) + keys.length) % keys.length];
   const [year, franchise] = key.split("-");
   return { franchise, year: Number(year) };
 }
@@ -102,10 +94,9 @@ export function findTeamSeason(data: RosterData, stored: StoredRosterRound): Ros
   return r;
 }
 
-export function publicRound(data: RosterData, ts: RosterTeamSeason, date: string, practiceSeed?: string): RosterRound {
+export function publicRound(data: RosterData, ts: RosterTeamSeason, date: string): RosterRound {
   return {
     date,
-    ...(practiceSeed ? { practiceSeed } : {}),
     year: ts.year,
     teams: data.yearTeams[String(ts.year)] ?? [],
   };
@@ -155,9 +146,7 @@ export function buildRosterShareText(round: RosterRound, state: RosterState, url
     year: "numeric",
     timeZone: "UTC",
   });
-  const title = round.practiceSeed
-    ? `Roster Reveal · Practice #${round.practiceSeed}`
-    : `Roster Reveal #${rosterRoundNumber(round.date)} · ${date}`;
+  const title = `Roster Reveal #${rosterRoundNumber(round.date)} · ${date}`;
   const n = state.revealed.length;
   const squares = "🟦".repeat(n - 1) + (state.correct ? "✅" : "❌");
   const line = state.correct ? `Got it after ${n} ${n === 1 ? "player" : "players"}` : "Swing and a miss";

@@ -4,7 +4,7 @@ import { connection } from "next/server";
 import RankGame from "@/components/RankGame";
 import { leaderboards } from "@/lib/leaderboards";
 import { getRankRound, isPlayableRankDate } from "@/lib/rank-data";
-import { isValidSeed, practiceEnabled, todayET } from "@/lib/round";
+import { todayET } from "@/lib/round";
 import styles from "../page.module.css";
 
 export const metadata: Metadata = {
@@ -16,21 +16,11 @@ type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
 
 async function TodaysRound({ searchParams }: { searchParams: SearchParams }) {
   await connection();
-  const { seed, date } = await searchParams;
-  const practice = practiceEnabled();
-  const practiceSeed = practice && isValidSeed(seed) ? seed : undefined;
+  const { date } = await searchParams;
   const today = todayET();
-  const roundDate = !practiceSeed && isPlayableRankDate(date, today) ? date : today;
-  const round = await getRankRound(roundDate, practiceSeed);
-  return (
-    <RankGame
-      key={practiceSeed ?? round.date}
-      round={round}
-      isToday={!practiceSeed && round.date === today}
-      today={today}
-      practiceEnabled={practice}
-    />
-  );
+  const roundDate = isPlayableRankDate(date, today) ? date : today;
+  const round = await getRankRound(roundDate);
+  return <RankGame key={round.date} round={round} isToday={round.date === today} today={today} />;
 }
 
 export default function RankPage({ searchParams }: { searchParams: SearchParams }) {

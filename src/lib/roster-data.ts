@@ -20,8 +20,7 @@ export function isPlayableRosterDate(date: unknown, today: string = todayET()): 
   return typeof date === "string" && isValidDate(date) && date >= ROSTER_LAUNCH_DATE && date <= today;
 }
 
-async function storedFor(date: string, practiceSeed?: string): Promise<StoredRosterRound> {
-  if (practiceSeed) return generateStoredRosterRound(rosterData, date, practiceSeed);
+async function storedFor(date: string): Promise<StoredRosterRound> {
   const cached = cache.get(date);
   if (cached) return cached;
   const db = getDb();
@@ -37,10 +36,7 @@ async function storedFor(date: string, practiceSeed?: string): Promise<StoredRos
 }
 
 /** The round for the browser plus the team-season (server only). */
-export async function getRosterRound(
-  date: string,
-  practiceSeed?: string,
-): Promise<{ round: RosterRound; teamSeason: RosterTeamSeason }> {
-  const teamSeason = findTeamSeason(rosterData, await storedFor(date, practiceSeed));
-  return { round: publicRound(rosterData, teamSeason, date, practiceSeed), teamSeason };
+export async function getRosterRound(date: string): Promise<{ round: RosterRound; teamSeason: RosterTeamSeason }> {
+  const teamSeason = findTeamSeason(rosterData, await storedFor(date));
+  return { round: publicRound(rosterData, teamSeason, date), teamSeason };
 }

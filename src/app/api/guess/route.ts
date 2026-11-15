@@ -2,7 +2,7 @@ import { getRound, resultsFromPlay, scoreGuess } from "@/lib/data";
 import { getDb } from "@/lib/db";
 import { ensurePlayerId } from "@/lib/player-cookie";
 import { getRoundStats, recordGuess } from "@/lib/plays";
-import { HOLES_PER_ROUND, isPlayableDate, isValidDate, isValidSeed, practiceEnabled, todayET } from "@/lib/round";
+import { HOLES_PER_ROUND, isPlayableDate, isValidDate, todayET } from "@/lib/round";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -11,21 +11,12 @@ export async function POST(request: Request) {
   } catch {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
-  const { date, seed, hole, playerId, playerName } = (body ?? {}) as Record<string, unknown>;
+  const { date, hole, playerId, playerName } = (body ?? {}) as Record<string, unknown>;
 
   if (typeof date !== "string" || !isValidDate(date)) {
     return Response.json({ error: "Invalid date" }, { status: 400 });
   }
-  let practiceSeed: string | undefined;
-  if (seed !== undefined && seed !== null) {
-    if (!practiceEnabled()) {
-      return Response.json({ error: "Practice rounds are turned off" }, { status: 400 });
-    }
-    if (!isValidSeed(seed)) {
-      return Response.json({ error: "Invalid practice round" }, { status: 400 });
-    }
-    practiceSeed = seed;
-  } else if (!isPlayableDate(date)) {
+  if (!isPlayableDate(date)) {
     // No peeking at future daily rounds, and no rounds from before launch.
     return Response.json({ error: "There's no round for that date" }, { status: 400 });
   }
@@ -37,12 +28,12 @@ export async function POST(request: Request) {
   }
   const name = typeof playerName === "string" ? playerName.slice(0, 80) : playerId;
 
-  const round = await getRound(date, practiceSeed);
+  const round = await getRound(date);
   const result = scoreGuess(round, hole, playerId, name);
 
-  // Practice rounds, and deployments without a database, stay stateless.
+  // Deployments without a database stay stateless.
   const db = getDb();
-  if (practiceSeed || !db) return Response.json({ result, stats: null });
+  if (!db) return Response.json({ result, stats: null });
 
   const me = await ensurePlayerId();
   const outcome = await recordGuess(db, {
