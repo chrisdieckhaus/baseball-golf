@@ -58,11 +58,9 @@ export default function RosterArchivePage() {
     <main className={styles.main}>
       <header className={styles.header}>
         <h1 className={styles.title}>
-          Previous <span>rounds</span>
+          Roster <span>Reveal</span>
         </h1>
-        <p className={styles.tagline}>
-          Play any Roster Reveal round you missed. Your results on this device show here.
-        </p>
+        <p className={styles.tagline}>Previous rounds. Play any one you missed.</p>
         <Link href="/roster" className={styles.back}>
           ← Today&apos;s round
         </Link>

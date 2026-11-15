@@ -1,3 +1,4 @@
+import { roundNumber } from "./round";
 import { MAX_HOLE_SCORE } from "./scoring";
 
 /**
@@ -35,13 +36,13 @@ export interface ShareInput {
 /**
  * Build the text a player pastes into a group chat, e.g.
  *
- *   Baseball Golf · Nov 13, 2026
+ *   Baseball Golf #13 · Nov 13, 2026
  *   🟩 +4  🟨 +12  ⛳ ACE
  *   Total: 16
  *   https://baseball-golf.vercel.app
  */
 export function buildShareText({ date, scores, url }: ShareInput): string {
-  const title = `Baseball Golf · ${shortDate(date)}`;
+  const title = `Baseball Golf #${roundNumber(date)} · ${shortDate(date)}`;
   const holes = scores.map((s) => `${holeEmoji(s)} ${holeLabel(s)}`).join("  ");
   const total = scores.reduce((a, b) => a + b, 0);
   const totalLine = total === 0 ? "Total: 0 — perfect round!" : `Total: ${total}`;

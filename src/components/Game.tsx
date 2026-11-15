@@ -5,7 +5,8 @@ import Link from "next/link";
 import type { GuessResult, PlayerIndexEntry, PlayState, Round, RoundStats } from "@/lib/types";
 import { MAX_HOLE_SCORE, ordinal } from "@/lib/scoring";
 import { buildShareText } from "@/lib/share";
-import { roundNumber } from "@/lib/round";
+import { formatRoundDate, LAUNCH_DATE, roundNumber } from "@/lib/round";
+import DayNav from "./DayNav";
 import PlayerSearch from "./PlayerSearch";
 import ShareButton from "./ShareButton";
 import styles from "./Game.module.css";
@@ -39,9 +40,7 @@ function GolfShare({ round, isToday, results }: { round: Round; isToday: boolean
       url: isToday ? window.location.origin : `${window.location.origin}/?date=${round.date}`,
     });
   return (
-    <div className={styles.share}>
-      <ShareButton getText={getText} label="Share score" className={styles.shareBtn} />
-    </div>
+    <ShareButton getText={getText} label="Share result" className={styles.shareBtn} />
   );
 }
 
@@ -70,22 +69,14 @@ function formatNumber(n: number): string {
   return n.toFixed(1).replace(/\.0$/, "");
 }
 
-function formatDate(date: string): string {
-  return new Date(`${date}T12:00:00Z`).toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-}
-
 export default function Game({
   round,
   isToday,
+  today,
 }: {
   round: Round;
   isToday: boolean; // today's daily round (not a previous round)
+  today: string;
 }) {
   const key = storageKey(round);
   const [results, setResults] = useState<(GuessResult | null)[]>(() => round.holes.map(() => null));
@@ -176,9 +167,9 @@ export default function Game({
     <section className={styles.game}>
       <div className={styles.dateBar}>
         <p className={styles.date}>
-          Round #{roundNumber(round.date)} · {formatDate(round.date)}
+          #{roundNumber(round.date)} · {formatRoundDate(round.date)}
         </p>
-        <Link href="/archive" className={styles.archiveBtn}>
+        <Link href="/archive" className={styles.archiveLink}>
           Play previous rounds
         </Link>
       </div>
@@ -253,6 +244,12 @@ export default function Game({
       </ol>
 
       <div className={styles.card} aria-label="Scorecard">
+        {finished && (
+          <p className={styles.headline}>
+            {total === 0 ? "Perfect round!" : `Total: ${total}`}
+            <span> / {MAX_HOLE_SCORE * round.holes.length} max</span>
+          </p>
+        )}
         <table className={styles.cardTable}>
           <thead>
             <tr>
@@ -284,19 +281,18 @@ export default function Game({
             )}
           </tbody>
         </table>
-        {finished && (
-          <p className={styles.final}>
-            Round complete: <strong>{total}</strong>
-            {total === 0
-              ? " — a perfect round!"
-              : isToday
-                ? ". Come back tomorrow for a new course."
-                : "."}
-          </p>
-        )}
         {finished && stats && <PercentileLine stats={stats} isToday={isToday} />}
         {finished && <GolfShare round={round} isToday={isToday} results={results as GuessResult[]} />}
       </div>
+
+      <nav className={styles.links}>
+        {finished ? (
+          // Finished the round: step to the day before or after.
+          <DayNav path="/" date={round.date} today={today} firstDate={LAUNCH_DATE} className={styles.linkBtn} />
+        ) : !isToday ? (
+          <Link href="/">Today&apos;s round</Link>
+        ) : null}
+      </nav>
     </section>
   );
 }

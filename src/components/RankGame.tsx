@@ -8,6 +8,7 @@ import DayNav from "@/components/DayNav";
 import ShareButton from "@/components/ShareButton";
 import type { RankStats } from "@/lib/game-plays";
 import { ordinal } from "@/lib/scoring";
+import { formatRoundDate } from "@/lib/round";
 import styles from "./RankGame.module.css";
 
 const storageKey = (round: RankRound) => `stats-ranker:${round.date}`;
@@ -202,12 +203,7 @@ export default function RankGame({
       <div className={styles.dateBar}>
         <p className={styles.date}>
           #{rankRoundNumber(round.date)} ·{" "}
-          {new Date(`${round.date}T12:00:00Z`).toLocaleDateString("en-US", {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-            timeZone: "UTC",
-          })}
+          {formatRoundDate(round.date)}
         </p>
         <Link href="/rank/archive" className={styles.archiveLink}>
           Play previous rounds
@@ -311,8 +307,6 @@ export default function RankGame({
         ) : !isToday ? (
           <Link href="/rank">Today&apos;s round</Link>
         ) : null}
-        <Link href="/">Play Baseball Golf →</Link>
-        <Link href="/roster">Play Roster Reveal →</Link>
       </nav>
     </div>
   );

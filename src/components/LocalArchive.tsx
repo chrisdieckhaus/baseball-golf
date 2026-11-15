@@ -36,6 +36,11 @@ export function golfStatus(holesPlayed: number, totalScore: number | null, holes
   return null;
 }
 
+/** How a Stats Ranker result reads in the list, in the game's own words: "Off by 3" or "Perfect". */
+export function rankStatus(score: number): Status {
+  return score === 0 ? { kind: "done", text: "Perfect" } : { kind: "done", text: "Off by", score };
+}
+
 /** How Roster Reveal progress reads in the list. */
 export function rosterStatus(revealed: number, correct: boolean, done: boolean): Status {
   if (done) return { kind: "done", text: correct ? `Got it after ${revealed}` : "Missed" };
@@ -56,7 +61,7 @@ function statusFor(game: GameKey, date: string): Status {
       reveal?: { score?: number };
     } | null;
     const score = saved?.reveal?.score;
-    return typeof score === "number" ? { kind: "done", text: "Score", score } : null;
+    return typeof score === "number" ? rankStatus(score) : null;
   }
   const saved = read(`roster-reveal:${date}`) as { revealed?: unknown[]; done?: boolean; correct?: boolean } | null;
   if (!saved?.revealed) return null;

@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { connection } from "next/server";
 import Game from "@/components/Game";
 import { getRound, leaderboards } from "@/lib/data";
@@ -24,7 +23,7 @@ async function TodaysRound({ searchParams }: { searchParams: SearchParams }) {
   const roundDate = isPlayableDate(date, today) ? date : today;
   const round = await getRound(roundDate);
   // key: remount (fresh state) when switching between rounds via client-side navigation
-  return <Game key={round.date} round={round} isToday={round.date === today} />;
+  return <Game key={round.date} round={round} isToday={round.date === today} today={today} />;
 }
 
 export default function Home({ searchParams }: { searchParams: SearchParams }) {
@@ -44,12 +43,6 @@ export default function Home({ searchParams }: { searchParams: SearchParams }) {
       </Suspense>
 
       <footer className={styles.footer}>
-        <p>
-          <Link href="/rank">Play Stats Ranker →</Link>
-        </p>
-        <p>
-          <Link href="/roster">New: play Roster Reveal →</Link>
-        </p>
         <p className={styles.dataNote}>
           Stats through the {leaderboards.throughSeason} season, for players who debuted in{" "}
           {leaderboards.firstDebutYear} or later. Career totals include the 1920–48 Negro Leagues.

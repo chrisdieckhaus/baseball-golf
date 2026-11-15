@@ -31,6 +31,16 @@ export function roundNumber(date: string): number {
   return Math.round(days) + 1;
 }
 
+/** The date in a game's round label, e.g. "Saturday, November 14" (the label is "#14 · Saturday, November 14"). */
+export function formatRoundDate(date: string): string {
+  return new Date(`${date}T12:00:00Z`).toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 /** A daily round exists for every date from launch through today (ET). Future rounds stay hidden. */
 export function isPlayableDate(date: unknown, today: string = todayET()): date is string {
   return typeof date === "string" && isValidDate(date) && date >= LAUNCH_DATE && date <= today;

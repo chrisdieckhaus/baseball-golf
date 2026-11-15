@@ -243,6 +243,10 @@
   font-size: 0.9rem;
 }
 
+.links:empty {
+  display: none;
+}
+
 .links a,
 .linkBtn {
   color: var(--chalk);

@@ -14,6 +14,7 @@ import {
   type RosterRound,
   type RosterState,
 } from "@/lib/roster";
+import { formatRoundDate } from "@/lib/round";
 import styles from "./RosterGame.module.css";
 
 const storageKey = (round: RosterRound) => `roster-reveal:${round.date}`;
@@ -159,12 +160,7 @@ export default function RosterGame({ round, initial, isToday, today }: Props) {
       <div className={styles.dateBar}>
         <p className={styles.date}>
           #{rosterRoundNumber(round.date)} ·{" "}
-          {new Date(`${round.date}T12:00:00Z`).toLocaleDateString("en-US", {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-            timeZone: "UTC",
-          })}
+          {formatRoundDate(round.date)}
         </p>
         <Link href="/roster/archive" className={styles.archiveLink}>
           Play previous rounds
@@ -277,8 +273,6 @@ export default function RosterGame({ round, initial, isToday, today }: Props) {
         ) : !isToday ? (
           <Link href="/roster">Today&apos;s round</Link>
         ) : null}
-        <Link href="/">Play Baseball Golf →</Link>
-        <Link href="/rank">Play Stats Ranker →</Link>
       </nav>
     </div>
   );

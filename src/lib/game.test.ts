@@ -116,7 +116,7 @@ describe("share text", () => {
       url: "https://baseball-golf.vercel.app",
     });
     expect(text).toBe(
-      "Baseball Golf · Nov 13, 2026\n🟩 +4  🟨 +12  ⛳ ACE\nTotal: 16\nhttps://baseball-golf.vercel.app",
+      "Baseball Golf #13 · Nov 13, 2026\n🟩 +4  🟨 +12  ⛳ ACE\nTotal: 16\nhttps://baseball-golf.vercel.app",
     );
   });
   it("buckets scores", () => {

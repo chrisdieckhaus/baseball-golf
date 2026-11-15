@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import LocalArchive, { type Status } from "@/components/LocalArchive";
+import LocalArchive, { rankStatus, type Status } from "@/components/LocalArchive";
 import { getDb } from "@/lib/db";
 import { getRankProgress } from "@/lib/game-plays";
 import { readPlayerId } from "@/lib/player-cookie";
@@ -31,7 +31,7 @@ async function loadSaved(): Promise<Record<string, Status>> {
   if (!db || !me) return {};
   try {
     const progress = await getRankProgress(db, me);
-    return Object.fromEntries([...progress].map(([date, score]) => [date, { kind: "done", text: "Score", score }]));
+    return Object.fromEntries([...progress].map(([date, score]) => [date, rankStatus(score)]));
   } catch (e) {
     console.error("[rank/archive] Couldn't load this player's plays", e);
     return {};
@@ -58,9 +58,9 @@ export default function RankArchivePage() {
     <main className={styles.main}>
       <header className={styles.header}>
         <h1 className={styles.title}>
-          Previous <span>rounds</span>
+          Stats <span>Ranker</span>
         </h1>
-        <p className={styles.tagline}>Play any Stats Ranker round you missed. Your results on this device show here.</p>
+        <p className={styles.tagline}>Previous rounds. Play any one you missed.</p>
         <Link href="/rank" className={styles.back}>
           ← Today&apos;s round
         </Link>

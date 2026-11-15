@@ -53,11 +53,9 @@ export default function ArchivePage() {
     <main className={styles.main}>
       <header className={styles.header}>
         <h1 className={styles.title}>
-          Previous <span>rounds</span>
+          Baseball <span>Golf</span>
         </h1>
-        <p className={styles.tagline}>
-          Play any round you missed, and see how you stack up against everyone who&apos;s played it.
-        </p>
+        <p className={styles.tagline}>Previous rounds. Play any one you missed.</p>
         <Link href="/" className={styles.back}>
           ← Today&apos;s round
         </Link>
