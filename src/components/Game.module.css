@@ -157,7 +157,7 @@
   white-space: nowrap;
 }
 
-.swing {
+.guessBtn {
   font: inherit;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -169,7 +169,7 @@
   cursor: pointer;
 }
 
-.swing:disabled {
+.guessBtn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }

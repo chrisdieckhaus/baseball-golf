@@ -163,8 +163,8 @@ export default function PlayerSearch({ usedIds, disabled, onSubmit }: Props) {
             </ul>
           )}
         </div>
-        <button className={styles.swing} onClick={submit} disabled={!selected || disabled}>
-          Swing
+        <button className={styles.guessBtn} onClick={submit} disabled={!selected || disabled}>
+          Guess
         </button>
       </div>
       {selected && (

@@ -41,13 +41,13 @@ const clamp = (n: number) =>
   Math.max(1, Math.min(MAX_TARGET_RANK, Math.round(n)));
 const suffix = (n: number) => ordinal(n).replace(/^\d+/, "");
 
-/** Pick a rank: −/+ buttons, a number box and a slider, then Putt. */
+/** Pick a rank: −/+ buttons, a number box and a slider, then Guess. */
 function RankPicker({
   disabled,
-  onPutt,
+  onGuess,
 }: {
   disabled: boolean;
-  onPutt: (rank: number) => void;
+  onGuess: (rank: number) => void;
 }) {
   const [rank, setRank] = useState(50);
   const [text, setText] = useState("50");
@@ -58,9 +58,9 @@ function RankPicker({
   };
   const valid =
     /^\d+$/.test(text) && Number(text) >= 1 && Number(text) <= MAX_TARGET_RANK;
-  const putt = () => {
+  const guess = () => {
     if (!valid || disabled) return;
-    onPutt(Number(text));
+    onGuess(Number(text));
   };
   return (
     <div className={own.picker}>
@@ -93,7 +93,7 @@ function RankPicker({
               }}
               onBlur={() => set(Number(text) || 1)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") putt();
+                if (e.key === "Enter") guess();
               }}
             />
             <span className={own.ord} aria-hidden="true">
@@ -112,7 +112,7 @@ function RankPicker({
         </button>
       </div>
       <label className={own.slider}>
-        <span>Line up your putt</span>
+        <span>Pick a rank</span>
         <input
           type="range"
           min={1}
@@ -127,14 +127,14 @@ function RankPicker({
       </label>
       <button
         type="button"
-        className={own.putt}
-        onClick={putt}
+        className={own.guessBtn}
+        onClick={guess}
         disabled={disabled || !valid}
       >
-        Putt
+        Guess
       </button>
       <p className={own.fine}>
-        One putt per hole. Your score is how many ranks you miss by.
+        One guess per hole. Your score is how many ranks you miss by.
       </p>
     </div>
   );
@@ -181,11 +181,11 @@ function Reveal({ result }: { result: PlayerGolfResult }) {
       <div className={styles.result}>
         <div className={styles.resultRows}>
           <p>
-            <span className={styles.resultLabel}>Your putt</span>
+            <span className={styles.resultLabel}>Your guess</span>
             <strong>{ordinal(result.guess)}</strong>
           </p>
           <p>
-            <span className={styles.resultLabel}>The pin</span>
+            <span className={styles.resultLabel}>The answer</span>
             {result.rank !== null ? (
               <>
                 <strong>
@@ -254,7 +254,7 @@ export default function PlayerGolfGame({
   const [synced, setSynced] = useState(false);
 
   // Restore this browser's copy after hydration, then the server's, which is the
-  // source of truth (it enforces one putt per hole) and has the percentile.
+  // source of truth (it enforces one guess per hole) and has the percentile.
   useEffect(() => {
     const saved = loadSaved(key);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- restoring from localStorage after hydration
@@ -286,7 +286,7 @@ export default function PlayerGolfGame({
   const total = results.reduce((sum, r) => sum + (r?.score ?? 0), 0);
   const holeAverages = finished ? stats?.holeAverages : undefined;
 
-  async function putt(hole: number, rank: number) {
+  async function submitGuess(hole: number, rank: number) {
     setPending(true);
     setError(null);
     try {
@@ -376,7 +376,7 @@ export default function PlayerGolfGame({
                   <RankPicker
                     key={`pick-${i}`}
                     disabled={pending || !synced}
-                    onPutt={(r) => putt(i, r)}
+                    onGuess={(r) => submitGuess(i, r)}
                   />
                   {error && <p className={styles.error}>{error}</p>}
                 </>
@@ -422,7 +422,7 @@ export default function PlayerGolfGame({
                 {holeAverages.map((a, i) => (
                   <td key={i}>{scoreLabel(a)}</td>
                 ))}
-                <td className={styles.total} />
+                <td className={styles.total}>{scoreLabel(stats.roundAverage)}</td>
               </tr>
             )}
           </tbody>
