@@ -11,6 +11,8 @@ const nextConfig: NextConfig = {
       // string carries over.
       { source: "/", destination: "/golf", permanent: false },
       { source: "/archive", destination: "/golf/archive", permanent: false },
+      // The NBA games start at Basketball Golf, like baseball's.
+      { source: "/nba", destination: "/nba/golf", permanent: false },
       // Sports Revealer was replaced by Roster Reveal.
       { source: "/reveal", destination: "/roster", permanent: false },
       { source: "/reveal/:path*", destination: "/roster/:path*", permanent: false },

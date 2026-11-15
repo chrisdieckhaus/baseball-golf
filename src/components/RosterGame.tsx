@@ -8,16 +8,17 @@ import ShareButton from "@/components/ShareButton";
 import type { RosterStats } from "@/lib/game-plays";
 import {
   buildRosterShareText,
-  LINEUP_SIZE,
+  lineupSize,
   ROSTER_LAUNCH_DATE,
   rosterRoundNumber,
   type RosterRound,
   type RosterState,
 } from "@/lib/roster";
 import { formatRoundDate } from "@/lib/round";
+import { apiUrl, basePath, COPY, namespaced, seasonLabel, type Sport } from "@/lib/sport";
 import styles from "./RosterGame.module.css";
 
-const storageKey = (round: RosterRound) => `roster-reveal:${round.date}`;
+const storageKey = (round: RosterRound, sport: Sport) => namespaced(sport, `roster-reveal:${round.date}`);
 
 function loadSaved(key: string): RosterState | null {
   try {
@@ -36,12 +37,13 @@ function save(key: string, state: RosterState) {
   }
 }
 
-function headline(state: RosterState): string {
-  if (!state.correct) return "Swing and a miss";
+function headline(state: RosterState, sport: Sport): string {
+  const size = lineupSize(sport);
+  if (!state.correct) return COPY[sport].rosterMiss;
   const n = state.revealed.length;
-  if (n === 1) return "First pitch. Unreal.";
+  if (n === 1) return sport === "nba" ? "Opening tip. Unreal." : "First pitch. Unreal.";
   if (n <= 3) return "Called it!";
-  if (n < LINEUP_SIZE) return "Got it!";
+  if (n < size) return "Got it!";
   return "Got there!";
 }
 
@@ -50,10 +52,13 @@ interface Props {
   initial: RosterState;
   isToday: boolean;
   today: string;
+  sport?: Sport;
 }
 
-export default function RosterGame({ round, initial, isToday, today }: Props) {
-  const key = storageKey(round);
+export default function RosterGame({ round, initial, isToday, today, sport = "mlb" }: Props) {
+  const key = storageKey(round, sport);
+  const size = lineupSize(sport);
+  const base = basePath(sport);
   const [state, setState] = useState<RosterState>(initial);
   const [stats, setStats] = useState<RosterStats | null>(null);
   const [guessing, setGuessing] = useState(false);
@@ -73,7 +78,7 @@ export default function RosterGame({ round, initial, isToday, today }: Props) {
     const res = await fetch("/api/roster", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date: round.date, revealed, guess }),
+      body: JSON.stringify({ date: round.date, revealed, guess, sport }),
     });
     const body = await res.json();
     if (!res.ok) throw new Error(body.error ?? "Something went wrong");
@@ -89,7 +94,7 @@ export default function RosterGame({ round, initial, isToday, today }: Props) {
     // play and this browser's copy is further along, and upload this browser's
     // progress if the database doesn't have it yet.
     let cancelled = false;
-    fetch(`/api/roster?date=${round.date}`, { cache: "no-store" })
+    fetch(apiUrl(sport, "/api/roster", { date: round.date }), { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
       .then(async (body: { play: { state: RosterState; stats: RosterStats | null } | null } | null) => {
         if (!body || cancelled) return;
@@ -117,7 +122,7 @@ export default function RosterGame({ round, initial, isToday, today }: Props) {
   }, [key, round.date]);
 
   async function reveal() {
-    if (busy || !synced || state.done || state.revealed.length >= LINEUP_SIZE) return;
+    if (busy || !synced || state.done || state.revealed.length >= size) return;
     setBusy(true);
     setError(null);
     try {
@@ -147,12 +152,14 @@ export default function RosterGame({ round, initial, isToday, today }: Props) {
   }
 
   function shareText(): string {
-    const url = isToday ? `${window.location.origin}/roster` : `${window.location.origin}/roster?date=${round.date}`;
-    return buildRosterShareText(round, state, url);
+    const page = `${window.location.origin}${base}/roster`;
+    const url = isToday ? page : `${page}?date=${round.date}`;
+    return buildRosterShareText(round, state, url, sport);
   }
 
   const shown = state.done && state.answer ? state.answer.lineup : state.revealed;
   const n = state.revealed.length;
+  const season = seasonLabel(sport, round.year);
   const teamName = (f: string | null) => round.teams.find(([id]) => id === f)?.[1] ?? f;
 
   return (
@@ -162,14 +169,14 @@ export default function RosterGame({ round, initial, isToday, today }: Props) {
           #{rosterRoundNumber(round.date)} ·{" "}
           {formatRoundDate(round.date)}
         </p>
-        <Link href="/roster/archive" className={styles.archiveLink}>
+        <Link href={`${base}/roster/archive`} className={styles.archiveLink}>
           Play previous rounds
         </Link>
       </div>
 
       <section className={`${styles.card} ${synced ? "" : "syncing"}`} aria-busy={!synced}>
         <p className={styles.kicker}>Lineup card</p>
-        <h2 className={styles.question}>Who&apos;s this {round.year} team?</h2>
+        <h2 className={styles.question}>Who&apos;s this {season} team?</h2>
         <ol className={styles.names}>
           {shown.map((p, i) => (
             <li
@@ -181,7 +188,7 @@ export default function RosterGame({ round, initial, isToday, today }: Props) {
               <span className={styles.pos}>{p.pos}</span>
             </li>
           ))}
-          {!state.done && n < LINEUP_SIZE && (
+          {!state.done && n < size && (
             <li className={styles.ghost}>
               <span className={styles.num}>{n + 1}</span>
               <span>Next player hidden</span>
@@ -196,11 +203,11 @@ export default function RosterGame({ round, initial, isToday, today }: Props) {
               <span>
                 {n} {n === 1 ? "player" : "players"} revealed
               </span>
-              <span>{n < LINEUP_SIZE ? `${LINEUP_SIZE - n} more available` : "That's the whole lineup."}</span>
+              <span>{n < size ? `${size - n} more available` : "That's the whole lineup."}</span>
             </div>
             {!guessing ? (
               <div className={styles.btns}>
-                <button className={styles.secondary} onClick={reveal} disabled={busy || n >= LINEUP_SIZE}>
+                <button className={styles.secondary} onClick={reveal} disabled={busy || n >= size}>
                   Reveal next player
                 </button>
                 <button className={styles.primary} onClick={() => synced && setGuessing(true)} disabled={busy}>
@@ -215,7 +222,7 @@ export default function RosterGame({ round, initial, isToday, today }: Props) {
                   onChange={(e) => setPick(e.target.value)}
                   aria-label="Team"
                 >
-                  <option value="">Pick a {round.year} team…</option>
+                  <option value="">Pick a {season} team…</option>
                   {[...round.teams]
                     .sort((a, b) => a[1].localeCompare(b[1]))
                     .map(([f, name]) => (
@@ -242,9 +249,9 @@ export default function RosterGame({ round, initial, isToday, today }: Props) {
 
       {state.done && state.answer && (
         <section className={`${styles.card} ${styles.result}`}>
-          <h2>{headline(state)}</h2>
+          <h2>{headline(state, sport)}</h2>
           <p className={styles.answer}>
-            {round.year} {state.answer.team}
+            {season} {state.answer.team}
           </p>
           <p>
             {state.answer.record}
@@ -253,9 +260,9 @@ export default function RosterGame({ round, initial, isToday, today }: Props) {
           <p>
             {state.correct
               ? `Got it after ${n} ${n === 1 ? "player" : "players"}.`
-              : `You guessed the ${round.year} ${teamName(state.guess)} after ${n} ${n === 1 ? "player" : "players"}.`}
+              : `You guessed the ${season} ${teamName(state.guess)} after ${n} ${n === 1 ? "player" : "players"}.`}
           </p>
-          {stats && <RosterCompare stats={stats} mine={state.correct ? n : LINEUP_SIZE + 1} isToday={isToday} />}
+          {stats && <RosterCompare stats={stats} mine={state.correct ? n : size + 1} isToday={isToday} />}
           <ShareButton getText={shareText} label="Share result" className={styles.shareBtn} />
         </section>
       )}
@@ -264,14 +271,14 @@ export default function RosterGame({ round, initial, isToday, today }: Props) {
         {state.done ? (
           // Finished the round: step to the day before or after.
           <DayNav
-            path="/roster"
+            path={`${base}/roster`}
             date={round.date}
             today={today}
             firstDate={ROSTER_LAUNCH_DATE}
             className={styles.linkBtn}
           />
         ) : !isToday ? (
-          <Link href="/roster">Today&apos;s round</Link>
+          <Link href={`${base}/roster`}>Today&apos;s round</Link>
         ) : null}
       </nav>
     </div>

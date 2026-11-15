@@ -1,4 +1,4 @@
-import type { LeaderboardEntry } from "./types";
+import type { LeaderboardEntry, StatKind } from "./types";
 
 /** Maximum score for a single hole; also the score for an unranked guess. */
 export const MAX_HOLE_SCORE = 100;
@@ -32,12 +32,14 @@ export function formatInnings(innings: number): string {
   return `${whole.toLocaleString("en-US")}.${thirds}`;
 }
 
-export function formatValue(value: number, kind: "count" | "rate", decimals: number): string {
+export function formatValue(value: number, kind: StatKind, decimals: number): string {
   if (kind === "count") {
     // The only count stat with decimals is Innings Pitched (outs / 3).
     return decimals > 0 ? formatInnings(value) : Math.round(value).toLocaleString("en-US");
   }
   const s = value.toFixed(decimals);
+  // Per-game averages keep the zero: 0.9 blocks a game, not .9
+  if (kind === "average") return s;
   // Baseball convention: .366 rather than 0.366
   return s.startsWith("0.") ? s.slice(1) : s;
 }

@@ -5,6 +5,12 @@
 // Every stored round refers to a stat by key, so a stat must stay in this file
 // even if it's later dropped from the pool of stats new rounds can pick.
 import raw from "@/data/leaderboards.json";
+import nbaRaw from "@/data/nba/leaderboards.json";
+import type { Sport } from "./sport";
 import type { LeaderboardData } from "./types";
 
+/** Baseball's leaderboards. */
 export const leaderboards = raw as unknown as LeaderboardData;
+export const nbaLeaderboards = nbaRaw as unknown as LeaderboardData;
+
+export const leaderboardsFor = (sport: Sport): LeaderboardData => (sport === "nba" ? nbaLeaderboards : leaderboards);

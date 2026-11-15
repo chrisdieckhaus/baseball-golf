@@ -7,6 +7,7 @@ import { PLAYER_GOLF_LAUNCH_DATE } from "@/lib/player-golf";
 import { formatRoundDate, roundNumber } from "@/lib/round";
 import { MAX_HOLE_SCORE, MAX_TARGET_RANK, ordinal } from "@/lib/scoring";
 import { buildShareText, holeLabel, scoreLabel } from "@/lib/share";
+import { apiUrl, basePath, namespaced, type Sport } from "@/lib/sport";
 import type { RoundStats } from "@/lib/types";
 import { GolfCompare } from "./CompareStats";
 import DayNav from "./DayNav";
@@ -17,8 +18,8 @@ import own from "./PlayerGolfGame.module.css";
 type Results = (PlayerGolfResult | null)[];
 
 /** Progress is saved per round, by date. The archive reads this key too. */
-export const playerStorageKey = (date: string) =>
-  `baseball-golf-player:${date}`;
+export const playerStorageKey = (date: string, sport: Sport = "mlb") =>
+  namespaced(sport, `baseball-golf-player:${date}`);
 
 function loadSaved(key: string): Results | null {
   try {
@@ -239,12 +240,15 @@ export default function PlayerGolfGame({
   round,
   isToday,
   today,
+  sport = "mlb",
 }: {
   round: PlayerRound;
   isToday: boolean;
   today: string;
+  sport?: Sport;
 }) {
-  const key = playerStorageKey(round.date);
+  const key = playerStorageKey(round.date, sport);
+  const base = basePath(sport);
   const [results, setResults] = useState<Results>(() =>
     round.holes.map(() => null),
   );
@@ -260,7 +264,7 @@ export default function PlayerGolfGame({
     // eslint-disable-next-line react-hooks/set-state-in-effect -- restoring from localStorage after hydration
     if (saved && saved.length === round.holes.length) setResults(saved);
     let cancelled = false;
-    fetch(`/api/player-golf?date=${round.date}`, { cache: "no-store" })
+    fetch(apiUrl(sport, "/api/player-golf", { date: round.date }), { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
       .then((state: { results: Results; stats: RoundStats | null } | null) => {
         if (cancelled || !state) return;
@@ -279,7 +283,7 @@ export default function PlayerGolfGame({
     return () => {
       cancelled = true;
     };
-  }, [key, round.date, round.holes.length]);
+  }, [key, round.date, round.holes.length, sport]);
 
   const current = results.findIndex((r) => r === null);
   const finished = current === -1;
@@ -293,7 +297,7 @@ export default function PlayerGolfGame({
       const res = await fetch("/api/player-golf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: round.date, hole, guess: rank }),
+        body: JSON.stringify({ date: round.date, hole, guess: rank, sport }),
       });
       const data = await res.json();
       if (res.status === 409 && data.state) {
@@ -321,9 +325,10 @@ export default function PlayerGolfGame({
       date: round.date,
       scores: results.map((r) => r?.score ?? 0),
       url: isToday
-        ? `${window.location.origin}/golf/player`
-        : `${window.location.origin}/golf/player?date=${round.date}`,
+        ? `${window.location.origin}${base}/golf/player`
+        : `${window.location.origin}${base}/golf/player?date=${round.date}`,
       mode: "player",
+      sport,
     });
 
   return (
@@ -332,7 +337,7 @@ export default function PlayerGolfGame({
         <p className={styles.date}>
           #{roundNumber(round.date)} · {formatRoundDate(round.date)}
         </p>
-        <Link href="/golf/player/archive" className={styles.archiveLink}>
+        <Link href={`${base}/golf/player/archive`} className={styles.archiveLink}>
           Play previous rounds
         </Link>
       </div>
@@ -440,14 +445,14 @@ export default function PlayerGolfGame({
       <nav className={styles.links}>
         {finished ? (
           <DayNav
-            path="/golf/player"
+            path={`${base}/golf/player`}
             date={round.date}
             today={today}
             firstDate={PLAYER_GOLF_LAUNCH_DATE}
             className={styles.linkBtn}
           />
         ) : !isToday ? (
-          <Link href="/golf/player">Today&apos;s round</Link>
+          <Link href={`${base}/golf/player`}>Today&apos;s round</Link>
         ) : null}
       </nav>
     </section>

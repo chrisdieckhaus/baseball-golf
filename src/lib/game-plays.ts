@@ -4,6 +4,8 @@
 // in localStorage; the database is the record.
 import { percentBeaten, type Queryable } from "./plays";
 import { RANK_MAX_SCORE, rankBucket } from "./rank";
+import { lineupSize } from "./roster";
+import { table, type Sport } from "./sport";
 
 async function ensurePlayer(db: Queryable, playerId: string) {
   await db.query(`INSERT INTO players (id) VALUES ($1) ON CONFLICT DO NOTHING`, [playerId]);
@@ -16,9 +18,9 @@ export interface RankPlay {
   score: number;
 }
 
-export async function getRankPlay(db: Queryable, playerId: string, roundDate: string): Promise<RankPlay | null> {
+export async function getRankPlay(db: Queryable, playerId: string, roundDate: string, sport: Sport = "mlb"): Promise<RankPlay | null> {
   const { rows } = await db.query<{ guess_order: string[]; score: number }>(
-    `SELECT guess_order, score FROM rank_plays WHERE player_id = $1 AND round_date = $2`,
+    `SELECT guess_order, score FROM ${table(sport, "rank_plays")} WHERE player_id = $1 AND round_date = $2`,
     [playerId, roundDate],
   );
   return rows[0] ? { order: rows[0].guess_order, score: rows[0].score } : null;
@@ -31,22 +33,23 @@ export async function getRankPlay(db: Queryable, playerId: string, roundDate: st
 export async function recordRankPlay(
   db: Queryable,
   args: { playerId: string; roundDate: string; order: string[]; score: number; isLive: boolean },
+  sport: Sport = "mlb",
 ): Promise<{ created: boolean; play: RankPlay }> {
   const { playerId, roundDate, order, score, isLive } = args;
   await ensurePlayer(db, playerId);
   const { rowCount } = await db.query(
-    `INSERT INTO rank_plays (player_id, round_date, guess_order, score, is_live)
+    `INSERT INTO ${table(sport, "rank_plays")} (player_id, round_date, guess_order, score, is_live)
      VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING`,
     [playerId, roundDate, order, score, isLive],
   );
   if ((rowCount ?? 0) > 0) return { created: true, play: { order, score } };
-  return { created: false, play: (await getRankPlay(db, playerId, roundDate))! };
+  return { created: false, play: (await getRankPlay(db, playerId, roundDate, sport))! };
 }
 
 /** This player's score on every daily round they've played, by date. */
-export async function getRankProgress(db: Queryable, playerId: string): Promise<Map<string, number>> {
+export async function getRankProgress(db: Queryable, playerId: string, sport: Sport = "mlb"): Promise<Map<string, number>> {
   const { rows } = await db.query<{ round_date: string; score: number }>(
-    `SELECT round_date::text AS round_date, score FROM rank_plays WHERE player_id = $1`,
+    `SELECT round_date::text AS round_date, score FROM ${table(sport, "rank_plays")} WHERE player_id = $1`,
     [playerId],
   );
   return new Map(rows.map((r) => [r.round_date, r.score]));
@@ -70,9 +73,9 @@ function toRosterPlay(r: Record<string, unknown>): RosterPlay {
   };
 }
 
-export async function getRosterPlay(db: Queryable, playerId: string, roundDate: string): Promise<RosterPlay | null> {
+export async function getRosterPlay(db: Queryable, playerId: string, roundDate: string, sport: Sport = "mlb"): Promise<RosterPlay | null> {
   const { rows } = await db.query(
-    `SELECT revealed, guess, correct, done FROM roster_plays WHERE player_id = $1 AND round_date = $2`,
+    `SELECT revealed, guess, correct, done FROM ${table(sport, "roster_plays")} WHERE player_id = $1 AND round_date = $2`,
     [playerId, roundDate],
   );
   return rows[0] ? toRosterPlay(rows[0]) : null;
@@ -85,18 +88,19 @@ export async function getRosterPlay(db: Queryable, playerId: string, roundDate: 
 export async function recordRosterReveal(
   db: Queryable,
   args: { playerId: string; roundDate: string; revealed: number; isLive: boolean },
+  sport: Sport = "mlb",
 ): Promise<RosterPlay> {
   const { playerId, roundDate, revealed, isLive } = args;
   await ensurePlayer(db, playerId);
   const { rows } = await db.query(
-    `INSERT INTO roster_plays (player_id, round_date, revealed, is_live) VALUES ($1, $2, $3, $4)
+    `INSERT INTO ${table(sport, "roster_plays")} (player_id, round_date, revealed, is_live) VALUES ($1, $2, $3, $4)
      ON CONFLICT (player_id, round_date) DO UPDATE
-       SET revealed = GREATEST(roster_plays.revealed, EXCLUDED.revealed)
-       WHERE NOT roster_plays.done
+       SET revealed = GREATEST(${table(sport, "roster_plays")}.revealed, EXCLUDED.revealed)
+       WHERE NOT ${table(sport, "roster_plays")}.done
      RETURNING revealed, guess, correct, done`,
     [playerId, roundDate, revealed, isLive],
   );
-  return rows[0] ? toRosterPlay(rows[0]) : (await getRosterPlay(db, playerId, roundDate))!;
+  return rows[0] ? toRosterPlay(rows[0]) : (await getRosterPlay(db, playerId, roundDate, sport))!;
 }
 
 /**
@@ -107,29 +111,30 @@ export async function recordRosterReveal(
 export async function recordRosterGuess(
   db: Queryable,
   args: { playerId: string; roundDate: string; revealed: number; guess: string; answer: string; isLive: boolean },
+  sport: Sport = "mlb",
 ): Promise<{ saved: boolean; play: RosterPlay }> {
   const { playerId, roundDate, revealed, guess, answer, isLive } = args;
   await ensurePlayer(db, playerId);
   await db.query(
-    `INSERT INTO roster_plays (player_id, round_date, revealed, is_live) VALUES ($1, $2, $3, $4)
+    `INSERT INTO ${table(sport, "roster_plays")} (player_id, round_date, revealed, is_live) VALUES ($1, $2, $3, $4)
      ON CONFLICT DO NOTHING`,
     [playerId, roundDate, revealed, isLive],
   );
   const { rows } = await db.query(
-    `UPDATE roster_plays SET
+    `UPDATE ${table(sport, "roster_plays")} SET
         revealed = GREATEST(revealed, $3), guess = $4, correct = ($4 = $5), done = true, completed_at = now()
       WHERE player_id = $1 AND round_date = $2 AND NOT done
       RETURNING revealed, guess, correct, done`,
     [playerId, roundDate, revealed, guess, answer],
   );
   if (rows[0]) return { saved: true, play: toRosterPlay(rows[0]) };
-  return { saved: false, play: (await getRosterPlay(db, playerId, roundDate))! };
+  return { saved: false, play: (await getRosterPlay(db, playerId, roundDate, sport))! };
 }
 
 /** This player's progress on every daily round they've started, by date. */
-export async function getRosterProgress(db: Queryable, playerId: string): Promise<Map<string, RosterPlay>> {
+export async function getRosterProgress(db: Queryable, playerId: string, sport: Sport = "mlb"): Promise<Map<string, RosterPlay>> {
   const { rows } = await db.query(
-    `SELECT round_date::text AS round_date, revealed, guess, correct, done FROM roster_plays WHERE player_id = $1`,
+    `SELECT round_date::text AS round_date, revealed, guess, correct, done FROM ${table(sport, "roster_plays")} WHERE player_id = $1`,
     [playerId],
   );
   return new Map(rows.map((r) => [r.round_date as string, toRosterPlay(r)]));
@@ -159,7 +164,7 @@ export interface RankStats {
   distribution: number[];
 }
 
-export async function getRankStats(db: Queryable, roundDate: string, playerId: string, score: number): Promise<RankStats> {
+export async function getRankStats(db: Queryable, roundDate: string, playerId: string, score: number, sport: Sport = "mlb"): Promise<RankStats> {
   const { rows } = await db.query<Record<string, string | null>>(
     `SELECT count(*) FILTER (WHERE player_id <> $2)                         AS others,
             count(*) FILTER (WHERE player_id <> $2 AND score > $3::smallint) AS worse,
@@ -167,12 +172,12 @@ export async function getRankStats(db: Queryable, roundDate: string, playerId: s
             count(*)                                                        AS finishers,
             avg(score)                                                      AS average,
             count(*) FILTER (WHERE score = 0)                               AS perfect
-       FROM rank_plays WHERE round_date = $1`,
+       FROM ${table(sport, "rank_plays")} WHERE round_date = $1`,
     [roundDate, playerId, score],
   );
   const r = rows[0];
   const { rows: scores } = await db.query<{ score: number; n: string }>(
-    `SELECT score, count(*) AS n FROM rank_plays WHERE round_date = $1 GROUP BY score`,
+    `SELECT score, count(*) AS n FROM ${table(sport, "rank_plays")} WHERE round_date = $1 GROUP BY score`,
     [roundDate],
   );
   const distribution: number[] = Array(Math.floor(RANK_MAX_SCORE / 2) + 1).fill(0);
@@ -202,43 +207,46 @@ export interface RosterStats {
   correctPercent: number;
   /** Average players revealed among those who got it. */
   averageRevealed: number | null;
-  /** How many finishers got it after 1, 2, … 10 players (index 0 = 1), then misses last (index 10). */
+  /** How many finishers got it after 1, 2, … players (index 0 = 1), then misses last (index = lineup size). */
   distribution: number[];
 }
 
 /**
  * How a finished Roster Reveal play compares. `result` is rosterResult(): the
- * players revealed when you got it (1–10), or 11 for a miss; lower is better.
+ * players revealed when you got it (1 to the lineup size), or one more for a miss; lower is better.
  */
 export async function getRosterStats(
   db: Queryable,
   roundDate: string,
   playerId: string,
   result: number,
+  sport: Sport = "mlb",
 ): Promise<RosterStats> {
+  const size = lineupSize(sport);
+  const miss = size + 1;
   const { rows } = await db.query<{ result: number; n: string; mine: string }>(
-    `SELECT CASE WHEN correct THEN revealed ELSE 11 END AS result,
+    `SELECT CASE WHEN correct THEN revealed ELSE ${miss} END AS result,
             count(*) AS n,
             count(*) FILTER (WHERE player_id = $2) AS mine
-       FROM roster_plays WHERE round_date = $1 AND done
+       FROM ${table(sport, "roster_plays")} WHERE round_date = $1 AND done
       GROUP BY 1`,
     [roundDate, playerId],
   );
-  const distribution = Array(11).fill(0);
+  const distribution = Array(miss).fill(0);
   let others = 0;
   let worse = 0;
   let tied = 0;
   for (const r of rows) {
     const n = Number(r.n);
     const notMe = n - Number(r.mine);
-    distribution[Math.min(Math.max(Number(r.result), 1), 11) - 1] += n;
+    distribution[Math.min(Math.max(Number(r.result), 1), miss) - 1] += n;
     others += notMe;
     if (r.result > result) worse += notMe;
     if (r.result === result) tied += notMe;
   }
   const finishers = distribution.reduce((a, b) => a + b, 0);
-  const correct = finishers - distribution[10];
-  const revealedSum = distribution.slice(0, 10).reduce((s, n, i) => s + n * (i + 1), 0);
+  const correct = finishers - distribution[size];
+  const revealedSum = distribution.slice(0, size).reduce((s, n, i) => s + n * (i + 1), 0);
   return {
     others,
     worse,

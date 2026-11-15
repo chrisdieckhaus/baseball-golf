@@ -2,20 +2,34 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { basePath, COPY, SPORTS, type Sport } from "@/lib/sport";
 import Logo from "./Logo";
 import styles from "./GameNav.module.css";
 
 const GAMES = [
-  { href: "/golf", label: "Golf" },
-  { href: "/rank", label: "Ranker" },
-  { href: "/roster", label: "Roster" },
+  { path: "/golf", label: "Golf" },
+  { path: "/rank", label: "Ranker" },
+  { path: "/roster", label: "Roster" },
 ];
 
-/** The Daily Dugout name and links to every game, shown at the top of each page. The current game is highlighted. */
-export default function GameNav() {
+/** Splits "/nba/rank/archive" into its sport and the game path ("/rank/archive"). */
+function parsePath(pathname: string): { sport: Sport; path: string } {
+  if (pathname === "/nba" || pathname.startsWith("/nba/")) return { sport: "nba", path: pathname.slice(4) || "/golf" };
+  return { sport: "mlb", path: pathname };
+}
+
+/**
+ * The Daily Dugout name and links to every game, shown at the top of each page.
+ * The current game is highlighted. While NBA is on (`nbaEnabled`, from the
+ * NBA_ENABLED kill switch), an MLB | NBA switch underneath moves to the same
+ * page in the other sport.
+ */
+export default function GameNav({ nbaEnabled = false }: { nbaEnabled?: boolean }) {
   const pathname = usePathname();
+  const { sport, path } = parsePath(pathname);
+  const base = basePath(sport);
   // Each game's archive counts as that game. "/" redirects to Baseball Golf.
-  const current = pathname.startsWith("/rank") ? "/rank" : pathname.startsWith("/roster") ? "/roster" : "/golf";
+  const current = path.startsWith("/rank") ? "/rank" : path.startsWith("/roster") ? "/roster" : "/golf";
   return (
     <nav className={styles.nav} aria-label="Games">
       <Link href="/" className={styles.brand}>
@@ -24,14 +38,28 @@ export default function GameNav() {
       </Link>
       {GAMES.map((g) => (
         <Link
-          key={g.href}
-          href={g.href}
-          className={`${styles.link} ${current === g.href ? styles.active : ""}`}
-          aria-current={current === g.href ? "page" : undefined}
+          key={g.path}
+          href={`${base}${g.path}`}
+          className={`${styles.link} ${current === g.path ? styles.active : ""}`}
+          aria-current={current === g.path ? "page" : undefined}
         >
           {g.label}
         </Link>
       ))}
+      {nbaEnabled && (
+        <div className={styles.sports} role="group" aria-label="Sport">
+          {SPORTS.map((s) => (
+            <Link
+              key={s}
+              href={`${basePath(s)}${path === "/" ? "/golf" : path}`}
+              className={`${styles.sport} ${s === sport ? styles.sportActive : ""}`}
+              aria-current={s === sport ? "page" : undefined}
+            >
+              {COPY[s].short}
+            </Link>
+          ))}
+        </div>
+      )}
     </nav>
   );
 }

@@ -1,4 +1,5 @@
 import { getRound, resultsFromPlay, scoreGuess } from "@/lib/data";
+import { requestSport } from "@/lib/api-sport";
 import { getDb } from "@/lib/db";
 import { ensurePlayerId } from "@/lib/player-cookie";
 import { getRoundStats, recordGuess } from "@/lib/plays";
@@ -11,7 +12,9 @@ export async function POST(request: Request) {
   } catch {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
-  const { date, hole, playerId, playerName } = (body ?? {}) as Record<string, unknown>;
+  const { date, hole, playerId, playerName, sport: rawSport } = (body ?? {}) as Record<string, unknown>;
+  const { sport, error } = requestSport(rawSport);
+  if (error) return error;
 
   if (typeof date !== "string" || !isValidDate(date)) {
     return Response.json({ error: "Invalid date" }, { status: 400 });
@@ -28,8 +31,8 @@ export async function POST(request: Request) {
   }
   const name = typeof playerName === "string" ? playerName.slice(0, 80) : playerId;
 
-  const round = await getRound(date);
-  const result = scoreGuess(round, hole, playerId, name);
+  const round = await getRound(date, sport);
+  const result = scoreGuess(round, hole, playerId, name, sport);
 
   // Deployments without a database stay stateless.
   const db = getDb();
@@ -44,7 +47,7 @@ export async function POST(request: Request) {
     guessName: result.guess.name,
     score: result.score,
     isLive: date === todayET(),
-  });
+  }, sport);
 
   if (!outcome.ok) {
     // e.g. the hole was already played in another tab: send back the saved state instead.
@@ -57,8 +60,8 @@ export async function POST(request: Request) {
       {
         error: message,
         state: {
-          results: resultsFromPlay(round, outcome.play),
-          stats: total === null ? null : await getRoundStats(db, date, me, total),
+          results: resultsFromPlay(round, outcome.play, sport),
+          stats: total === null ? null : await getRoundStats(db, date, me, total, "plays", sport),
         },
       },
       { status: 409 },
@@ -66,5 +69,5 @@ export async function POST(request: Request) {
   }
 
   const total = outcome.play.totalScore;
-  return Response.json({ result, stats: total === null ? null : await getRoundStats(db, date, me, total) });
+  return Response.json({ result, stats: total === null ? null : await getRoundStats(db, date, me, total, "plays", sport) });
 }

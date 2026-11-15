@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import styles from "@/app/archive.module.css";
 import { golfStatus, rankStatus, rosterStatus, type Status } from "@/lib/archive-status";
+import { basePath, namespaced, type Sport } from "@/lib/sport";
 
 type GameKey = "golf" | "player" | "rank" | "roster";
 
@@ -12,6 +13,7 @@ const PATHS: Record<GameKey, string> = { golf: "/golf", player: "/golf/player", 
 
 interface Props {
   game: GameKey;
+  sport?: Sport;
   /** Previous daily rounds, newest first. */
   rounds: { date: string; number: number; label: string }[];
   /** This browser's saved plays from the database, by date. */
@@ -19,7 +21,7 @@ interface Props {
 }
 
 
-function read(key: string): unknown {
+function readKey(key: string): unknown {
   try {
     const raw = localStorage.getItem(key);
     return raw ? JSON.parse(raw) : null;
@@ -29,7 +31,8 @@ function read(key: string): unknown {
 }
 
 /** This browser's result for a round, from what the game saved in localStorage. */
-function statusFor(game: GameKey, date: string): Status {
+function statusFor(game: GameKey, date: string, sport: Sport): Status {
+  const read = (key: string) => readKey(namespaced(sport, key));
   if (game === "golf" || game === "player") {
     const saved = read(game === "golf" ? `baseball-golf:${date}` : `baseball-golf-player:${date}`) as ({ score?: number } | null)[] | null;
     if (!Array.isArray(saved) || saved.length === 0) return null;
@@ -54,13 +57,13 @@ function statusFor(game: GameKey, date: string): Status {
  * status comes from this browser's saved plays in the database, or, for rounds
  * played before plays were saved, from localStorage after the page loads.
  */
-export default function LocalArchive({ game, rounds, saved }: Props) {
+export default function LocalArchive({ game, sport = "mlb", rounds, saved }: Props) {
   const [statuses, setStatuses] = useState<Record<string, Status>>(saved);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reading localStorage after hydration
-    setStatuses(Object.fromEntries(rounds.map((r) => [r.date, saved[r.date] ?? statusFor(game, r.date)])));
-  }, [game, rounds, saved]);
+    setStatuses(Object.fromEntries(rounds.map((r) => [r.date, saved[r.date] ?? statusFor(game, r.date, sport)])));
+  }, [game, rounds, saved, sport]);
 
   if (rounds.length === 0) return <p className={styles.empty}>No previous rounds yet. Check back tomorrow.</p>;
 
@@ -70,7 +73,7 @@ export default function LocalArchive({ game, rounds, saved }: Props) {
         const s = statuses[r.date];
         return (
           <li key={r.date}>
-            <Link href={`${PATHS[game]}?date=${r.date}`} className={styles.row}>
+            <Link href={`${basePath(sport)}${PATHS[game]}?date=${r.date}`} className={styles.row}>
               <span className={styles.num}>#{r.number}</span>
               <span className={styles.date}>{r.label}</span>
               {s?.kind === "done" ? (

@@ -5,8 +5,9 @@
 //
 // No "server-only" import, so scripts can use this file. The answers (ranks and
 // values) never leave the server before a guess.
-import { HOLES_PER_ROUND, MAX_TIE_SIZE, hashString, mulberry32 } from "./round";
+import { HOLES_PER_ROUND, MAX_TIE_SIZE, hashString, hasUsedFamily, mulberry32 } from "./round";
 import { formatValue, MAX_HOLE_SCORE, MAX_TARGET_RANK, targetPlayers } from "./scoring";
+import { namespaced, type Sport } from "./sport";
 import type { LeaderboardData, LeaderboardEntry, StatGroup } from "./types";
 
 /** Round #1. Rounds are numbered from Nov 1, 2026, like the other games. */
@@ -61,13 +62,19 @@ export interface PlayerGolfResult {
  * Daily rounds are stored the first time they're needed (player-golf-rounds.ts),
  * so changing this only affects rounds that don't exist yet.
  */
-export function generateStoredPlayerRound(data: LeaderboardData, meta: PlayerMeta, date: string): StoredPlayerHole[] {
-  const rand = mulberry32(hashString(`baseball-golf-player:${date}`));
+export function generateStoredPlayerRound(
+  data: LeaderboardData,
+  meta: PlayerMeta,
+  date: string,
+  sport: Sport = "mlb",
+): StoredPlayerHole[] {
+  const rand = mulberry32(hashString(namespaced(sport, `baseball-golf-player:${date}`)));
   const pick = <T,>(arr: T[]): T => arr[Math.floor(rand() * arr.length)];
   const keys = Object.keys(data.stats).sort();
   const holes: StoredPlayerHole[] = [];
   const usedStats = new Set<string>();
   const usedPlayers = new Set<string>();
+  const usedFamilies = new Set<string>();
   while (holes.length < HOLES_PER_ROUND) {
     const groupCounts = new Map<string, number>();
     for (const h of holes) {
@@ -75,11 +82,16 @@ export function generateStoredPlayerRound(data: LeaderboardData, meta: PlayerMet
       groupCounts.set(g, (groupCounts.get(g) ?? 0) + 1);
     }
     const candidates = keys.filter(
-      (k) => !usedStats.has(k) && (groupCounts.get(data.stats[k].group) ?? 0) < HOLES_PER_ROUND - 1,
+      (k) =>
+        !usedStats.has(k) &&
+        !hasUsedFamily(data, k, usedFamilies) &&
+        (groupCounts.get(data.stats[k].group) ?? 0) < HOLES_PER_ROUND - 1,
     );
     if (candidates.length === 0) throw new Error(`Couldn't build a Player round for ${date}`);
     const key = pick(candidates);
     usedStats.add(key);
+    const family = data.stats[key].family;
+    if (family) usedFamilies.add(family);
     const entries = data.stats[key].entries;
     const tieSize = new Map<number, number>();
     for (const e of entries) tieSize.set(e.rank, (tieSize.get(e.rank) ?? 0) + 1);

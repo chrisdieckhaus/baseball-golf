@@ -1,3 +1,4 @@
+import { requestSport } from "@/lib/api-sport";
 import { getDb } from "@/lib/db";
 import { getRosterPlay, getRosterStats, recordRosterGuess, recordRosterReveal } from "@/lib/game-plays";
 import { ensurePlayerId, readPlayerId } from "@/lib/player-cookie";
@@ -9,16 +10,21 @@ const noStore = { "Cache-Control": "private, no-store" };
 
 /** This browser's saved play on a daily round: { play: { state, stats } | null }. */
 export async function GET(request: Request) {
-  const date = new URL(request.url).searchParams.get("date");
+  const params = new URL(request.url).searchParams;
+  const { sport, error } = requestSport(params.get("sport"));
+  if (error) return error;
+  const date = params.get("date");
   if (!isPlayableRosterDate(date)) return Response.json({ error: "Invalid date" }, { status: 400 });
   const db = getDb();
   const me = await readPlayerId();
   if (!db || !me) return Response.json({ play: null }, { headers: noStore });
-  const play = await getRosterPlay(db, me, date);
+  const play = await getRosterPlay(db, me, date, sport);
   if (!play) return Response.json({ play: null }, { headers: noStore });
-  const { teamSeason } = await getRosterRound(date);
+  const { teamSeason } = await getRosterRound(date, sport);
   const state = rosterState(teamSeason, play.revealed, play.guess);
-  const stats = play.done ? await getRosterStats(db, date, me, rosterResult(play.revealed, play.correct)) : null;
+  const stats = play.done
+    ? await getRosterStats(db, date, me, rosterResult(play.revealed, play.correct, sport), sport)
+    : null;
   return Response.json({ play: { state, stats } }, { headers: noStore });
 }
 
@@ -37,7 +43,9 @@ export async function POST(request: Request) {
   } catch {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
-  const { date, revealed, guess } = (body ?? {}) as Record<string, unknown>;
+  const { date, revealed, guess, sport: rawSport } = (body ?? {}) as Record<string, unknown>;
+  const { sport, error } = requestSport(rawSport);
+  if (error) return error;
 
   if (typeof date !== "string" || !isValidDate(date)) {
     return Response.json({ error: "Invalid date" }, { status: 400 });
@@ -46,8 +54,8 @@ export async function POST(request: Request) {
     return Response.json({ error: "There's no round for that date" }, { status: 400 });
   }
 
-  const { round, teamSeason } = await getRosterRound(date);
-  if (!isValidRevealed(revealed)) return Response.json({ error: "Invalid reveal count" }, { status: 400 });
+  const { round, teamSeason } = await getRosterRound(date, sport);
+  if (!isValidRevealed(revealed, sport)) return Response.json({ error: "Invalid reveal count" }, { status: 400 });
   if (guess !== undefined && guess !== null && !isValidGuess(round, guess)) {
     return Response.json({ error: "That team didn't play that season" }, { status: 400 });
   }
@@ -67,10 +75,12 @@ export async function POST(request: Request) {
           guess: theGuess,
           answer: teamSeason.franchise,
           isLive,
-        })).play
-      : await recordRosterReveal(db, { playerId: me, roundDate: date, revealed, isLive });
+        }, sport)).play
+      : await recordRosterReveal(db, { playerId: me, roundDate: date, revealed, isLive }, sport);
     const state = rosterState(teamSeason, play.revealed, play.guess);
-    const stats = play.done ? await getRosterStats(db, date, me, rosterResult(play.revealed, play.correct)) : null;
+    const stats = play.done
+      ? await getRosterStats(db, date, me, rosterResult(play.revealed, play.correct, sport), sport)
+      : null;
     return Response.json({ state, stats });
   } catch (e) {
     console.error("[api/roster] Couldn't save the play", e);

@@ -65,7 +65,7 @@ A third daily game on the same data, replacing Sports Revealer (`/reveal` now re
 - **Ordering:** obscure to famous, by All-Star selections, MVPs and Cy Youngs, the Hall of Fame and career length.
 - **Teams:** every AL and NL team since 1901, plus the 1914–15 Federal League. That's 2,722 team-seasons. The Negro Leagues and earlier independent teams are in the data but left out of this game, because they'd crowd the team picker.
 - **Data file:** `scripts/build_roster_data.py` writes `src/data/roster.json`, which is server-only.
-- **Picking the round:** daily rounds walk through one fixed shuffle of every team-season (`src/lib/roster.ts`), so nothing repeats for years. Each day's team-season is saved in `roster_rounds` the first time it's needed. Rounds are numbered from Nov 1, 2026, like the other games, and `/roster/archive` replays any past round.
+- **Picking the round:** daily rounds walk through one fixed order of every team-season (`src/lib/roster.ts`), so nothing repeats for years. Through Nov 17, 2026 it was an even shuffle. From Nov 18 (`ROSTER_WEIGHTED_FROM`) it's weighted toward recent seasons: a season's weight halves every 25 years, so about half of rounds come from the last 25 seasons and older teams still turn up. The weighted order skips every team-season already used, in both sports. Each day's team-season is saved in `roster_rounds` the first time it's needed. Rounds are numbered from Nov 1, 2026, like the other games, and `/roster/archive` replays any past round.
 - **Playing:** `POST /api/roster` takes `{ date, seed, revealed, guess? }` and returns only the players revealed, plus the answer once the guess is in.
 - **Saved plays:** daily plays are saved in `roster_plays`. `revealed` only goes up, the score uses the most players ever revealed, and the first guess stands. `GET /api/roster` returns this browser's saved play, and the game restores it or uploads browser-only progress.
 - **Comparison:** finished rounds show how you compare: percent beaten, percent who got it, average players needed, and a chart of players needed.
@@ -74,6 +74,20 @@ A third daily game on the same data, replacing Sports Revealer (`/reveal` now re
 - Both games number their rounds from Nov 1, 2026, like Baseball Golf. The build's backfill stores every round from then on.
 - Both save each daily play (`rank_plays`, `roster_plays`), keyed by the same anonymous `bg_player` cookie as Baseball Golf. The archives read results from those tables, falling back to localStorage.
 - Sports Revealer's old `reveal_rounds` and `reveal_plays` tables are no longer used.
+
+## NBA versions (prototype, off by default)
+Every game also has an NBA version under `/nba`: Basketball Golf (`/nba/golf`, with Player mode at `/nba/golf/player`), Stats Ranker (`/nba/rank`) and Roster Reveal (`/nba/roster`), each with its archive.
+
+- **Kill switch:** the NBA games exist only while the `NBA_ENABLED` environment variable is `1` or `true`. Unset, every `/nba` page is a 404, NBA API calls (`sport=nba`) are a 404, the nav's MLB | NBA switch is hidden, and the build doesn't backfill NBA rounds. Change it in Vercel (Settings → Environment Variables) and redeploy.
+- **Why it's off by default:** the NBA data is built from Basketball-Reference (through the community [bball-reference-datasets](https://github.com/sumitrodatta/bball-reference-datasets) CSVs). That's fine for a private prototype, but it needs a license or a legal check before NBA goes public. NBA pages are also marked `noindex`.
+- **Data:** `scripts/build_nba_data.py` writes `src/data/nba/leaderboards.json`, `src/data/nba/player-meta.json`, `src/data/nba/roster.json` (server-only) and `public/players-nba.json`. Through the 2025–26 season; BAA, NBA and ABA careers combined, regular season, like Basketball-Reference's leaderboards.
+  ```bash
+  git clone --depth 1 https://github.com/sumitrodatta/bball-reference-datasets /tmp/bbref
+  python3 scripts/build_nba_data.py /tmp/bbref/Data   # or: npm run data:nba -- /tmp/bbref/Data
+  ```
+- **Stats (21):** Totals (PTS, TRB, AST, STL, BLK, 3P, FG, FT, G, MP, ORB, TOV), Per Game (PPG, RPG, APG, SPG, BPG, MPG; 400 games, or 10,000 points for PPG) and Shooting (FG% 2,000 FG, FT% 1,200 FT, 3P% 250 3P). Stats that weren't always kept count only the seasons they were, and the hole says "Tracked since …" (so Bill Russell has no blocks). A round never uses two versions of one stat (PTS and PPG share a `family`).
+- **Roster Reveal:** every BAA, NBA and ABA team-season (1,818). The lineup is the team's eight players with the most minutes (most points before 1951–52; `lineupSize` in `src/lib/roster.ts`), from most obscure to most famous (All-Star picks, All-League teams, MVPs, the Hall of Fame, career games). The question gives the season ("1995–96"), and ABA teams are marked in the picker.
+- **How it's wired:** `src/lib/sport.ts`. Baseball keeps every name it had: routes, tables, round seeds and localStorage keys. NBA uses the same tables with an `nba_` prefix (created by `scripts/migrate.mjs`), seeds and storage keys with an `nba:` prefix, and `sport=nba` on API calls. The page bodies live in `src/views/`, shared by the baseball and NBA routes.
 
 ## Development
 

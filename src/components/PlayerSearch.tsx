@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import type { Sport } from "@/lib/sport";
 import type { PlayerIndexEntry } from "@/lib/types";
 import styles from "./Game.module.css";
 
@@ -18,19 +19,24 @@ interface Indexed extends PlayerIndexEntry {
   norm: string;
 }
 
-let playersPromise: Promise<Indexed[]> | null = null;
-function loadPlayers(): Promise<Indexed[]> {
-  playersPromise ??= fetch("/players.json")
+/** Each sport's autocomplete index, loaded once per page. */
+const PLAYER_FILES: Record<Sport, string> = { mlb: "/players.json", nba: "/players-nba.json" };
+const playersPromises = new Map<Sport, Promise<Indexed[]>>();
+function loadPlayers(sport: Sport): Promise<Indexed[]> {
+  const existing = playersPromises.get(sport);
+  if (existing) return existing;
+  const promise = fetch(PLAYER_FILES[sport])
     .then((r) => {
       if (!r.ok) throw new Error(`Failed to load players (${r.status})`);
       return r.json();
     })
     .then((d: { players: PlayerIndexEntry[] }) => d.players.map((p) => ({ ...p, norm: normalize(p.n) })))
     .catch((e) => {
-      playersPromise = null;
+      playersPromises.delete(sport);
       throw e;
     });
-  return playersPromise;
+  playersPromises.set(sport, promise);
+  return promise;
 }
 
 export function search(players: Indexed[], query: string): Indexed[] {
@@ -52,12 +58,13 @@ export function search(players: Indexed[], query: string): Indexed[] {
 }
 
 interface Props {
+  sport?: Sport;
   usedIds: Set<string>;
   disabled: boolean;
   onSubmit: (player: PlayerIndexEntry) => void;
 }
 
-export default function PlayerSearch({ usedIds, disabled, onSubmit }: Props) {
+export default function PlayerSearch({ sport = "mlb", usedIds, disabled, onSubmit }: Props) {
   const [players, setPlayers] = useState<Indexed[] | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [query, setQuery] = useState("");
@@ -68,8 +75,8 @@ export default function PlayerSearch({ usedIds, disabled, onSubmit }: Props) {
   const listId = useId();
 
   useEffect(() => {
-    loadPlayers().then(setPlayers, () => setLoadError(true));
-  }, []);
+    loadPlayers(sport).then(setPlayers, () => setLoadError(true));
+  }, [sport]);
 
   const results = useMemo(() => (players && !selected ? search(players, query) : []), [players, query, selected]);
 

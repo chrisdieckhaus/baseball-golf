@@ -1,4 +1,8 @@
-export type StatGroup = "Batting" | "Pitching";
+/** Baseball: "Batting" | "Pitching". NBA: "Totals" | "Per Game" | "Shooting". */
+export type StatGroup = string;
+
+/** count: totals; rate: .366-style (no leading zero); average: per-game, like 27.1. */
+export type StatKind = "count" | "rate" | "average";
 
 export interface LeaderboardEntry {
   id: string;
@@ -11,7 +15,12 @@ export interface Leaderboard {
   key: string;
   label: string;
   group: StatGroup;
-  kind: "count" | "rate";
+  /**
+   * Versions of the same stat share a family (NBA: PTS and PPG are both "pts"),
+   * and a round never uses two from one family. Baseball stats have none.
+   */
+  family?: string;
+  kind: StatKind;
   decimals: number;
   lowerIsBetter: boolean;
   qualifier: string | null;

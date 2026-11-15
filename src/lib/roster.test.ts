@@ -10,8 +10,10 @@ import {
   rosterResult,
   rosterRoundNumber,
   rosterState,
+  ROSTER_LAUNCH_DATE,
+  ROSTER_WEIGHTED_FROM,
 } from "./roster";
-import { rosterData } from "./roster-pool";
+import { rosterData, rosterDataFor } from "./roster-pool";
 
 const find = (team: string, year: number) => rosterData.rounds.find((r) => r.team === team && r.year === year)!;
 
@@ -81,7 +83,7 @@ describe("playing a round", () => {
   });
 
   it("validates reveal counts and guesses", () => {
-    expect([0, 1, 10, 11, 2.5, "3"].map(isValidRevealed)).toEqual([false, true, true, false, false, false]);
+    expect([0, 1, 10, 11, 2.5, "3"].map((n) => isValidRevealed(n))).toEqual([false, true, true, false, false, false]);
     expect(isValidGuess(round, "BOS")).toBe(true);
     expect(isValidGuess(round, "WSN")).toBe(true); // the 2004 Expos (franchise WSN)
     expect(isValidGuess(round, "XXX")).toBe(false);
@@ -95,4 +97,39 @@ describe("playing a round", () => {
   it("finds a stored round's team-season", () => {
     expect(findTeamSeason(rosterData, { franchise: "BOS", year: 2004 }).team).toBe("Boston Red Sox");
   });
+});
+
+describe("Roster Reveal: weighted toward recent seasons", () => {
+  const days = (from: string, n: number) => {
+    const out: string[] = [];
+    const d = new Date(`${from}T00:00:00Z`);
+    for (let i = 0; i < n; i++, d.setUTCDate(d.getUTCDate() + 1)) out.push(d.toISOString().slice(0, 10));
+    return out;
+  };
+
+  for (const sport of ["mlb", "nba"] as const) {
+    const data = rosterDataFor(sport);
+    const last = data.lastYear;
+
+    it(`${sport}: never repeats a team-season, across the switch to the weighted order`, () => {
+      const seen = new Set<string>();
+      // Every team-season gets a turn before anything repeats.
+      for (const date of days(ROSTER_LAUNCH_DATE, data.rounds.length)) {
+        const r = generateStoredRosterRound(data, date, sport);
+        const key = `${r.year}-${r.franchise}`;
+        expect(seen.has(key), `${date} repeats ${key}`).toBe(false);
+        seen.add(key);
+        findTeamSeason(data, r);
+      }
+      expect(seen.size).toBe(data.rounds.length);
+    });
+
+    it(`${sport}: about half of the first three years come from the last 25 seasons`, () => {
+      const years = days(ROSTER_WEIGHTED_FROM, 3 * 365).map((d) => generateStoredRosterRound(data, d, sport).year);
+      const recent = years.filter((y) => y > last - 25).length / years.length;
+      expect(recent).toBeGreaterThan(0.45);
+      expect(recent).toBeLessThan(0.62);
+      expect(years.filter((y) => y < 1970).length).toBeGreaterThan(30); // old-timers still show up
+    });
+  }
 });

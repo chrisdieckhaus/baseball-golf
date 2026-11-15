@@ -4,6 +4,7 @@
 // guess per hole. The round total is set when the last hole is saved.
 import type { Queryable } from "./plays";
 import { HOLES_PER_ROUND } from "./round";
+import { table, type Sport } from "./sport";
 
 export interface StoredPlayerPlay {
   guesses: (number | null)[];
@@ -23,9 +24,14 @@ function toPlay(row: Record<string, unknown>): StoredPlayerPlay {
   };
 }
 
-export async function getPlayerGolfPlay(db: Queryable, playerId: string, roundDate: string): Promise<StoredPlayerPlay | null> {
+export async function getPlayerGolfPlay(
+  db: Queryable,
+  playerId: string,
+  roundDate: string,
+  sport: Sport = "mlb",
+): Promise<StoredPlayerPlay | null> {
   const { rows } = await db.query(
-    `SELECT guesses, hole_scores, total_score FROM player_golf_plays WHERE player_id = $1 AND round_date = $2`,
+    `SELECT guesses, hole_scores, total_score FROM ${table(sport, "player_golf_plays")} WHERE player_id = $1 AND round_date = $2`,
     [playerId, roundDate],
   );
   return rows[0] ? toPlay(rows[0]) : null;
@@ -35,12 +41,13 @@ export async function getPlayerGolfPlay(db: Queryable, playerId: string, roundDa
 export async function getPlayerGolfProgress(
   db: Queryable,
   playerId: string,
+  sport: Sport = "mlb",
 ): Promise<Map<string, { holesPlayed: number; totalScore: number | null }>> {
   const { rows } = await db.query<{ round_date: string; holes_played: number; total_score: number | null }>(
     `SELECT round_date::text AS round_date,
             cardinality(array_remove(guesses, NULL)) AS holes_played,
             total_score
-       FROM player_golf_plays WHERE player_id = $1`,
+       FROM ${table(sport, "player_golf_plays")} WHERE player_id = $1`,
     [playerId],
   );
   return new Map(rows.map((r) => [r.round_date, { holesPlayed: r.holes_played, totalScore: r.total_score }]));
@@ -49,18 +56,20 @@ export async function getPlayerGolfProgress(
 export async function recordPlayerGolfGuess(
   db: Queryable,
   args: { playerId: string; roundDate: string; hole: number; guess: number; score: number; isLive: boolean },
+  sport: Sport = "mlb",
 ): Promise<PlayerRecordOutcome> {
   const { playerId, roundDate, hole, guess, score, isLive } = args;
   const h = hole + 1; // Postgres arrays are 1-based
+  const plays = table(sport, "player_golf_plays");
 
   await db.query(`INSERT INTO players (id) VALUES ($1) ON CONFLICT DO NOTHING`, [playerId]);
   await db.query(
-    `INSERT INTO player_golf_plays (player_id, round_date, is_live) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
+    `INSERT INTO ${plays} (player_id, round_date, is_live) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
     [playerId, roundDate, isLive],
   );
 
   const { rows } = await db.query(
-    `UPDATE player_golf_plays p SET
+    `UPDATE ${plays} p SET
         guesses[$3::int]     = $4::smallint,
         hole_scores[$3::int] = $5::smallint,
         total_score = CASE WHEN cardinality(array_remove(p.guesses, NULL)) = $6::int - 1
@@ -74,6 +83,6 @@ export async function recordPlayerGolfGuess(
   );
   if (rows[0]) return { ok: true, play: toPlay(rows[0]) };
 
-  const play = (await getPlayerGolfPlay(db, playerId, roundDate))!;
+  const play = (await getPlayerGolfPlay(db, playerId, roundDate, sport))!;
   return { ok: false, reason: play.guesses[hole] !== null ? "already_guessed" : "out_of_order", play };
 }

@@ -8,6 +8,7 @@
 // never leave the server: the browser only gets names and ids.
 import { hashString, mulberry32 } from "./round";
 import { formatValue } from "./scoring";
+import { namespaced, type Sport } from "./sport";
 import type { LeaderboardData, StatGroup } from "./types";
 
 export const RANK_PLAYERS = 5;
@@ -66,8 +67,8 @@ export interface RankReveal {
  * spans the leaderboard. They're shown alphabetically by last name (see
  * rankRoundFromStored); the stored order is shuffled so it doesn't follow the bands.
  */
-export function generateStoredRankRound(data: LeaderboardData, date: string): StoredRankRound {
-  const rand = mulberry32(hashString(`stats-ranker:${date}`));
+export function generateStoredRankRound(data: LeaderboardData, date: string, sport: Sport = "mlb"): StoredRankRound {
+  const rand = mulberry32(hashString(namespaced(sport, `stats-ranker:${date}`)));
   const pick = <T,>(arr: T[]): T => arr[Math.floor(rand() * arr.length)];
   const keys = Object.keys(data.stats).sort();
   const bandSize = RANK_POOL / RANK_PLAYERS;
@@ -217,14 +218,15 @@ export function rankShareLine(g: { off: number; dir: -1 | 0 | 1 }): string {
   return `${g.dir < 0 ? "⬆️" : "⬇️"} ${g.off}`;
 }
 
-export function buildRankShareText(round: RankRound, reveal: RankReveal, url: string): string {
+export function buildRankShareText(round: RankRound, reveal: RankReveal, url: string, sport: Sport = "mlb"): string {
   const date = new Date(`${round.date}T12:00:00Z`).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
     timeZone: "UTC",
   });
-  const title = `Stats Ranker #${rankRoundNumber(round.date)} · ${date}`;
+  const name = sport === "nba" ? "Stats Ranker · NBA" : "Stats Ranker";
+  const title = `${name} #${rankRoundNumber(round.date)} · ${date}`;
   const line = reveal.score === 0 ? "Perfect order!" : `Off by ${reveal.score}`;
   return [title, ...reveal.guess.map(rankShareLine), line, url].join("\n");
 }

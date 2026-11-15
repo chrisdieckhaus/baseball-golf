@@ -1,5 +1,6 @@
 import type { Hole, LeaderboardData, Round } from "./types";
 import { MAX_TARGET_RANK } from "./scoring";
+import { namespaced, type Sport } from "./sport";
 
 export const HOLES_PER_ROUND = 3;
 /** A target rank shared by more than this many players counts as a "large tie". */
@@ -89,27 +90,40 @@ export function eligibleTargetRanks(data: LeaderboardData, statKey: string): num
     .sort((a, b) => a - b);
 }
 
+/** True if the stat is a version of one already in the round (NBA: PPG after PTS). Baseball stats have no family. */
+export function hasUsedFamily(data: LeaderboardData, key: string, usedFamilies: Set<string>): boolean {
+  const family = data.stats[key].family;
+  return family !== undefined && usedFamilies.has(family);
+}
+
 /**
  * Deterministically generate a round. Daily rounds are generated once and then
  * stored (see rounds.ts), so changing this function or the data only affects
- * rounds that don't exist yet. The round is seeded by its date. Picks three
- * different stats (never all three from the same group) and a target rank for each.
+ * rounds that don't exist yet. The round is seeded by its date (and sport). Picks
+ * three different stats (never all three from the same group, never two from one
+ * family) and a target rank for each.
  */
-export function generateRound(data: LeaderboardData, date: string): Round {
-  const rand = mulberry32(hashString(`baseball-golf:${date}`));
+export function generateRound(data: LeaderboardData, date: string, sport: Sport = "mlb"): Round {
+  const rand = mulberry32(hashString(namespaced(sport, `baseball-golf:${date}`)));
   const pick = <T,>(arr: T[]): T => arr[Math.floor(rand() * arr.length)];
 
   const allKeys = Object.keys(data.stats).sort();
   const holes: Hole[] = [];
   const used = new Set<string>();
+  const usedFamilies = new Set<string>();
   while (holes.length < HOLES_PER_ROUND) {
     const groupCounts = new Map<string, number>();
     for (const h of holes) groupCounts.set(h.group, (groupCounts.get(h.group) ?? 0) + 1);
     const candidates = allKeys.filter(
-      (k) => !used.has(k) && (groupCounts.get(data.stats[k].group) ?? 0) < HOLES_PER_ROUND - 1,
+      (k) =>
+        !used.has(k) &&
+        !hasUsedFamily(data, k, usedFamilies) &&
+        (groupCounts.get(data.stats[k].group) ?? 0) < HOLES_PER_ROUND - 1,
     );
     const key = pick(candidates);
     used.add(key);
+    const family = data.stats[key].family;
+    if (family) usedFamilies.add(family);
     const ranks = eligibleTargetRanks(data, key);
     if (ranks.length === 0) continue;
     const stat = data.stats[key];
