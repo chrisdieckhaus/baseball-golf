@@ -297,3 +297,7 @@
 .archiveLink:hover {
   background: rgba(248, 245, 236, 0.1);
 }
+
+a.linkBtn {
+  text-decoration: none;
+}

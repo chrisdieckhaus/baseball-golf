@@ -8,12 +8,14 @@ import {
   buildRevealShareText,
   INNINGS,
   inningName,
+  REVEAL_LAUNCH_DATE,
   revealRoundNumber,
   SKIP,
   type RevealRound,
   type RevealState,
 } from "@/lib/reveal";
 import { RevealCompare } from "@/components/CompareStats";
+import DayNav from "@/components/DayNav";
 import type { RevealStats } from "@/lib/game-plays";
 import { ordinal } from "@/lib/scoring";
 import type { PlayerIndexEntry } from "@/lib/types";
@@ -64,10 +66,11 @@ interface Props {
   round: RevealRound;
   initial: RevealState;
   isToday: boolean;
+  today: string;
   practiceEnabled: boolean;
 }
 
-export default function RevealGame({ round, initial, isToday, practiceEnabled }: Props) {
+export default function RevealGame({ round, initial, isToday, today, practiceEnabled }: Props) {
   const router = useRouter();
   const key = storageKey(round);
   const [guesses, setGuesses] = useState<string[]>([]);
@@ -301,15 +304,28 @@ export default function RevealGame({ round, initial, isToday, practiceEnabled }:
       )}
 
       <nav className={styles.links}>
-        {practiceEnabled && (
-          <button
+        {state.done && !round.practiceSeed ? (
+          // Finished a daily round: step to the day before or after.
+          <DayNav
+            path="/reveal"
+            date={round.date}
+            today={today}
+            firstDate={REVEAL_LAUNCH_DATE}
             className={styles.linkBtn}
-            onClick={() => router.push(`/reveal?seed=${Math.random().toString(36).slice(2, 10)}`)}
-          >
-            ↻ New practice round
-          </button>
+          />
+        ) : (
+          <>
+            {practiceEnabled && (
+              <button
+                className={styles.linkBtn}
+                onClick={() => router.push(`/reveal?seed=${Math.random().toString(36).slice(2, 10)}`)}
+              >
+                ↻ New practice round
+              </button>
+            )}
+            {round.practiceSeed || !isToday ? <Link href="/reveal">Today&apos;s round</Link> : null}
+          </>
         )}
-        {round.practiceSeed || !isToday ? <Link href="/reveal">Today&apos;s round</Link> : null}
         <Link href="/">Play Baseball Golf →</Link>
         <Link href="/rank">Play Stats Ranker →</Link>
       </nav>
