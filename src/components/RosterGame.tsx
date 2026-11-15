@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { RosterCompare } from "@/components/CompareStats";
 import DayNav from "@/components/DayNav";
 import type { RosterStats } from "@/lib/game-plays";
@@ -16,8 +15,7 @@ import {
 } from "@/lib/roster";
 import styles from "./RosterGame.module.css";
 
-const storageKey = (round: RosterRound) =>
-  round.practiceSeed ? `roster-reveal:practice:${round.practiceSeed}` : `roster-reveal:${round.date}`;
+const storageKey = (round: RosterRound) => `roster-reveal:${round.date}`;
 
 function loadSaved(key: string): RosterState | null {
   try {
@@ -50,11 +48,9 @@ interface Props {
   initial: RosterState;
   isToday: boolean;
   today: string;
-  practiceEnabled: boolean;
 }
 
-export default function RosterGame({ round, initial, isToday, today, practiceEnabled }: Props) {
-  const router = useRouter();
+export default function RosterGame({ round, initial, isToday, today }: Props) {
   const key = storageKey(round);
   const [state, setState] = useState<RosterState>(initial);
   const [stats, setStats] = useState<RosterStats | null>(null);
@@ -75,7 +71,7 @@ export default function RosterGame({ round, initial, isToday, today, practiceEna
     const res = await fetch("/api/roster", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date: round.date, seed: round.practiceSeed ?? null, revealed, guess }),
+      body: JSON.stringify({ date: round.date, revealed, guess }),
     });
     const body = await res.json();
     if (!res.ok) throw new Error(body.error ?? "Something went wrong");
@@ -86,7 +82,6 @@ export default function RosterGame({ round, initial, isToday, today, practiceEna
     const saved = loadSaved(key);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- restoring from localStorage after hydration
     if (saved) setState(saved);
-    if (round.practiceSeed) return;
 
     // The database has this browser's daily plays. Use whichever of the saved
     // play and this browser's copy is further along, and upload this browser's
@@ -113,7 +108,7 @@ export default function RosterGame({ round, initial, isToday, today, practiceEna
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per round
-  }, [key, round.date, round.practiceSeed]);
+  }, [key, round.date]);
 
   async function reveal() {
     if (busy || state.done || state.revealed.length >= LINEUP_SIZE) return;
@@ -146,11 +141,7 @@ export default function RosterGame({ round, initial, isToday, today, practiceEna
   }
 
   async function share() {
-    const url = round.practiceSeed
-      ? `${window.location.origin}/roster?seed=${round.practiceSeed}`
-      : isToday
-        ? `${window.location.origin}/roster`
-        : `${window.location.origin}/roster?date=${round.date}`;
+    const url = isToday ? `${window.location.origin}/roster` : `${window.location.origin}/roster?date=${round.date}`;
     const text = buildRosterShareText(round, state, url);
     if (typeof navigator.share === "function" && window.matchMedia?.("(pointer: coarse)").matches) {
       try {
@@ -177,14 +168,13 @@ export default function RosterGame({ round, initial, isToday, today, practiceEna
     <div className={styles.game}>
       <div className={styles.dateBar}>
         <p className={styles.date}>
-          {round.practiceSeed
-            ? `Practice round #${round.practiceSeed}`
-            : `#${rosterRoundNumber(round.date)} · ${new Date(`${round.date}T12:00:00Z`).toLocaleDateString("en-US", {
-                weekday: "long",
-                month: "long",
-                day: "numeric",
-                timeZone: "UTC",
-              })}`}
+          #{rosterRoundNumber(round.date)} ·{" "}
+          {new Date(`${round.date}T12:00:00Z`).toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+            timeZone: "UTC",
+          })}
         </p>
         <Link href="/roster/archive" className={styles.archiveLink}>
           Play previous rounds
@@ -287,8 +277,8 @@ export default function RosterGame({ round, initial, isToday, today, practiceEna
       )}
 
       <nav className={styles.links}>
-        {state.done && !round.practiceSeed ? (
-          // Finished a daily round: step to the day before or after.
+        {state.done ? (
+          // Finished the round: step to the day before or after.
           <DayNav
             path="/roster"
             date={round.date}
@@ -296,19 +286,9 @@ export default function RosterGame({ round, initial, isToday, today, practiceEna
             firstDate={ROSTER_LAUNCH_DATE}
             className={styles.linkBtn}
           />
-        ) : (
-          <>
-            {practiceEnabled && (
-              <button
-                className={styles.linkBtn}
-                onClick={() => router.push(`/roster?seed=${Math.random().toString(36).slice(2, 10)}`)}
-              >
-                ↻ New practice round
-              </button>
-            )}
-            {round.practiceSeed || !isToday ? <Link href="/roster">Today&apos;s round</Link> : null}
-          </>
-        )}
+        ) : !isToday ? (
+          <Link href="/roster">Today&apos;s round</Link>
+        ) : null}
         <Link href="/">Play Baseball Golf →</Link>
         <Link href="/rank">Play Stats Ranker →</Link>
       </nav>

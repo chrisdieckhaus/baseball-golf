@@ -14,9 +14,11 @@ describe("scoreHole", () => {
     expect(scoreHole(83, 90)).toBe(7);
     expect(scoreHole(83, 70)).toBe(13);
   });
-  it("caps at 150 and scores unranked as 150", () => {
-    expect(scoreHole(10, 299)).toBe(150);
-    expect(scoreHole(10, null)).toBe(150);
+  it("caps at 100 and scores unranked as 100", () => {
+    expect(scoreHole(10, 299)).toBe(100);
+    expect(scoreHole(10, 110)).toBe(100);
+    expect(scoreHole(10, 109)).toBe(99);
+    expect(scoreHole(10, null)).toBe(100);
   });
 });
 
@@ -68,18 +70,12 @@ describe("generateRound", () => {
       expect(new Set(holes.map((h) => h.group)).size).toBe(2); // never all one group
       for (const h of holes) {
         expect(h.targetRank).toBeGreaterThanOrEqual(1);
-        expect(h.targetRank).toBeLessThanOrEqual(150);
+        expect(h.targetRank).toBeLessThanOrEqual(100);
         const holders = data.stats[h.statKey].entries.filter((e) => e.rank === h.targetRank);
         expect(holders.length).toBeGreaterThanOrEqual(1);
         expect(holders.length).toBeLessThanOrEqual(MAX_TIE_SIZE);
       }
     }
-  });
-  it("practice rounds are seeded by the seed, not the date", () => {
-    const a = generateRound(data, "2026-11-13", "abc123");
-    expect(a.practiceSeed).toBe("abc123");
-    expect(a.holes).toEqual(generateRound(data, "2027-05-01", "abc123").holes);
-    expect(a.holes).not.toEqual(generateRound(data, "2026-11-13").holes);
   });
   it("only targets ranks somebody holds", () => {
     expect(eligibleTargetRanks(data, "W")).not.toContain(4);
@@ -117,11 +113,10 @@ describe("share text", () => {
       "Baseball Golf · Nov 13, 2026\n🟩 +4  🟨 +12  ⛳ ACE\nTotal: 16\nhttps://baseball-golf.vercel.app",
     );
   });
-  it("labels practice rounds and buckets scores", () => {
-    const text = buildShareText({ date: "2026-11-13", practiceSeed: "abc123", scores: [35, 90, 150], url: "x" });
-    expect(text.split("\n")[0]).toBe("Baseball Golf · Practice #abc123");
-    expect(text).toContain("🟧 +35  🟥 +90  ⬛ +150");
-    expect([0, 5, 6, 20, 21, 50, 51, 149, 150].map(holeEmoji).join("")).toBe("⛳🟩🟨🟨🟧🟧🟥🟥⬛");
+  it("buckets scores", () => {
+    const text = buildShareText({ date: "2026-11-13", scores: [35, 90, 100], url: "x" });
+    expect(text).toContain("🟧 +35  🟥 +90  ⬛ +100");
+    expect([0, 5, 6, 20, 21, 50, 51, 99, 100].map(holeEmoji).join("")).toBe("⛳🟩🟨🟨🟧🟧🟥🟥⬛");
   });
   it("celebrates a perfect round", () => {
     expect(buildShareText({ date: "2026-11-13", scores: [0, 0, 0], url: "x" })).toContain("perfect round");

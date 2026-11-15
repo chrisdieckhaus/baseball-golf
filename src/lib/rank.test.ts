@@ -13,6 +13,8 @@ import {
 } from "./rank";
 
 const date = "2026-11-20";
+/** The date `i` days after Nov 1, 2026, for checking many different rounds. */
+const nthDate = (i: number) => new Date(Date.UTC(2026, 10, 1) + i * 86_400_000).toISOString().slice(0, 10);
 const round = rankRoundFromStored(leaderboards, date, generateStoredRankRound(leaderboards, date));
 const answer = scoreRankOrder(leaderboards, round, round.players.map((p) => p.id)).answer.map((a) => a.id);
 
@@ -27,7 +29,7 @@ describe("Stats Ranker round", () => {
 
   it("picks five distinct top-pool players with distinct values, for many dates", () => {
     for (let i = 0; i < 200; i++) {
-      const r = generateStoredRankRound(leaderboards, date, `t${i}`);
+      const r = generateStoredRankRound(leaderboards, nthDate(i));
       const stat = leaderboards.stats[r.statKey];
       expect(r.playerIds).toHaveLength(RANK_PLAYERS);
       const entries = r.playerIds.map((id) => stat.entries.find((e) => e.id === id)!);
@@ -38,7 +40,7 @@ describe("Stats Ranker round", () => {
 
   it("takes one player from each fifth of the top RANK_POOL", () => {
     for (let i = 0; i < 200; i++) {
-      const r = generateStoredRankRound(leaderboards, date, `b${i}`);
+      const r = generateStoredRankRound(leaderboards, nthDate(i + 200));
       const stat = leaderboards.stats[r.statKey];
       const bands = r.playerIds
         .map((id) => Math.floor((stat.entries.find((e) => e.id === id)!.rank - 1) / (RANK_POOL / RANK_PLAYERS)))
@@ -50,7 +52,7 @@ describe("Stats Ranker round", () => {
   it("doesn't show the players in band order", () => {
     let inOrder = 0;
     for (let i = 0; i < 200; i++) {
-      const r = generateStoredRankRound(leaderboards, date, `s${i}`);
+      const r = generateStoredRankRound(leaderboards, nthDate(i + 400));
       const round = rankRoundFromStored(leaderboards, date, r);
       if (scoreRankOrder(leaderboards, round, r.playerIds).score === 0) inOrder++;
     }
@@ -60,7 +62,7 @@ describe("Stats Ranker round", () => {
 
   it("shows the players alphabetically by last name", () => {
     for (let i = 0; i < 100; i++) {
-      const r = rankRoundFromStored(leaderboards, date, generateStoredRankRound(leaderboards, date, `a${i}`));
+      const r = rankRoundFromStored(leaderboards, date, generateStoredRankRound(leaderboards, nthDate(i + 600)));
       const last = r.players.map((p) => lastName(p.name));
       expect(last).toEqual([...last].sort((x, y) => x.localeCompare(y, "en")));
     }

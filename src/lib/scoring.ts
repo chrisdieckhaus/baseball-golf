@@ -1,10 +1,13 @@
 import type { LeaderboardEntry } from "./types";
 
 /** Maximum score for a single hole; also the score for an unranked guess. */
-export const MAX_HOLE_SCORE = 150;
+export const MAX_HOLE_SCORE = 100;
 
-/** Highest rank a hole can target. */
-export const MAX_TARGET_RANK = 150;
+/**
+ * Highest rank a new round can target. Rounds stored before Nov 15, 2026 can
+ * target up to 150; they're scored with the same 100-per-hole cap.
+ */
+export const MAX_TARGET_RANK = 100;
 
 /**
  * Score one hole: distance between the target rank and the guessed player's rank,

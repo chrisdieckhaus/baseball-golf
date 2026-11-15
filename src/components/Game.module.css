@@ -13,41 +13,6 @@
   color: var(--chalk-dim);
 }
 
-.practiceBar {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 14px;
-  margin-top: -8px;
-}
-
-.practiceBtn {
-  font: inherit;
-  font-size: 0.88rem;
-  font-weight: 600;
-  padding: 7px 14px;
-  border-radius: 999px;
-  border: 1.5px solid rgba(248, 245, 236, 0.5);
-  background: transparent;
-  color: var(--chalk);
-  cursor: pointer;
-}
-
-.practiceBtn:hover {
-  background: rgba(248, 245, 236, 0.1);
-}
-
-.practiceLink {
-  font: inherit;
-  font-size: 0.88rem;
-  border: none;
-  background: none;
-  padding: 0;
-  color: var(--chalk-dim);
-  text-decoration: underline;
-  cursor: pointer;
-}
-
 .holes {
   list-style: none;
   margin: 0;

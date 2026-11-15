@@ -8,12 +8,13 @@ Quick daily sports stats games, all in one app:
 
 ## Baseball Golf
 
-A daily baseball trivia game. Each day everyone plays the same three holes. Each hole gives a career stat and an all-time rank, for example "83rd all-time in career RBIs." Name the player you think holds that rank. Your score is how far off your player's rank is, capped at 150 per hole. Lowest total wins.
+A daily baseball trivia game. Each day everyone plays the same three holes. Each hole gives a career stat and an all-time rank, for example "83rd all-time in career RBIs." Name the player you think holds that rank. Your score is how far off your player's rank is, capped at 100 per hole. Lowest total wins.
 
 ### Rules
-- Three holes a day. Each hole's stat is random and its target rank is between 1 and 150. A new round starts at midnight Eastern.
+- Three holes a day. Each hole's stat is random and its target rank is between 1 and 100. A new round starts at midnight Eastern.
 - One guess per hole, and you can't use the same player twice in a round.
-- Hole score = `min(|target rank − your player's rank|, 150)`. An unranked guess scores 150.
+- Hole score = `min(|target rank − your player's rank|, 100)`. An unranked guess scores 100.
+- Rounds stored before Nov 15, 2026 can target ranks up to 150. They're scored with the same 100 cap, and scores already saved stay as they were.
 - Tied players share a rank (1, 2, 2, 4).
 - Rate stats have minimums to qualify: 3,000 PA for batting (AVG, OBP, SLG, OPS) and 1,000 IP for pitching (ERA, WHIP, K/9).
 
@@ -25,7 +26,7 @@ Stats come from the [Lahman Baseball Database](https://sabr.org/lahman-database/
   - AL, NL, AA, UA, PL and FL
   - the 1920–48 Negro Leagues
 - Pre-1920 Black baseball and independent teams are excluded, which matches Baseball-Reference.
-- `scripts/build_data.py` precomputes career leaderboards. It keeps ranks up to 300, because any rank past that always scores 150.
+- `scripts/build_data.py` precomputes career leaderboards. It keeps ranks up to 300. New rounds target 1–100, but older stored rounds can target up to 150, and a rank 100 or more past the target always scores the maximum.
   - `src/data/leaderboards.json` holds the leaderboards and is server-only, so answers aren't shipped to the browser.
   - `public/players.json` is the autocomplete index.
 
@@ -58,7 +59,7 @@ A third daily game on the same data, replacing Sports Revealer (`/reveal` now re
 
 ## Stats Ranker and Roster Reveal archives and plays
 - Both games number their rounds from Nov 1, 2026, like Baseball Golf. The build's backfill stores every round from then on.
-- Both save each daily play (`rank_plays`, `roster_plays`), keyed by the same anonymous `bg_player` cookie as Baseball Golf. Practice rounds aren't saved. The archives read results from those tables, falling back to localStorage.
+- Both save each daily play (`rank_plays`, `roster_plays`), keyed by the same anonymous `bg_player` cookie as Baseball Golf. The archives read results from those tables, falling back to localStorage.
 - Sports Revealer's old `reveal_rounds` and `reveal_plays` tables are no longer used.
 
 ## Development
@@ -72,14 +73,9 @@ npm run build
 
 It deploys to Vercel as a standard Next.js app, with Neon Postgres (`DATABASE_URL`). `npm run build` first runs `scripts/migrate.mjs` (tables) and `scripts/backfill-rounds.mts` (saves any daily rounds not stored yet). Without `DATABASE_URL`, both skip and the game runs statelessly. Database tests run when `TEST_DATABASE_URL` points at a Postgres you can wipe.
 
-### Practice rounds (testing)
-A **↻ New practice round** button loads a random round at `/?seed=<random>`. That round is seeded by the `seed` value, not the date, so the same link always gives the same round and testers can share them. Practice progress is saved separately from the daily round.
-
-To turn practice rounds off before launch, set the environment variable `DISABLE_PRACTICE=1` in Vercel and redeploy. That hides the button and makes the API reject practice rounds.
-
 ## How it works
 - `src/lib/round.ts` generates each day's round from a seed based on the date, so every player gets the same round.
-  - Each daily round's stats and target ranks are saved in the `rounds` table (`src/lib/rounds.ts`) the first time it's needed. After that the saved round is used, so changing the generator never changes a round that already exists. Answers aren't saved: they always come from the current leaderboards. Practice rounds aren't saved.
+  - Each daily round's stats and target ranks are saved in the `rounds` table (`src/lib/rounds.ts`) the first time it's needed. After that the saved round is used, so changing the generator never changes a round that already exists. Answers aren't saved: they always come from the current leaderboards.
   - A round never has three holes from the same group (batting or pitching).
   - It never targets a rank shared by more than three players.
 - `POST /api/guess` scores a guess on the server and returns the reveal: your player's rank and the player(s) at the target rank.

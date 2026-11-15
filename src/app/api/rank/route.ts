@@ -4,7 +4,7 @@ import { leaderboards } from "@/lib/leaderboards";
 import { ensurePlayerId, readPlayerId } from "@/lib/player-cookie";
 import { isValidOrder, scoreRankOrder } from "@/lib/rank";
 import { getRankRound, isPlayableRankDate } from "@/lib/rank-data";
-import { isValidDate, isValidSeed, practiceEnabled, todayET } from "@/lib/round";
+import { isValidDate, todayET } from "@/lib/round";
 
 const noStore = { "Cache-Control": "private, no-store" };
 
@@ -36,28 +36,23 @@ export async function POST(request: Request) {
   } catch {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
-  const { date, seed, order } = (body ?? {}) as Record<string, unknown>;
+  const { date, order } = (body ?? {}) as Record<string, unknown>;
 
   if (typeof date !== "string" || !isValidDate(date)) {
     return Response.json({ error: "Invalid date" }, { status: 400 });
   }
-  let practiceSeed: string | undefined;
-  if (seed !== undefined && seed !== null) {
-    if (!practiceEnabled()) return Response.json({ error: "Practice rounds are turned off" }, { status: 400 });
-    if (!isValidSeed(seed)) return Response.json({ error: "Invalid practice round" }, { status: 400 });
-    practiceSeed = seed;
-  } else if (!isPlayableRankDate(date)) {
+  if (!isPlayableRankDate(date)) {
     return Response.json({ error: "There's no round for that date" }, { status: 400 });
   }
 
-  const round = await getRankRound(date, practiceSeed);
+  const round = await getRankRound(date);
   if (!isValidOrder(round, order)) {
     return Response.json({ error: "Order must contain each of the round's players once" }, { status: 400 });
   }
   const reveal = scoreRankOrder(leaderboards, round, order);
 
   const db = getDb();
-  if (practiceSeed || !db) return Response.json({ order, reveal });
+  if (!db) return Response.json({ order, reveal });
   try {
     const me = await ensurePlayerId();
     const { created, play } = await recordRankPlay(db, {

@@ -38,7 +38,6 @@ export interface Hole {
 
 export interface Round {
   date: string; // YYYY-MM-DD, America/New_York
-  practiceSeed?: string; // set for practice (random, non-daily) rounds
   holes: Hole[];
 }
 

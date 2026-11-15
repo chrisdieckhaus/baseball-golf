@@ -1,5 +1,5 @@
 // Saved plays for Stats Ranker and Roster Reveal, one row per player per
-// daily round (practice rounds aren't saved). Same anonymous player id as
+// daily round. Same anonymous player id as
 // Baseball Golf's plays (the bg_player cookie). The browser also keeps a copy
 // in localStorage; the database is the record.
 import { percentBeaten, type Queryable } from "./plays";

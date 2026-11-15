@@ -19,8 +19,9 @@ from pathlib import Path
 import pandas as pd
 import pyreadr
 
-# Keep every player whose rank is <= this. Targets are 1-150 and the per-hole
-# score is capped at 150, so any rank past 300 always scores 150 anyway.
+# Keep every player whose rank is <= this. New rounds target 1-100 and the
+# per-hole score is capped at 100. Rounds stored before Nov 15, 2026 can target
+# up to 150, so ranks up to 250 can still matter; 300 covers them.
 MAX_RANK = 300
 
 # Only players who debuted in this season or later are included, with their full

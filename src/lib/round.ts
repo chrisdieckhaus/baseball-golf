@@ -80,29 +80,13 @@ export function eligibleTargetRanks(data: LeaderboardData, statKey: string): num
 }
 
 /**
- * Practice rounds (random rounds for testing) are on unless DISABLE_PRACTICE=1.
- * Server-only: read in server components and the API route.
- */
-export function practiceEnabled(): boolean {
-  return process.env.DISABLE_PRACTICE !== "1";
-}
-
-const SEED_RE = /^[a-z0-9]{1,16}$/;
-export function isValidSeed(seed: unknown): seed is string {
-  return typeof seed === "string" && SEED_RE.test(seed);
-}
-
-/**
  * Deterministically generate a round. Daily rounds are generated once and then
  * stored (see rounds.ts), so changing this function or the data only affects
- * rounds that don't exist yet. The daily round is seeded by its date; a
- * practice round is seeded by its practice seed instead, so the same link always
- * gives the same practice round. Picks three different stats (never all three
- * from the same group) and a target rank for each.
+ * rounds that don't exist yet. The round is seeded by its date. Picks three
+ * different stats (never all three from the same group) and a target rank for each.
  */
-export function generateRound(data: LeaderboardData, date: string, practiceSeed?: string): Round {
-  const seedString = practiceSeed ? `baseball-golf:practice:${practiceSeed}` : `baseball-golf:${date}`;
-  const rand = mulberry32(hashString(seedString));
+export function generateRound(data: LeaderboardData, date: string): Round {
+  const rand = mulberry32(hashString(`baseball-golf:${date}`));
   const pick = <T,>(arr: T[]): T => arr[Math.floor(rand() * arr.length)];
 
   const allKeys = Object.keys(data.stats).sort();
@@ -127,5 +111,5 @@ export function generateRound(data: LeaderboardData, date: string, practiceSeed?
       targetRank: pick(ranks),
     });
   }
-  return practiceSeed ? { date, practiceSeed, holes } : { date, holes };
+  return { date, holes };
 }

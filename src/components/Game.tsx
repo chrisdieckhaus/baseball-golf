@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import type { GuessResult, PlayerIndexEntry, PlayState, Round, RoundStats } from "@/lib/types";
 import { MAX_HOLE_SCORE, ordinal } from "@/lib/scoring";
 import { buildShareText } from "@/lib/share";
@@ -10,13 +9,8 @@ import { roundNumber } from "@/lib/round";
 import PlayerSearch from "./PlayerSearch";
 import styles from "./Game.module.css";
 
-/** Progress is saved per round: the date for daily rounds, the seed for practice rounds. */
-const storageKey = (round: Round) =>
-  round.practiceSeed ? `baseball-golf:practice:${round.practiceSeed}` : `baseball-golf:${round.date}`;
-
-function newPracticeSeed(): string {
-  return Math.random().toString(36).slice(2, 10);
-}
+/** Progress is saved per round, by date. */
+const storageKey = (round: Round) => `baseball-golf:${round.date}`;
 
 function loadSaved(key: string): (GuessResult | null)[] | null {
   try {
@@ -74,15 +68,10 @@ function ShareButton({ round, isToday, results }: { round: Round; isToday: boole
   const [fallbackText, setFallbackText] = useState<string | null>(null);
 
   async function share() {
-    // Practice and previous rounds link to that exact round; today's round links to the site.
-    const url = round.practiceSeed
-      ? `${window.location.origin}/?seed=${round.practiceSeed}`
-      : isToday
-        ? window.location.origin
-        : `${window.location.origin}/?date=${round.date}`;
+    // Previous rounds link to that exact round; today's round links to the site.
+    const url = isToday ? window.location.origin : `${window.location.origin}/?date=${round.date}`;
     const text = buildShareText({
       date: round.date,
-      practiceSeed: round.practiceSeed,
       scores: results.map((r) => r.score),
       url,
     });
@@ -165,15 +154,11 @@ function formatDate(date: string): string {
 export default function Game({
   round,
   isToday,
-  practiceEnabled,
 }: {
   round: Round;
-  isToday: boolean; // today's daily round (not a previous round or a practice round)
-  practiceEnabled: boolean;
+  isToday: boolean; // today's daily round (not a previous round)
 }) {
-  const router = useRouter();
   const key = storageKey(round);
-  const isPractice = Boolean(round.practiceSeed);
   const [results, setResults] = useState<(GuessResult | null)[]>(() => round.holes.map(() => null));
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -187,7 +172,6 @@ export default function Game({
     const saved = loadSaved(key);
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (saved && saved.length === round.holes.length) setResults(saved);
-    if (isPractice) return;
 
     let cancelled = false;
     fetch(`/api/play?date=${round.date}`, { cache: "no-store" })
@@ -207,7 +191,7 @@ export default function Game({
     return () => {
       cancelled = true;
     };
-  }, [key, round.date, round.holes.length, isPractice]);
+  }, [key, round.date, round.holes.length]);
 
   const current = results.findIndex((r) => r === null);
   const finished = current === -1;
@@ -226,7 +210,6 @@ export default function Game({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           date: round.date,
-          seed: round.practiceSeed,
           hole: holeIndex,
           playerId: player.id,
           playerName: player.n,
@@ -258,30 +241,13 @@ export default function Game({
   return (
     <section className={styles.game}>
       <div className={styles.dateBar}>
-        {isPractice ? (
-          <p className={styles.date}>Practice round · #{round.practiceSeed}</p>
-        ) : (
-          <p className={styles.date}>
-            Round #{roundNumber(round.date)} · {formatDate(round.date)}
-          </p>
-        )}
+        <p className={styles.date}>
+          Round #{roundNumber(round.date)} · {formatDate(round.date)}
+        </p>
         <Link href="/archive" className={styles.archiveBtn}>
           Play previous rounds
         </Link>
       </div>
-
-      {practiceEnabled && (
-        <div className={styles.practiceBar}>
-          <button className={styles.practiceBtn} onClick={() => router.push(`/?seed=${newPracticeSeed()}`)}>
-            ↻ New practice round
-          </button>
-          {isPractice && (
-            <button className={styles.practiceLink} onClick={() => router.push("/")}>
-              Back to today&apos;s round
-            </button>
-          )}
-        </div>
-      )}
 
       <ol className={styles.holes}>
         {round.holes.map((hole, i) => {
@@ -389,14 +355,12 @@ export default function Game({
             Round complete: <strong>{total}</strong>
             {total === 0
               ? " — a perfect round!"
-              : isPractice
-                ? ". Try another practice round?"
-                : isToday
-                  ? ". Come back tomorrow for a new course."
-                  : "."}
+              : isToday
+                ? ". Come back tomorrow for a new course."
+                : "."}
           </p>
         )}
-        {finished && !isPractice && stats && <PercentileLine stats={stats} isToday={isToday} />}
+        {finished && stats && <PercentileLine stats={stats} isToday={isToday} />}
         {finished && <ShareButton round={round} isToday={isToday} results={results as GuessResult[]} />}
       </div>
     </section>
