@@ -234,7 +234,7 @@
   color: var(--ink-dim);
 }
 
-/* The real order: the same rows as the list above, with the value and rank on the right. */
+/* The correct order: the same rows as the list above, with the value and rank on the right. */
 .answerStat {
   display: flex;
   flex-direction: column;

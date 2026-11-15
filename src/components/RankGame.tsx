@@ -292,7 +292,7 @@ export default function RankGame({
             <span> / {RANK_MAX_SCORE} max</span>
           </p>
           {stats && <RankCompare stats={stats} isToday={isToday} />}
-          <h3 className={styles.answerTitle}>The real order</h3>
+          <h3 className={styles.answerTitle}>Correct order</h3>
           <ol className={styles.list}>
             {reveal.answer.map((a, i) => (
               <li key={a.id} className={`${styles.row} ${styles.locked}`}>
