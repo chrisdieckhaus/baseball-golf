@@ -10,7 +10,10 @@
 import { hashString, mulberry32 } from "./round";
 import { COPY, namespaced, type Sport } from "./sport";
 
+/** Baseball's lineup: ten players. */
 export const LINEUP_SIZE = 10;
+/** Players in a lineup: ten for baseball, eight for the NBA (a basketball rotation is shorter). */
+export const lineupSize = (sport: Sport = "mlb") => (sport === "nba" ? 8 : LINEUP_SIZE);
 /** Round #1. Rounds are numbered from Nov 1, 2026, like the other games. */
 export const ROSTER_LAUNCH_DATE = "2026-11-01";
 
@@ -103,9 +106,9 @@ export function publicRound(data: RosterData, ts: RosterTeamSeason, date: string
   };
 }
 
-/** A reveal count the round allows: 1 (the first player shows from the start) through ten. */
-export function isValidRevealed(n: unknown): n is number {
-  return Number.isInteger(n) && (n as number) >= 1 && (n as number) <= LINEUP_SIZE;
+/** A reveal count the round allows: 1 (the first player shows from the start) through the lineup size. */
+export function isValidRevealed(n: unknown, sport: Sport = "mlb"): n is number {
+  return Number.isInteger(n) && (n as number) >= 1 && (n as number) <= lineupSize(sport);
 }
 
 /** A guess is one of the franchises that played that season. */
@@ -118,7 +121,7 @@ export function rosterState(ts: RosterTeamSeason, revealed: number, guess: strin
   const done = guess !== null;
   const lineup = ts.lineup.map(({ name, pos }) => ({ name, pos }));
   return {
-    revealed: lineup.slice(0, Math.max(1, Math.min(revealed, LINEUP_SIZE))),
+    revealed: lineup.slice(0, Math.max(1, Math.min(revealed, lineup.length))),
     guess,
     done,
     correct: done && guess === ts.franchise,
@@ -128,9 +131,10 @@ export function rosterState(ts: RosterTeamSeason, revealed: number, guess: strin
 
 /**
  * A finished play's result as one number, lower is better: the players revealed
- * when you got it (1–10), or 11 for a miss.
+ * when you got it (1 to the lineup size), or one more than that for a miss.
  */
-export const rosterResult = (revealed: number, correct: boolean) => (correct ? revealed : LINEUP_SIZE + 1);
+export const rosterResult = (revealed: number, correct: boolean, sport: Sport = "mlb") =>
+  correct ? revealed : lineupSize(sport) + 1;
 
 /**
  * Spoiler-free share text, e.g.

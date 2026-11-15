@@ -1,6 +1,5 @@
 import type { RankStats, RosterStats } from "@/lib/game-plays";
 import { rankBucket } from "@/lib/rank";
-import { LINEUP_SIZE } from "@/lib/roster";
 import { ordinal } from "@/lib/scoring";
 import type { RoundStats } from "@/lib/types";
 import styles from "./CompareStats.module.css";
@@ -131,6 +130,8 @@ export function RankCompare({ stats, mine, isToday }: { stats: RankStats; mine: 
  * how many players everyone needed (or missed), with yours marked.
  */
 export function RosterCompare({ stats, mine, isToday }: { stats: RosterStats; mine: number; isToday: boolean }) {
+  // One bar per lineup spot, then misses (ten spots for baseball, eight for the NBA).
+  const size = stats.distribution.length - 1;
   return (
     <div className={styles.compare}>
       <PercentileLine stats={stats} isToday={isToday} />
@@ -152,8 +153,8 @@ export function RosterCompare({ stats, mine, isToday }: { stats: RosterStats; mi
         counts={stats.distribution}
         mine={mine - 1}
         label="How many players everyone needed"
-        bucketLabel={(i) => (i < LINEUP_SIZE ? String(i + 1) : "✗")}
-        bucketTitle={(i) => (i < LINEUP_SIZE ? `Got it after ${i + 1}` : "Missed")}
+        bucketLabel={(i) => (i < size ? String(i + 1) : "✗")}
+        bucketTitle={(i) => (i < size ? `Got it after ${i + 1}` : "Missed")}
       />
     </div>
   );

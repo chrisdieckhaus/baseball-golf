@@ -35,7 +35,7 @@ function RosterNote({ sport }: { sport: Sport }) {
     return (
       <p className={styles.dataNote}>
         Every BAA, NBA and ABA team from {seasonLabel("nba", data.firstYear)} through{" "}
-        {seasonLabel("nba", data.lastYear)}. The lineup is the team&apos;s ten players with the most minutes (most
+        {seasonLabel("nba", data.lastYear)}. The lineup is the team&apos;s eight players with the most minutes (most
         points before minutes were kept, in 1951–52), from the most obscure to the most famous.
       </p>
     );

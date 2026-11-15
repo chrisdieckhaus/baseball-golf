@@ -86,7 +86,7 @@ Every game also has an NBA version under `/nba`: Basketball Golf (`/nba/golf`, w
   python3 scripts/build_nba_data.py /tmp/bbref/Data   # or: npm run data:nba -- /tmp/bbref/Data
   ```
 - **Stats (21):** Totals (PTS, TRB, AST, STL, BLK, 3P, FG, FT, G, MP, ORB, TOV), Per Game (PPG, RPG, APG, SPG, BPG, MPG; 400 games, or 10,000 points for PPG) and Shooting (FG% 2,000 FG, FT% 1,200 FT, 3P% 250 3P). Stats that weren't always kept count only the seasons they were, and the hole says "Tracked since …" (so Bill Russell has no blocks). A round never uses two versions of one stat (PTS and PPG share a `family`).
-- **Roster Reveal:** every BAA, NBA and ABA team-season (1,818). The lineup is the team's ten players with the most minutes (most points before 1951–52), from most obscure to most famous (All-Star picks, All-League teams, MVPs, the Hall of Fame, career games). The question gives the season ("1995–96"), and ABA teams are marked in the picker.
+- **Roster Reveal:** every BAA, NBA and ABA team-season (1,818). The lineup is the team's eight players with the most minutes (most points before 1951–52; `lineupSize` in `src/lib/roster.ts`), from most obscure to most famous (All-Star picks, All-League teams, MVPs, the Hall of Fame, career games). The question gives the season ("1995–96"), and ABA teams are marked in the picker.
 - **How it's wired:** `src/lib/sport.ts`. Baseball keeps every name it had: routes, tables, round seeds and localStorage keys. NBA uses the same tables with an `nba_` prefix (created by `scripts/migrate.mjs`), seeds and storage keys with an `nba:` prefix, and `sport=nba` on API calls. The page bodies live in `src/views/`, shared by the baseball and NBA routes.
 
 ## Development

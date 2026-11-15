@@ -4,6 +4,7 @@
 // in localStorage; the database is the record.
 import { percentBeaten, type Queryable } from "./plays";
 import { RANK_MAX_SCORE, rankBucket } from "./rank";
+import { lineupSize } from "./roster";
 import { table, type Sport } from "./sport";
 
 async function ensurePlayer(db: Queryable, playerId: string) {
@@ -206,13 +207,13 @@ export interface RosterStats {
   correctPercent: number;
   /** Average players revealed among those who got it. */
   averageRevealed: number | null;
-  /** How many finishers got it after 1, 2, … 10 players (index 0 = 1), then misses last (index 10). */
+  /** How many finishers got it after 1, 2, … players (index 0 = 1), then misses last (index = lineup size). */
   distribution: number[];
 }
 
 /**
  * How a finished Roster Reveal play compares. `result` is rosterResult(): the
- * players revealed when you got it (1–10), or 11 for a miss; lower is better.
+ * players revealed when you got it (1 to the lineup size), or one more for a miss; lower is better.
  */
 export async function getRosterStats(
   db: Queryable,
@@ -221,29 +222,31 @@ export async function getRosterStats(
   result: number,
   sport: Sport = "mlb",
 ): Promise<RosterStats> {
+  const size = lineupSize(sport);
+  const miss = size + 1;
   const { rows } = await db.query<{ result: number; n: string; mine: string }>(
-    `SELECT CASE WHEN correct THEN revealed ELSE 11 END AS result,
+    `SELECT CASE WHEN correct THEN revealed ELSE ${miss} END AS result,
             count(*) AS n,
             count(*) FILTER (WHERE player_id = $2) AS mine
        FROM ${table(sport, "roster_plays")} WHERE round_date = $1 AND done
       GROUP BY 1`,
     [roundDate, playerId],
   );
-  const distribution = Array(11).fill(0);
+  const distribution = Array(miss).fill(0);
   let others = 0;
   let worse = 0;
   let tied = 0;
   for (const r of rows) {
     const n = Number(r.n);
     const notMe = n - Number(r.mine);
-    distribution[Math.min(Math.max(Number(r.result), 1), 11) - 1] += n;
+    distribution[Math.min(Math.max(Number(r.result), 1), miss) - 1] += n;
     others += notMe;
     if (r.result > result) worse += notMe;
     if (r.result === result) tied += notMe;
   }
   const finishers = distribution.reduce((a, b) => a + b, 0);
-  const correct = finishers - distribution[10];
-  const revealedSum = distribution.slice(0, 10).reduce((s, n, i) => s + n * (i + 1), 0);
+  const correct = finishers - distribution[size];
+  const revealedSum = distribution.slice(0, size).reduce((s, n, i) => s + n * (i + 1), 0);
   return {
     others,
     worse,

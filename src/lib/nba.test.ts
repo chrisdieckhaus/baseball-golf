@@ -7,7 +7,7 @@ import {
   buildRosterShareText,
   findTeamSeason,
   generateStoredRosterRound,
-  LINEUP_SIZE,
+  lineupSize,
   publicRound,
   rosterState,
 } from "./roster";
@@ -161,7 +161,9 @@ describe("NBA Stats Ranker rounds", () => {
 });
 
 describe("NBA Roster Reveal", () => {
-  it("has every BAA/NBA/ABA team-season through 2025-26 with ten players", () => {
+  it("has every BAA/NBA/ABA team-season through 2025-26 with eight players", () => {
+    const LINEUP_SIZE = lineupSize("nba");
+    expect(LINEUP_SIZE).toBe(8);
     expect(nbaRosterData.firstYear).toBe(1947);
     expect(nbaRosterData.lastYear).toBe(2026);
     expect(nbaRosterData.rounds.length).toBeGreaterThan(1800);
@@ -214,5 +216,16 @@ describe("sport helpers", () => {
     expect(parseSport(null)).toBe("mlb");
     expect(parseSport("nba")).toBe("nba");
     expect(parseSport("nfl")).toBeNull();
+  });
+});
+
+describe("NBA Roster Reveal lineup size", () => {
+  it("allows 1–8 reveals and scores a miss as 9", async () => {
+    const { isValidRevealed, rosterResult } = await import("./roster");
+    expect(isValidRevealed(8, "nba")).toBe(true);
+    expect(isValidRevealed(9, "nba")).toBe(false);
+    expect(isValidRevealed(10, "mlb")).toBe(true);
+    expect(rosterResult(3, false, "nba")).toBe(9);
+    expect(rosterResult(3, false)).toBe(11);
   });
 });

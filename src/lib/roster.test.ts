@@ -81,7 +81,7 @@ describe("playing a round", () => {
   });
 
   it("validates reveal counts and guesses", () => {
-    expect([0, 1, 10, 11, 2.5, "3"].map(isValidRevealed)).toEqual([false, true, true, false, false, false]);
+    expect([0, 1, 10, 11, 2.5, "3"].map((n) => isValidRevealed(n))).toEqual([false, true, true, false, false, false]);
     expect(isValidGuess(round, "BOS")).toBe(true);
     expect(isValidGuess(round, "WSN")).toBe(true); // the 2004 Expos (franchise WSN)
     expect(isValidGuess(round, "XXX")).toBe(false);

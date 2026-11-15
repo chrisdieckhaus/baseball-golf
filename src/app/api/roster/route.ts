@@ -23,7 +23,7 @@ export async function GET(request: Request) {
   const { teamSeason } = await getRosterRound(date, sport);
   const state = rosterState(teamSeason, play.revealed, play.guess);
   const stats = play.done
-    ? await getRosterStats(db, date, me, rosterResult(play.revealed, play.correct), sport)
+    ? await getRosterStats(db, date, me, rosterResult(play.revealed, play.correct, sport), sport)
     : null;
   return Response.json({ play: { state, stats } }, { headers: noStore });
 }
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
   }
 
   const { round, teamSeason } = await getRosterRound(date, sport);
-  if (!isValidRevealed(revealed)) return Response.json({ error: "Invalid reveal count" }, { status: 400 });
+  if (!isValidRevealed(revealed, sport)) return Response.json({ error: "Invalid reveal count" }, { status: 400 });
   if (guess !== undefined && guess !== null && !isValidGuess(round, guess)) {
     return Response.json({ error: "That team didn't play that season" }, { status: 400 });
   }
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
       : await recordRosterReveal(db, { playerId: me, roundDate: date, revealed, isLive }, sport);
     const state = rosterState(teamSeason, play.revealed, play.guess);
     const stats = play.done
-      ? await getRosterStats(db, date, me, rosterResult(play.revealed, play.correct), sport)
+      ? await getRosterStats(db, date, me, rosterResult(play.revealed, play.correct, sport), sport)
       : null;
     return Response.json({ state, stats });
   } catch (e) {

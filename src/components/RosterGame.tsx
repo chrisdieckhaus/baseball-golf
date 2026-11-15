@@ -8,7 +8,7 @@ import ShareButton from "@/components/ShareButton";
 import type { RosterStats } from "@/lib/game-plays";
 import {
   buildRosterShareText,
-  LINEUP_SIZE,
+  lineupSize,
   ROSTER_LAUNCH_DATE,
   rosterRoundNumber,
   type RosterRound,
@@ -38,11 +38,12 @@ function save(key: string, state: RosterState) {
 }
 
 function headline(state: RosterState, sport: Sport): string {
+  const size = lineupSize(sport);
   if (!state.correct) return COPY[sport].rosterMiss;
   const n = state.revealed.length;
   if (n === 1) return sport === "nba" ? "Opening tip. Unreal." : "First pitch. Unreal.";
   if (n <= 3) return "Called it!";
-  if (n < LINEUP_SIZE) return "Got it!";
+  if (n < size) return "Got it!";
   return "Got there!";
 }
 
@@ -56,6 +57,7 @@ interface Props {
 
 export default function RosterGame({ round, initial, isToday, today, sport = "mlb" }: Props) {
   const key = storageKey(round, sport);
+  const size = lineupSize(sport);
   const base = basePath(sport);
   const [state, setState] = useState<RosterState>(initial);
   const [stats, setStats] = useState<RosterStats | null>(null);
@@ -120,7 +122,7 @@ export default function RosterGame({ round, initial, isToday, today, sport = "ml
   }, [key, round.date]);
 
   async function reveal() {
-    if (busy || !synced || state.done || state.revealed.length >= LINEUP_SIZE) return;
+    if (busy || !synced || state.done || state.revealed.length >= size) return;
     setBusy(true);
     setError(null);
     try {
@@ -186,7 +188,7 @@ export default function RosterGame({ round, initial, isToday, today, sport = "ml
               <span className={styles.pos}>{p.pos}</span>
             </li>
           ))}
-          {!state.done && n < LINEUP_SIZE && (
+          {!state.done && n < size && (
             <li className={styles.ghost}>
               <span className={styles.num}>{n + 1}</span>
               <span>Next player hidden</span>
@@ -201,11 +203,11 @@ export default function RosterGame({ round, initial, isToday, today, sport = "ml
               <span>
                 {n} {n === 1 ? "player" : "players"} revealed
               </span>
-              <span>{n < LINEUP_SIZE ? `${LINEUP_SIZE - n} more available` : "That's the whole lineup."}</span>
+              <span>{n < size ? `${size - n} more available` : "That's the whole lineup."}</span>
             </div>
             {!guessing ? (
               <div className={styles.btns}>
-                <button className={styles.secondary} onClick={reveal} disabled={busy || n >= LINEUP_SIZE}>
+                <button className={styles.secondary} onClick={reveal} disabled={busy || n >= size}>
                   Reveal next player
                 </button>
                 <button className={styles.primary} onClick={() => synced && setGuessing(true)} disabled={busy}>
@@ -260,7 +262,7 @@ export default function RosterGame({ round, initial, isToday, today, sport = "ml
               ? `Got it after ${n} ${n === 1 ? "player" : "players"}.`
               : `You guessed the ${season} ${teamName(state.guess)} after ${n} ${n === 1 ? "player" : "players"}.`}
           </p>
-          {stats && <RosterCompare stats={stats} mine={state.correct ? n : LINEUP_SIZE + 1} isToday={isToday} />}
+          {stats && <RosterCompare stats={stats} mine={state.correct ? n : size + 1} isToday={isToday} />}
           <ShareButton getText={shareText} label="Share result" className={styles.shareBtn} />
         </section>
       )}

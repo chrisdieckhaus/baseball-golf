@@ -41,7 +41,7 @@ MIN_PTS_FOR_PPG = 10_000  # PPG also qualifies with 10,000 points
 MIN_FG = 2000
 MIN_FT = 1200
 MIN_3P = 250
-LINEUP_SIZE = 10
+LINEUP_SIZE = 8  # must match lineupSize("nba") in src/lib/roster.ts
 MULTI_TEAM = r"^\d+TM$|^TOT$"
 LEAGUE_LABEL = {"BAA": "BAA", "NBA": "NBA", "ABA": "ABA"}
 
