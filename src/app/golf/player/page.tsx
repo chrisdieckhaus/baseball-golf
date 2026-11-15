@@ -35,12 +35,12 @@ export default function PlayerModePage({ searchParams }: { searchParams: SearchP
         </h1>
         <ModeSwitch current="player" />
         <p className={styles.tagline}>
-          Three holes. We name the player, you name his all-time rank, as close to the pin as you can. Lowest score
+          Three holes. We name the player, you name his all-time rank. Lowest score
           wins.
         </p>
       </header>
 
-      <Suspense fallback={<p className={styles.loading}>Setting up today&apos;s course…</p>}>
+      <Suspense fallback={<p className={styles.loading}>Setting up today&apos;s round…</p>}>
         <TodaysRound searchParams={searchParams} />
       </Suspense>
 

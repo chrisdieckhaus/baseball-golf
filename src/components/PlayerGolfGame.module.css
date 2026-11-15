@@ -119,7 +119,7 @@
   justify-content: space-between;
 }
 
-.putt {
+.guessBtn {
   font: inherit;
   font-size: 1.05rem;
   font-weight: 700;
@@ -132,11 +132,11 @@
   cursor: pointer;
 }
 
-.putt:hover:not(:disabled) {
+.guessBtn:hover:not(:disabled) {
   filter: brightness(1.1);
 }
 
-.putt:disabled {
+.guessBtn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }

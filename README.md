@@ -23,7 +23,7 @@ A **Rank | Player** switch under the title picks the mode. Rank mode is the game
 
 - Three holes a day, the same for everyone, numbered from Nov 1, 2026 like the other games. Three different stats, never all batting or all pitching.
 - Each player is ranked 1st–100th in that stat, isn't in a tie of more than 3, and appears once per round.
-- Pick a rank (−/+, type it, or the slider) and **Putt**. One putt per hole, holes in order, enforced on the server.
+- Pick a rank (−/+, type it, or the slider) and **Guess**. One guess per hole, holes in order, enforced on the server.
 - Hole score = how many ranks you miss by, capped at 100. A guess anywhere inside his tie counts as exact (a 3-way tie at 20th covers 20th–22nd).
 - The reveal shows his rank and value, the leaderboard two ranks either side of him, and who holds the rank you guessed.
 - Rounds are saved in `player_golf_rounds` (stat and player id, no ranks) the first time they're needed, and backfilled on every build. Plays are in `player_golf_plays`, keyed by the same `bg_player` cookie, and have their own percentile and averages.

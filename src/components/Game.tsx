@@ -197,7 +197,7 @@ export default function Game({
                       )}
                     </p>
                     <p>
-                      <span className={styles.resultLabel}>The pin · {ordinal(result.target.rank)}</span>
+                      <span className={styles.resultLabel}>The answer · {ordinal(result.target.rank)}</span>
                       {result.target.players.map((p, j) => (
                         <span key={p.name}>
                           {j > 0 && ", "}
@@ -251,8 +251,7 @@ export default function Game({
                 {holeAverages.map((a, i) => (
                   <td key={i}>{scoreLabel(a)}</td>
                 ))}
-                {/* The round average is in the compare panel below. */}
-                <td className={styles.total} />
+                <td className={styles.total}>{scoreLabel(stats.roundAverage)}</td>
               </tr>
             )}
           </tbody>

@@ -36,11 +36,11 @@ export default function Home({ searchParams }: { searchParams: SearchParams }) {
         </h1>
         <ModeSwitch current="rank" />
         <p className={styles.tagline}>
-          Three holes. Name the player at each all-time rank, as close to the pin as you can. Lowest score wins.
+          Three holes. Name the player at each all-time rank. Lowest score wins.
         </p>
       </header>
 
-      <Suspense fallback={<p className={styles.loading}>Setting up today&apos;s course…</p>}>
+      <Suspense fallback={<p className={styles.loading}>Setting up today&apos;s round…</p>}>
         <TodaysRound searchParams={searchParams} />
       </Suspense>
 
