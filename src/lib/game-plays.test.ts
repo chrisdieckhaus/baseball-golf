@@ -88,6 +88,7 @@ describe.skipIf(!url)("Stats Ranker and Roster Reveal plays (Postgres)", () => {
       finishers: 3,
       averageScore: 2.7,
       perfectPercent: 33,
+      distribution: [1, 1, 0, 1, 0, 0, 0],
     });
   });
 
