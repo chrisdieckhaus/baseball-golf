@@ -291,7 +291,7 @@ export default function RankGame({
             {reveal.score === 0 ? "Perfect order!" : `Off by ${reveal.score}`}
             <span> / {RANK_MAX_SCORE} max</span>
           </p>
-          {stats && <RankCompare stats={stats} isToday={isToday} />}
+          {stats && <RankCompare stats={stats} mine={reveal.score} isToday={isToday} />}
           <h3 className={styles.answerTitle}>Correct order</h3>
           <ol className={styles.list}>
             {reveal.answer.map((a, i) => (

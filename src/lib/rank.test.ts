@@ -8,6 +8,7 @@ import {
   RANK_MAX_SCORE,
   RANK_PLAYERS,
   RANK_POOL,
+  rankBucket,
   rankRoundFromStored,
   scoreRankOrder,
 } from "./rank";
@@ -107,5 +108,11 @@ describe("Stats Ranker scoring", () => {
     expect(text).toContain("Perfect order!");
     for (const p of round.players) expect(text).not.toContain(p.name);
     expect(text).not.toContain(round.label);
+  });
+
+  it("puts each score in its results-chart bar", () => {
+    expect([0, 2, 4, 12].map(rankBucket)).toEqual([0, 1, 2, 6]);
+    expect(rankBucket(3)).toBe(2); // odd scores can't happen, but round up
+    expect(rankBucket(99)).toBe(6);
   });
 });

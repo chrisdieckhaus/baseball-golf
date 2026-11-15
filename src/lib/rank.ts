@@ -15,6 +15,13 @@ export const RANK_PLAYERS = 5;
 export const RANK_POOL = 100;
 /** The worst possible score: the order exactly reversed. */
 export const RANK_MAX_SCORE = Math.floor((RANK_PLAYERS * RANK_PLAYERS) / 2);
+/**
+ * Where a score goes in the results chart, which has one bar per even score
+ * (0, 2, … RANK_MAX_SCORE). A score is always even: each player moved up is
+ * matched by one moved down.
+ */
+export const rankBucket = (score: number) =>
+  Math.min(Math.max(Math.ceil(score / 2), 0), Math.floor(RANK_MAX_SCORE / 2));
 /** The first Stats Ranker round (#1). */
 // Stats Ranker went live on Nov 14, 2026, with rounds generated back to Nov 1 so
 // its numbering matches Baseball Golf's (#1 = Nov 1).

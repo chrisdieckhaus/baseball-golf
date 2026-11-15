@@ -1,4 +1,5 @@
 import type { RankStats, RosterStats } from "@/lib/game-plays";
+import { rankBucket } from "@/lib/rank";
 import { LINEUP_SIZE } from "@/lib/roster";
 import { ordinal } from "@/lib/scoring";
 import type { RoundStats } from "@/lib/types";
@@ -54,7 +55,45 @@ export function GolfCompare({ stats, isToday }: { stats: RoundStats; isToday: bo
   );
 }
 
-export function RankCompare({ stats, isToday }: { stats: RankStats; isToday: boolean }) {
+/**
+ * A Wordle-style bar chart of how everyone finished, with the player's own
+ * bucket highlighted. Shared by Stats Ranker and Roster Reveal.
+ */
+function DistributionChart({
+  counts,
+  mine,
+  label,
+  bucketLabel,
+  bucketTitle,
+}: {
+  counts: number[];
+  /** Index of the player's own bucket. */
+  mine: number;
+  label: string;
+  bucketLabel: (i: number) => string;
+  bucketTitle: (i: number) => string;
+}) {
+  const max = Math.max(1, ...counts);
+  return (
+    <ol className={styles.chart} aria-label={label}>
+      {counts.map((n, i) => (
+        <li key={i} className={i === mine ? styles.mine : undefined} title={`${bucketTitle(i)}: ${n}`}>
+          <span className={styles.barLabel}>{bucketLabel(i)}</span>
+          <span className={styles.barTrack}>
+            <span className={styles.bar} style={{ width: `${Math.max(n ? 6 : 0, (n / max) * 100)}%` }} />
+          </span>
+          <span className={styles.barCount}>{fmt(n)}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/**
+ * Stats Ranker: your percentile, the average and perfect-order rate, and a
+ * chart of everyone's scores (0, 2, 4 … 12), with yours marked.
+ */
+export function RankCompare({ stats, mine, isToday }: { stats: RankStats; mine: number; isToday: boolean }) {
   return (
     <div className={styles.compare}>
       <PercentileLine stats={stats} isToday={isToday} />
@@ -74,6 +113,15 @@ export function RankCompare({ stats, isToday }: { stats: RankStats; isToday: boo
           </div>
         </dl>
       )}
+      {stats.finishers > 0 && (
+        <DistributionChart
+          counts={stats.distribution}
+          mine={rankBucket(mine)}
+          label="How far off everyone was"
+          bucketLabel={(i) => (i === 0 ? "✓" : String(i * 2))}
+          bucketTitle={(i) => (i === 0 ? "Perfect order" : `Off by ${i * 2}`)}
+        />
+      )}
     </div>
   );
 }
@@ -83,7 +131,6 @@ export function RankCompare({ stats, isToday }: { stats: RankStats; isToday: boo
  * how many players everyone needed (or missed), with yours marked.
  */
 export function RosterCompare({ stats, mine, isToday }: { stats: RosterStats; mine: number; isToday: boolean }) {
-  const max = Math.max(1, ...stats.distribution);
   return (
     <div className={styles.compare}>
       <PercentileLine stats={stats} isToday={isToday} />
@@ -101,21 +148,13 @@ export function RosterCompare({ stats, mine, isToday }: { stats: RosterStats; mi
           <dd>{fmt(stats.finishers)}</dd>
         </div>
       </dl>
-      <ol className={styles.chart} aria-label="How many players everyone needed">
-        {stats.distribution.map((n, i) => {
-          const label = i < LINEUP_SIZE ? String(i + 1) : "✗";
-          const title = i < LINEUP_SIZE ? `Got it after ${i + 1}` : "Missed";
-          return (
-            <li key={i} className={i + 1 === mine ? styles.mine : undefined} title={`${title}: ${n}`}>
-              <span className={styles.barLabel}>{label}</span>
-              <span className={styles.barTrack}>
-                <span className={styles.bar} style={{ width: `${Math.max(n ? 6 : 0, (n / max) * 100)}%` }} />
-              </span>
-              <span className={styles.barCount}>{fmt(n)}</span>
-            </li>
-          );
-        })}
-      </ol>
+      <DistributionChart
+        counts={stats.distribution}
+        mine={mine - 1}
+        label="How many players everyone needed"
+        bucketLabel={(i) => (i < LINEUP_SIZE ? String(i + 1) : "✗")}
+        bucketTitle={(i) => (i < LINEUP_SIZE ? `Got it after ${i + 1}` : "Missed")}
+      />
     </div>
   );
 }

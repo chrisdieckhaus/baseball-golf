@@ -3,6 +3,7 @@
 // Baseball Golf's plays (the bg_player cookie). The browser also keeps a copy
 // in localStorage; the database is the record.
 import { percentBeaten, type Queryable } from "./plays";
+import { RANK_MAX_SCORE, rankBucket } from "./rank";
 
 async function ensurePlayer(db: Queryable, playerId: string) {
   await db.query(`INSERT INTO players (id) VALUES ($1) ON CONFLICT DO NOTHING`, [playerId]);
@@ -151,6 +152,11 @@ export interface RankStats {
   averageScore: number | null;
   /** Percent of finishers with a perfect order. */
   perfectPercent: number;
+  /**
+   * How many finishers scored 0, 2, 4, … RANK_MAX_SCORE (index = score / 2).
+   * A Ranker score is always even: each player moved up is matched by one moved down.
+   */
+  distribution: number[];
 }
 
 export async function getRankStats(db: Queryable, roundDate: string, playerId: string, score: number): Promise<RankStats> {
@@ -165,6 +171,12 @@ export async function getRankStats(db: Queryable, roundDate: string, playerId: s
     [roundDate, playerId, score],
   );
   const r = rows[0];
+  const { rows: scores } = await db.query<{ score: number; n: string }>(
+    `SELECT score, count(*) AS n FROM rank_plays WHERE round_date = $1 GROUP BY score`,
+    [roundDate],
+  );
+  const distribution: number[] = Array(Math.floor(RANK_MAX_SCORE / 2) + 1).fill(0);
+  for (const s of scores) distribution[rankBucket(Number(s.score))] += Number(s.n);
   const others = Number(r.others);
   const worse = Number(r.worse);
   const finishers = Number(r.finishers);
@@ -176,6 +188,7 @@ export async function getRankStats(db: Queryable, roundDate: string, playerId: s
     finishers,
     averageScore: oneDecimal(toNum(r.average)),
     perfectPercent: finishers ? Math.round((Number(r.perfect) / finishers) * 100) : 0,
+    distribution,
   };
 }
 
