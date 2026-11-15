@@ -7,7 +7,7 @@ import { getDb } from "@/lib/db";
 import { readPlayerId } from "@/lib/player-cookie";
 import { getPlayerProgress } from "@/lib/plays";
 import { playableDates, roundNumber, todayET } from "@/lib/round";
-import styles from "./archive.module.css";
+import styles from "@/app/archive.module.css";
 
 export const metadata: Metadata = {
   title: "Baseball Golf archive",
@@ -56,7 +56,7 @@ export default function ArchivePage() {
           Baseball <span>Golf</span>
         </h1>
         <p className={styles.tagline}>Previous rounds. Play any one you missed.</p>
-        <Link href="/" className={styles.back}>
+        <Link href="/golf" className={styles.back}>
           ← Today&apos;s round
         </Link>
       </header>

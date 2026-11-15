@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { buildRankShareText, RANK_LAUNCH_DATE, RANK_MAX_SCORE, rankRoundNumber, rankShareLine, type RankReveal, type RankRound } from "@/lib/rank";
+import { buildRankShareText, RANK_LAUNCH_DATE, RANK_MAX_SCORE, rankRoundNumber, type RankReveal, type RankRound } from "@/lib/rank";
 import { RankCompare } from "@/components/CompareStats";
 import DayNav from "@/components/DayNav";
 import ShareButton from "@/components/ShareButton";
@@ -39,6 +39,12 @@ function endLabels(round: RankRound): [string, string] {
   if (round.lowerIsBetter) return [`Lowest ${round.label} (best)`, `Highest ${round.label}`];
   const counting = round.qualifier === null;
   return counting ? [`Most ${round.label}`, `Fewest ${round.label}`] : [`Highest ${round.label}`, `Lowest ${round.label}`];
+}
+
+/** Which way a pick needed to move, in plain characters (the share text uses emoji). */
+function moveLabel(g: { off: number; dir: -1 | 0 | 1 }): string {
+  if (g.off === 0) return "✓";
+  return `${g.dir < 0 ? "↑" : "↓"} ${g.off}`;
 }
 
 function moveItem<T>(arr: T[], from: number, to: number): T[] {
@@ -246,7 +252,7 @@ export default function RankGame({
                 <span className={styles.name}>{names.get(id)}</span>
                 {locked ? (
                   <span className={styles.result}>
-                    {rankShareLine(reveal!.guess[i])}
+                    {moveLabel(reveal!.guess[i])}
                   </span>
                 ) : (
                   <span className={styles.controls}>
@@ -286,13 +292,16 @@ export default function RankGame({
             <span> / {RANK_MAX_SCORE} max</span>
           </p>
           {stats && <RankCompare stats={stats} isToday={isToday} />}
-          <h3 className={styles.answerTitle}>The real order</h3>
-          <ol className={styles.answer}>
-            {reveal.answer.map((a) => (
-              <li key={a.id}>
+          <h3 className={styles.answerTitle}>Correct order</h3>
+          <ol className={styles.list}>
+            {reveal.answer.map((a, i) => (
+              <li key={a.id} className={`${styles.row} ${styles.locked}`}>
+                <span className={styles.pos}>{i + 1}</span>
                 <span className={styles.name}>{a.name}</span>
-                <span className={styles.value}>{a.value}</span>
-                <span className={styles.rank}>{a.rank ? `${ordinal(a.rank)} all-time` : "—"}</span>
+                <span className={styles.answerStat}>
+                  <span className={styles.value}>{a.value}</span>
+                  <span className={styles.rank}>{a.rank ? `${ordinal(a.rank)} all-time` : "—"}</span>
+                </span>
               </li>
             ))}
           </ol>

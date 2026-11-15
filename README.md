@@ -2,7 +2,7 @@
 
 Quick daily sports stats games, all in one app:
 
-- **Baseball Golf** (`/`): name the player at each all-time career rank.
+- **Baseball Golf** (`/golf`; `/` redirects there): name the player at each all-time career rank.
 - **Stats Ranker** (`/rank`): put five players in order of one career stat.
 - **Roster Reveal** (`/roster`): you get the year; name the team from its starting lineup, revealed one player at a time.
 

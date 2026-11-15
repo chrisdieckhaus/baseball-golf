@@ -1,10 +1,13 @@
 import type { RankStats, RosterStats } from "@/lib/game-plays";
+import { LINEUP_SIZE } from "@/lib/roster";
+import { scoreLabel } from "@/lib/share";
+import type { RoundStats } from "@/lib/types";
 import styles from "./CompareStats.module.css";
 
 const fmt = (n: number) => n.toLocaleString("en-US");
 const avg = (n: number) => n.toFixed(1).replace(/\.0$/, "");
 
-/** "You beat 78% of the 41 other players who finished today", same wording as Baseball Golf. */
+/** "You beat 78% of the 41 other players who finished today", the same line in every game. */
 function PercentileLine({
   stats,
   isToday,
@@ -29,6 +32,25 @@ function PercentileLine({
   );
 }
 
+/** Baseball Golf: your percentile, the average round and how many have played. */
+export function GolfCompare({ stats, isToday }: { stats: RoundStats; isToday: boolean }) {
+  return (
+    <div className={styles.compare}>
+      <PercentileLine stats={stats} isToday={isToday} />
+      <dl className={styles.facts}>
+        <div>
+          <dt>Average</dt>
+          <dd>{scoreLabel(stats.roundAverage)}</dd>
+        </div>
+        <div>
+          <dt>Played</dt>
+          <dd>{fmt(stats.finishers)}</dd>
+        </div>
+      </dl>
+    </div>
+  );
+}
+
 export function RankCompare({ stats, isToday }: { stats: RankStats; isToday: boolean }) {
   return (
     <div className={styles.compare}>
@@ -44,7 +66,7 @@ export function RankCompare({ stats, isToday }: { stats: RankStats; isToday: boo
             <dd>{stats.perfectPercent}%</dd>
           </div>
           <div>
-            <dt>Players</dt>
+            <dt>Played</dt>
             <dd>{fmt(stats.finishers)}</dd>
           </div>
         </dl>
@@ -72,14 +94,14 @@ export function RosterCompare({ stats, mine, isToday }: { stats: RosterStats; mi
           <dd>{stats.averageRevealed === null ? "—" : `${avg(stats.averageRevealed)} players`}</dd>
         </div>
         <div>
-          <dt>Players</dt>
+          <dt>Played</dt>
           <dd>{fmt(stats.finishers)}</dd>
         </div>
       </dl>
       <ol className={styles.chart} aria-label="How many players everyone needed">
         {stats.distribution.map((n, i) => {
-          const label = i < 10 ? String(i + 1) : "✗";
-          const title = i < 10 ? `Got it after ${i + 1}` : "Missed";
+          const label = i < LINEUP_SIZE ? String(i + 1) : "✗";
+          const title = i < LINEUP_SIZE ? `Got it after ${i + 1}` : "Missed";
           return (
             <li key={i} className={i + 1 === mine ? styles.mine : undefined} title={`${title}: ${n}`}>
               <span className={styles.barLabel}>{label}</span>

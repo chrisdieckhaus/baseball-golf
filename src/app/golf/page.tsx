@@ -4,7 +4,7 @@ import { connection } from "next/server";
 import Game from "@/components/Game";
 import { getRound, leaderboards } from "@/lib/data";
 import { isPlayableDate, todayET } from "@/lib/round";
-import styles from "./page.module.css";
+import styles from "@/app/page.module.css";
 
 export const metadata: Metadata = {
   // The layout's title template doesn't apply to a page in the same segment.
@@ -34,7 +34,7 @@ export default function Home({ searchParams }: { searchParams: SearchParams }) {
           Baseball <span>Golf</span>
         </h1>
         <p className={styles.tagline}>
-          Three holes. Name the player at each all-time rank. Closest to the pin wins — lowest score is best.
+          Three holes. Name the player at each all-time rank, as close to the pin as you can. Lowest score wins.
         </p>
       </header>
 

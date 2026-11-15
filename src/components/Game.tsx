@@ -4,9 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { GuessResult, PlayerIndexEntry, PlayState, Round, RoundStats } from "@/lib/types";
 import { MAX_HOLE_SCORE, ordinal } from "@/lib/scoring";
-import { buildShareText } from "@/lib/share";
+import { buildShareText, holeLabel, scoreLabel } from "@/lib/share";
 import { formatRoundDate, LAUNCH_DATE, roundNumber } from "@/lib/round";
 import DayNav from "./DayNav";
+import { GolfCompare } from "./CompareStats";
 import PlayerSearch from "./PlayerSearch";
 import ShareButton from "./ShareButton";
 import styles from "./Game.module.css";
@@ -32,41 +33,16 @@ function save(key: string, results: (GuessResult | null)[]) {
 }
 
 function GolfShare({ round, isToday, results }: { round: Round; isToday: boolean; results: GuessResult[] }) {
-  // Previous rounds link to that exact round; today's round links to the site.
+  // Previous rounds link to that exact round; today's round links to the game.
   const getText = () =>
     buildShareText({
       date: round.date,
       scores: results.map((r) => r.score),
-      url: isToday ? window.location.origin : `${window.location.origin}/?date=${round.date}`,
+      url: isToday ? `${window.location.origin}/golf` : `${window.location.origin}/golf?date=${round.date}`,
     });
   return (
     <ShareButton getText={getText} label="Share result" className={styles.shareBtn} />
   );
-}
-
-function PercentileLine({ stats, isToday }: { stats: RoundStats; isToday: boolean }) {
-  // Everyone who has finished this round counts, whether they played it on its day or later.
-  const who = isToday ? "who finished today" : stats.others === 1 ? "who's finished this round" : "who've finished this round";
-  if (stats.percentBeaten === null) {
-    return (
-      <p className={styles.percentile}>
-        You&apos;re the first to finish this round. Check back later to see how you stack up.
-      </p>
-    );
-  }
-  const others = stats.others.toLocaleString("en-US");
-  return (
-    <p className={styles.percentile}>
-      You beat <strong>{stats.percentBeaten}%</strong> of the {others} other {stats.others === 1 ? "player" : "players"}{" "}
-      {who}
-      {stats.tied > 0 && <> (tied with {stats.tied.toLocaleString("en-US")})</>}.
-    </p>
-  );
-}
-
-/** An average to one decimal place, dropping a trailing ".0" (12.4, 89). */
-function formatNumber(n: number): string {
-  return n.toFixed(1).replace(/\.0$/, "");
 }
 
 export default function Game({
@@ -169,7 +145,7 @@ export default function Game({
         <p className={styles.date}>
           #{roundNumber(round.date)} · {formatRoundDate(round.date)}
         </p>
-        <Link href="/archive" className={styles.archiveLink}>
+        <Link href="/golf/archive" className={styles.archiveLink}>
           Play previous rounds
         </Link>
       </div>
@@ -185,10 +161,9 @@ export default function Game({
               key={hole.statKey}
               className={`${styles.hole} ${isCurrent ? styles.holeCurrent : ""}`}
             >
-              <div className={styles.holeHead}>
-                <span className={styles.holeNum}>Hole {i + 1}</span>
-                <span className={styles.holeGroup}>{hole.group}</span>
-              </div>
+              <p className={styles.kicker}>
+                Hole {i + 1} · {hole.group}
+              </p>
               <h2 className={styles.prompt}>
                 <span className={styles.rank}>{ordinal(hole.targetRank)}</span> all-time in career{" "}
                 <span className={styles.stat}>{hole.label}</span>
@@ -233,7 +208,7 @@ export default function Game({
                     </p>
                   </div>
                   <div className={`${styles.score} ${result.score === 0 ? styles.ace : ""}`}>
-                    <span className={styles.scoreNum}>{result.score === 0 ? "ACE" : `+${result.score}`}</span>
+                    <span className={styles.scoreNum}>{holeLabel(result.score)}</span>
                     {result.score === MAX_HOLE_SCORE && <span className={styles.scoreNote}>max</span>}
                   </div>
                 </div>
@@ -246,7 +221,7 @@ export default function Game({
       <div className={styles.card} aria-label="Scorecard">
         {finished && (
           <p className={styles.headline}>
-            {total === 0 ? "Perfect round!" : `Total: ${total}`}
+            {total === 0 ? "Perfect round!" : `Total: ${scoreLabel(total)}`}
             <span> / {MAX_HOLE_SCORE * round.holes.length} max</span>
           </p>
         )}
@@ -266,31 +241,32 @@ export default function Game({
             <tr>
               <th scope="row">Score</th>
               {results.map((r, i) => (
-                <td key={i}>{r ? r.score : "–"}</td>
+                <td key={i}>{r ? holeLabel(r.score) : "–"}</td>
               ))}
-              <td className={styles.total}>{results.some(Boolean) ? total : "–"}</td>
+              <td className={styles.total}>{results.some(Boolean) ? scoreLabel(total) : "–"}</td>
             </tr>
             {holeAverages && stats && (
               <tr className={styles.avgRow}>
                 <th scope="row">Avg</th>
                 {holeAverages.map((a, i) => (
-                  <td key={i}>{formatNumber(a)}</td>
+                  <td key={i}>{scoreLabel(a)}</td>
                 ))}
-                <td className={styles.total}>{formatNumber(stats.roundAverage)}</td>
+                {/* The round average is in the compare panel below. */}
+                <td className={styles.total} />
               </tr>
             )}
           </tbody>
         </table>
-        {finished && stats && <PercentileLine stats={stats} isToday={isToday} />}
+        {finished && stats && <GolfCompare stats={stats} isToday={isToday} />}
         {finished && <GolfShare round={round} isToday={isToday} results={results as GuessResult[]} />}
       </div>
 
       <nav className={styles.links}>
         {finished ? (
           // Finished the round: step to the day before or after.
-          <DayNav path="/" date={round.date} today={today} firstDate={LAUNCH_DATE} className={styles.linkBtn} />
+          <DayNav path="/golf" date={round.date} today={today} firstDate={LAUNCH_DATE} className={styles.linkBtn} />
         ) : !isToday ? (
-          <Link href="/">Today&apos;s round</Link>
+          <Link href="/golf">Today&apos;s round</Link>
         ) : null}
       </nav>
     </section>

@@ -4,7 +4,7 @@ import type { LeaderboardData } from "./types";
 import { eligibleTargetRanks, generateRound, MAX_TIE_SIZE, todayET } from "./round";
 import { formatValue, ordinal, scoreHole } from "./scoring";
 import { search } from "@/components/PlayerSearch";
-import { buildShareText, holeEmoji } from "./share";
+import { buildShareText, holeEmoji, scoreLabel } from "./share";
 
 const data = raw as unknown as LeaderboardData;
 
@@ -116,8 +116,11 @@ describe("share text", () => {
       url: "https://baseball-golf.vercel.app",
     });
     expect(text).toBe(
-      "Baseball Golf #13 · Nov 13, 2026\n🟩 +4  🟨 +12  ⛳ ACE\nTotal: 16\nhttps://baseball-golf.vercel.app",
+      "Baseball Golf #13 · Nov 13, 2026\n🟩 +4  🟨 +12  ⛳ ACE\nTotal: +16\nhttps://baseball-golf.vercel.app",
     );
+  });
+  it("labels totals and averages with the same + as holes", () => {
+    expect([82, 0, 32.3, 101.0, 142.66].map(scoreLabel)).toEqual(["+82", "0", "+32.3", "+101", "+142.7"]);
   });
   it("buckets scores", () => {
     const text = buildShareText({ date: "2026-11-13", scores: [35, 90, 100], url: "x" });

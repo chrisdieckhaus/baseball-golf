@@ -28,12 +28,6 @@
   border-radius: 14px;
   padding: 18px 20px;
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.25), 0 8px 24px rgba(0, 0, 0, 0.18);
-  border: 2px solid transparent;
-  transition: opacity 0.2s, border-color 0.2s;
-}
-
-.holeCurrent {
-  border-color: var(--flag);
 }
 
 .holeCurrent {
@@ -53,27 +47,21 @@
   }
 }
 
-.holeHead {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
+/* Kicker and heading match Stats Ranker and Roster Reveal. */
+.kicker {
+  margin: 0;
   font-size: 0.72rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink-dim);
 }
 
-.holeNum {
-  font-weight: 700;
-  color: var(--fairway);
-}
-
 .prompt {
-  margin: 8px 0 0;
+  margin: 4px 0 0;
   font-family: var(--font-display);
-  font-size: 1.45rem;
-  font-weight: 600;
-  line-height: 1.25;
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
 .rank {
@@ -300,7 +288,7 @@
 
 @media (max-width: 520px) {
   .prompt {
-    font-size: 1.2rem;
+    font-size: 1.4rem;
   }
   .result {
     flex-direction: column;
@@ -338,18 +326,6 @@
   background: var(--flag);
   color: #fff;
   cursor: pointer;
-}
-
-.percentile {
-  margin: 8px 0 0;
-  text-align: center;
-  font-size: 0.95rem;
-  color: var(--ink-dim);
-}
-
-.percentile strong {
-  color: var(--ink);
-  font-size: 1.1rem;
 }
 
 .dateBar {

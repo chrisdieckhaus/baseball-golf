@@ -8,7 +8,7 @@ import { getRankProgress } from "@/lib/game-plays";
 import { readPlayerId } from "@/lib/player-cookie";
 import { rankRoundNumber, RANK_LAUNCH_DATE } from "@/lib/rank";
 import { playableDates, todayET } from "@/lib/round";
-import styles from "../../archive/archive.module.css";
+import styles from "@/app/archive.module.css";
 
 export const metadata: Metadata = {
   title: "Stats Ranker archive",
