@@ -41,6 +41,8 @@ export interface ShareInput {
   date: string; // YYYY-MM-DD
   scores: number[];
   url: string; // where friends can play: the site root, or the previous round's link
+  /** Player mode (/golf/player) adds "Player" to the title. */
+  mode?: "rank" | "player";
 }
 
 /**
@@ -51,8 +53,9 @@ export interface ShareInput {
  *   Total: +16
  *   https://baseball-golf.vercel.app
  */
-export function buildShareText({ date, scores, url }: ShareInput): string {
-  const title = `Baseball Golf #${roundNumber(date)} · ${shortDate(date)}`;
+export function buildShareText({ date, scores, url, mode = "rank" }: ShareInput): string {
+  const name = mode === "player" ? "Baseball Golf · Player" : "Baseball Golf";
+  const title = `${name} #${roundNumber(date)} · ${shortDate(date)}`;
   const holes = scores.map((s) => `${holeEmoji(s)} ${holeLabel(s)}`).join("  ");
   const total = scores.reduce((a, b) => a + b, 0);
   const totalLine = total === 0 ? "Total: 0 — perfect round!" : `Total: ${scoreLabel(total)}`;

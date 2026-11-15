@@ -1,0 +1,28 @@
+.switch {
+  display: inline-flex;
+  margin: 12px auto 0;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.option {
+  min-width: 84px;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  color: var(--chalk-dim);
+}
+
+.option:hover {
+  color: var(--chalk);
+}
+
+.active,
+.active:hover {
+  background: var(--flag);
+  color: #fff;
+}

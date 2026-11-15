@@ -2,7 +2,7 @@
 
 Quick daily sports stats games, all in one app:
 
-- **Baseball Golf** (`/golf`; `/` redirects there): name the player at each all-time career rank.
+- **Baseball Golf** (`/golf`; `/` redirects there): name the player at each all-time career rank. Its **Player** mode (`/golf/player`) flips it: we name the player, you name his rank.
 - **Stats Ranker** (`/rank`): put five players in order of one career stat.
 - **Roster Reveal** (`/roster`): you get the year; name the team from its starting lineup, revealed one player at a time.
 
@@ -17,6 +17,18 @@ A daily baseball trivia game. Each day everyone plays the same three holes. Each
 - Rounds stored before Nov 15, 2026 can target ranks up to 150. They're scored with the same 100 cap, and scores already saved stay as they were.
 - Tied players share a rank (1, 2, 2, 4).
 - Rate stats have minimums to qualify: 3,000 PA for batting (AVG, OBP, SLG, OPS) and 1,000 IP for pitching (ERA, WHIP, K/9).
+
+### Player mode (`/golf/player`)
+A **Rank | Player** switch under the title picks the mode. Rank mode is the game above. Player mode flips it: each hole names a player and a career stat, and you say where he ranks all-time.
+
+- Three holes a day, the same for everyone, numbered from Nov 1, 2026 like the other games. Three different stats, never all batting or all pitching.
+- Each player is ranked 1st–100th in that stat, isn't in a tie of more than 3, and appears once per round.
+- Pick a rank (−/+, type it, or the slider) and **Putt**. One putt per hole, holes in order, enforced on the server.
+- Hole score = how many ranks you miss by, capped at 100. A guess anywhere inside his tie counts as exact (a 3-way tie at 20th covers 20th–22nd).
+- The reveal shows his rank and value, the leaderboard two ranks either side of him, and who holds the rank you guessed.
+- Rounds are saved in `player_golf_rounds` (stat and player id, no ranks) the first time they're needed, and backfilled on every build. Plays are in `player_golf_plays`, keyed by the same `bg_player` cookie, and have their own percentile and averages.
+- `src/data/player-meta.json` holds each ranked player's years and position. `scripts/build_player_meta.mjs` writes it from `public/players.json`; `npm run data` runs it.
+- Code: `src/lib/player-golf*.ts`, `src/app/api/player-golf/route.ts`, `src/components/PlayerGolfGame.tsx`, `src/components/ModeSwitch.tsx`, `src/app/golf/player/`.
 
 ## Data
 Stats come from the [Lahman Baseball Database](https://sabr.org/lahman-database/) (CC BY-SA 3.0), read from the [Lahman R package](https://github.com/cdalzell/Lahman) data files. They currently run through the 2025 season.
@@ -36,6 +48,7 @@ To refresh the data when a new Lahman release comes out:
 git clone --depth 1 https://github.com/cdalzell/Lahman /tmp/Lahman
 pip install pyreadr pandas
 python3 scripts/build_data.py /tmp/Lahman/data
+node scripts/build_player_meta.mjs
 python3 scripts/build_reveal_data.py /tmp/Lahman/data
 npm test
 ```

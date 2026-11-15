@@ -6,10 +6,10 @@ import styles from "@/app/archive.module.css";
 import { HOLES_PER_ROUND } from "@/lib/round";
 import { scoreLabel } from "@/lib/share";
 
-type GameKey = "golf" | "rank" | "roster";
+type GameKey = "golf" | "player" | "rank" | "roster";
 
-/** Where each game's rounds live: Baseball Golf is at the site root. */
-const PATHS: Record<GameKey, string> = { golf: "/golf", rank: "/rank", roster: "/roster" };
+/** Where each game's rounds live. "player" is Baseball Golf's Player mode. */
+const PATHS: Record<GameKey, string> = { golf: "/golf", player: "/golf/player", rank: "/rank", roster: "/roster" };
 
 interface Props {
   game: GameKey;
@@ -50,8 +50,8 @@ export function rosterStatus(revealed: number, correct: boolean, done: boolean):
 
 /** This browser's result for a round, from what the game saved in localStorage. */
 function statusFor(game: GameKey, date: string): Status {
-  if (game === "golf") {
-    const saved = read(`baseball-golf:${date}`) as ({ score?: number } | null)[] | null;
+  if (game === "golf" || game === "player") {
+    const saved = read(game === "golf" ? `baseball-golf:${date}` : `baseball-golf-player:${date}`) as ({ score?: number } | null)[] | null;
     if (!Array.isArray(saved) || saved.length === 0) return null;
     const played = saved.filter((r) => typeof r?.score === "number");
     const total = played.length === saved.length ? played.reduce((sum, r) => sum + r!.score!, 0) : null;
