@@ -8,6 +8,7 @@ import { MAX_HOLE_SCORE, MAX_TARGET_RANK } from "@/lib/scoring";
 import type { Sport } from "@/lib/sport";
 import { DataCredit, GolfTitle, StatsNote } from "./footers";
 import type { SearchParams } from "./GolfPage";
+import HowToPlay from "./HowToPlay";
 import styles from "@/app/page.module.css";
 
 async function TodaysRound({ searchParams, sport }: { searchParams: SearchParams; sport: Sport }) {
@@ -38,6 +39,8 @@ export default function PlayerGolfPage({ searchParams, sport }: { searchParams: 
       <Suspense fallback={<p className={styles.loading}>Setting up today&apos;s round…</p>}>
         <TodaysRound searchParams={searchParams} sport={sport} />
       </Suspense>
+
+      {sport === "mlb" && <HowToPlay game="player" />}
 
       <footer className={styles.footer}>
         <p className={styles.dataNote}>

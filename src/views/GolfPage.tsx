@@ -6,6 +6,7 @@ import { getRound } from "@/lib/data";
 import { isPlayableDate, todayET } from "@/lib/round";
 import type { Sport } from "@/lib/sport";
 import { DataCredit, GolfTitle, StatsNote } from "./footers";
+import HowToPlay from "./HowToPlay";
 import styles from "@/app/page.module.css";
 
 export type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
@@ -39,6 +40,8 @@ export default function GolfPage({ searchParams, sport }: { searchParams: Search
       <Suspense fallback={<p className={styles.loading}>Setting up today&apos;s round…</p>}>
         <TodaysRound searchParams={searchParams} sport={sport} />
       </Suspense>
+
+      {sport === "mlb" && <HowToPlay game="golf" />}
 
       <footer className={styles.footer}>
         <StatsNote sport={sport} />

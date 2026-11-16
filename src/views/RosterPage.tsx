@@ -8,6 +8,7 @@ import { todayET } from "@/lib/round";
 import { seasonLabel, type Sport } from "@/lib/sport";
 import { DataCredit } from "./footers";
 import type { SearchParams } from "./GolfPage";
+import HowToPlay from "./HowToPlay";
 import styles from "@/app/page.module.css";
 
 async function TodaysRound({ searchParams, sport }: { searchParams: SearchParams; sport: Sport }) {
@@ -66,6 +67,8 @@ export default function RosterPage({ searchParams, sport }: { searchParams: Sear
       <Suspense fallback={<p className={styles.loading}>Filling out the lineup card…</p>}>
         <TodaysRound searchParams={searchParams} sport={sport} />
       </Suspense>
+
+      {sport === "mlb" && <HowToPlay game="roster" />}
 
       <footer className={styles.footer}>
         <RosterNote sport={sport} />

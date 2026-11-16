@@ -1,0 +1,9 @@
+import { OG_SIZE, ogCard } from "@/lib/og-card";
+
+export const alt = "Stats Ranker, a daily baseball stats game on Daily Dugout";
+export const size = OG_SIZE;
+export const contentType = "image/png";
+
+export default function Image() {
+  return ogCard({ title: "Stats", accent: "Ranker", pitch: "One career stat. Five players. Put them in order." });
+}
