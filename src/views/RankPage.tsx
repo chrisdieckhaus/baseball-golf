@@ -6,6 +6,7 @@ import { todayET } from "@/lib/round";
 import type { Sport } from "@/lib/sport";
 import { DataCredit, StatsNote } from "./footers";
 import type { SearchParams } from "./GolfPage";
+import HowToPlay from "./HowToPlay";
 import styles from "@/app/page.module.css";
 
 async function TodaysRound({ searchParams, sport }: { searchParams: SearchParams; sport: Sport }) {
@@ -25,12 +26,17 @@ export default function RankPage({ searchParams, sport }: { searchParams: Search
         <h1 className={styles.title}>
           Stats <span>Ranker</span>
         </h1>
-        <p className={styles.tagline}>One stat. Five players. Put them in order. Lowest score wins.</p>
+        {/* Baseball explains the game in How to play, below it. */}
+        {sport === "nba" && (
+          <p className={styles.tagline}>One stat. Five players. Put them in order. Lowest score wins.</p>
+        )}
       </header>
 
       <Suspense fallback={<p className={styles.loading}>Pulling today&apos;s lineup…</p>}>
         <TodaysRound searchParams={searchParams} sport={sport} />
       </Suspense>
+
+      {sport === "mlb" && <HowToPlay game="rank" />}
 
       <footer className={styles.footer}>
         <StatsNote sport={sport} />

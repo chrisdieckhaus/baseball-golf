@@ -54,7 +54,7 @@ export interface ShareInput {
  *   Baseball Golf #13 · Nov 13, 2026
  *   🟩 +4  🟨 +12  ⛳ ACE
  *   Total: +16
- *   https://baseball-golf.vercel.app
+ *   https://dailydugout.com/golf
  */
 export function buildShareText({ date, scores, url, mode = "rank", sport = "mlb" }: ShareInput): string {
   const golf = COPY[sport].golfName;

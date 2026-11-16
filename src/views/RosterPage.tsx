@@ -8,6 +8,7 @@ import { todayET } from "@/lib/round";
 import { seasonLabel, type Sport } from "@/lib/sport";
 import { DataCredit } from "./footers";
 import type { SearchParams } from "./GolfPage";
+import HowToPlay from "./HowToPlay";
 import styles from "@/app/page.module.css";
 
 async function TodaysRound({ searchParams, sport }: { searchParams: SearchParams; sport: Sport }) {
@@ -57,15 +58,20 @@ export default function RosterPage({ searchParams, sport }: { searchParams: Sear
         <h1 className={styles.title}>
           Roster <span>Reveal</span>
         </h1>
-        <p className={styles.tagline}>
-          You get the {sport === "nba" ? "season" : "year"}. Name the team from its lineup, one player at a time. One
-          guess. Fewest players wins.
-        </p>
+        {/* Baseball explains the game in How to play, below it. */}
+        {sport === "nba" && (
+          <p className={styles.tagline}>
+            You get the season. Name the team from its lineup, one player at a time. One
+            guess. Fewest players wins.
+          </p>
+        )}
       </header>
 
       <Suspense fallback={<p className={styles.loading}>Filling out the lineup card…</p>}>
         <TodaysRound searchParams={searchParams} sport={sport} />
       </Suspense>
+
+      {sport === "mlb" && <HowToPlay game="roster" />}
 
       <footer className={styles.footer}>
         <RosterNote sport={sport} />
