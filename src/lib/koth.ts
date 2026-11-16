@@ -206,7 +206,7 @@ export interface KothResult {
 export interface KothState {
   results: KothResult[];
   /** The matchup to play next (the king's value shown after matchup 1), or null when done. */
-  next: { king: KothCard; challenger: KothCard; streak: number } | null;
+  next: { king: KothCard; challenger: KothCard } | null;
   score: number;
   done: boolean;
 }
@@ -256,13 +256,12 @@ export function kothState(
 
   const results: KothResult[] = [];
   let king = stored.playerIds[0];
-  let streak = 0;
   for (let i = 0; i < KOTH_MATCHUPS; i++) {
     const challenger = stored.playerIds[i + 1];
     if (i >= picks.length) {
       return {
         results,
-        next: { king: card(king, i > 0), challenger: card(challenger, false), streak },
+        next: { king: card(king, i > 0), challenger: card(challenger, false) },
         score: results.filter((r) => r.ok).length,
         done: false,
       };
@@ -276,11 +275,7 @@ export function kothState(
       pickedId: picks[i],
       ok: picks[i] === winner,
     });
-    if (winner === king) streak++;
-    else {
-      king = winner;
-      streak = 1;
-    }
+    king = winner;
   }
   return { results, next: null, score: results.filter((r) => r.ok).length, done: true };
 }

@@ -144,8 +144,6 @@ export default function KothGame({ round, initial, isToday, today, sport = "mlb"
   const index = showingResult ? state.results.length - 1 : state.results.length;
   const king = showingResult ? last.king : state.next!.king;
   const challenger = showingResult ? last.challenger : state.next!.challenger;
-  // Streak shown on the king's badge: wins before this matchup.
-  const streak = showingResult ? kingStreakBefore(state, index) : state.next!.streak;
 
   function cardView(c: KothCard, isKing: boolean) {
     let cls = styles.player;
@@ -157,9 +155,7 @@ export default function KothGame({ round, initial, isToday, today, sport = "mlb"
     }
     const badge =
       isKing && index > 0 ? (
-        <span className={styles.badge}>
-          👑 King · {streak} {streak === 1 ? "win" : "wins"}
-        </span>
+        <span className={styles.badge}>👑 King</span>
       ) : (
         <span className={`${styles.badge} ${styles.badgeNew}`}>Challenger</span>
       );
@@ -262,14 +258,4 @@ export default function KothGame({ round, initial, isToday, today, sport = "mlb"
       </nav>
     </div>
   );
-}
-
-/** The king's winning streak going into matchup `index`. */
-function kingStreakBefore(state: KothState, index: number): number {
-  let streak = 0;
-  for (let i = 0; i < index; i++) {
-    const r = state.results[i];
-    streak = r.winnerId === r.king.id ? streak + 1 : 1;
-  }
-  return streak;
 }
