@@ -10,6 +10,8 @@ const GAMES = [
   { path: "/golf", label: "Golf" },
   { path: "/rank", label: "Ranker" },
   { path: "/roster", label: "Roster" },
+  // Hit the Number is baseball only, so the NBA nav leaves it out.
+  { path: "/number", label: "Number", mlbOnly: true },
 ];
 
 /** Splits "/nba/rank/archive" into its sport and the game path ("/rank/archive"). */
@@ -29,14 +31,20 @@ export default function GameNav({ nbaEnabled = false }: { nbaEnabled?: boolean }
   const { sport, path } = parsePath(pathname);
   const base = basePath(sport);
   // Each game's archive counts as that game. "/" redirects to Baseball Golf.
-  const current = path.startsWith("/rank") ? "/rank" : path.startsWith("/roster") ? "/roster" : "/golf";
+  const current = path.startsWith("/rank")
+    ? "/rank"
+    : path.startsWith("/roster")
+      ? "/roster"
+      : path.startsWith("/number")
+        ? "/number"
+        : "/golf";
   return (
     <nav className={styles.nav} aria-label="Games">
       <Link href="/" className={styles.brand}>
         <Logo size={44} className={styles.logo} />
         Daily Dugout
       </Link>
-      {GAMES.map((g) => (
+      {GAMES.filter((g) => !(g.mlbOnly && sport === "nba")).map((g) => (
         <Link
           key={g.path}
           href={`${base}${g.path}`}

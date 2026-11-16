@@ -125,7 +125,36 @@ CREATE INDEX IF NOT EXISTS ${p}player_golf_plays_round_scores_idx
   ON ${p}player_golf_plays (round_date, total_score) WHERE total_score IS NOT NULL;
 `;
 
-const SCHEMA = PLAYERS_SCHEMA + gameSchema("") + gameSchema("nba_");
+// Hit the Number (baseball only).
+const NUMBER_SCHEMA = `
+-- One row per daily round: the stat and target, saved the first time it's needed.
+CREATE TABLE IF NOT EXISTS number_rounds (
+  round_date  date PRIMARY KEY,
+  stat_key    text NOT NULL,
+  target      integer NOT NULL,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+
+-- One row per player per daily round. pick_ids only grow, in order, until the
+-- round is done (three picks, or the total went over). score is how far under
+-- the target the total finished (null for a bust or an unfinished round).
+CREATE TABLE IF NOT EXISTS number_plays (
+  player_id     uuid NOT NULL REFERENCES players (id) ON DELETE CASCADE,
+  round_date    date NOT NULL,
+  pick_ids      text[] NOT NULL DEFAULT '{}',
+  total         integer NOT NULL DEFAULT 0,
+  done          boolean NOT NULL DEFAULT false,
+  bust          boolean NOT NULL DEFAULT false,
+  score         integer,
+  is_live       boolean NOT NULL,           -- started on the round's own day (ET), not later from the archive
+  started_at    timestamptz NOT NULL DEFAULT now(),
+  completed_at  timestamptz,
+  PRIMARY KEY (player_id, round_date)
+);
+CREATE INDEX IF NOT EXISTS number_plays_round_idx ON number_plays (round_date) WHERE done;
+`;
+
+const SCHEMA = PLAYERS_SCHEMA + gameSchema("") + gameSchema("nba_") + NUMBER_SCHEMA;
 
 const client = new pg.Client({ connectionString: url });
 try {

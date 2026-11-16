@@ -3,13 +3,19 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import styles from "@/app/archive.module.css";
-import { golfStatus, rankStatus, rosterStatus, type Status } from "@/lib/archive-status";
+import { golfStatus, numberStatus, rankStatus, rosterStatus, type Status } from "@/lib/archive-status";
 import { basePath, namespaced, type Sport } from "@/lib/sport";
 
-type GameKey = "golf" | "player" | "rank" | "roster";
+type GameKey = "golf" | "player" | "rank" | "roster" | "number";
 
 /** Where each game's rounds live. "player" is Baseball Golf's Player mode. */
-const PATHS: Record<GameKey, string> = { golf: "/golf", player: "/golf/player", rank: "/rank", roster: "/roster" };
+const PATHS: Record<GameKey, string> = {
+  golf: "/golf",
+  player: "/golf/player",
+  rank: "/rank",
+  roster: "/roster",
+  number: "/number",
+};
 
 interface Props {
   game: GameKey;
@@ -46,6 +52,16 @@ function statusFor(game: GameKey, date: string, sport: Sport): Status {
     } | null;
     const score = saved?.reveal?.score;
     return typeof score === "number" ? rankStatus(score) : null;
+  }
+  if (game === "number") {
+    const saved = read(`hit-the-number:${date}`) as {
+      picks?: unknown[];
+      done?: boolean;
+      bust?: boolean;
+      score?: number | null;
+    } | null;
+    if (!saved?.picks?.length) return null;
+    return numberStatus(saved.picks.length, Boolean(saved.done), Boolean(saved.bust), saved.score ?? null);
   }
   const saved = read(`roster-reveal:${date}`) as { revealed?: unknown[]; done?: boolean; correct?: boolean } | null;
   if (!saved?.revealed) return null;
