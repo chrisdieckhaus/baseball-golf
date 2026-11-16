@@ -6,7 +6,7 @@ import { MAX_HOLE_SCORE, MAX_TARGET_RANK } from "@/lib/scoring";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 import styles from "@/app/page.module.css";
 
-export type HowToGame = "golf" | "player" | "rank" | "roster" | "number";
+export type HowToGame = "golf" | "player" | "rank" | "roster" | "number" | "king";
 
 const GAMES: Record<HowToGame, { name: string; path: string; summary: string; rules: string[] }> = {
   golf: {
@@ -62,6 +62,17 @@ const GAMES: Record<HowToGame, { name: string; path: string; summary: string; ru
       "Name three players, one at a time. Each player's career total is revealed when you pick him, so you can aim your last pick. Anyone who debuted in 1890 or later counts.",
       "Your score is how far under the target your three players finish. Hit it exactly for a bullseye. Go over and it's a bust, and the round ends.",
       "A new round starts every day at midnight Eastern, and past rounds are in the archive.",
+    ],
+  },
+  king: {
+    name: "King of the Hill",
+    path: "/king",
+    summary: "A daily baseball stats game: five head-to-head matchups on one career stat, and the winner stays on as king.",
+    rules: [
+      "You get one career stat and five matchups. Tap the player with the better number. For ERA, lower is better.",
+      "The first matchup is two challengers. Whoever really wins becomes king and stays on against a new challenger, whether you picked him or not. His number stays face up.",
+      "Each matchup pairs players closer together on the all-time leaderboard, so they get harder as you go.",
+      "Score a point for each matchup you get right. A new round starts every day at midnight Eastern, and past rounds are in the archive.",
     ],
   },
 };

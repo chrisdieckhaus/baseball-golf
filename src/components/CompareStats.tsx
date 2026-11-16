@@ -1,6 +1,7 @@
 import type { RankStats, RosterStats } from "@/lib/game-plays";
 import { numberBucket, numberBucketLimits } from "@/lib/number";
 import type { NumberStats } from "@/lib/number-plays";
+import type { KothStats } from "@/lib/koth-plays";
 import { rankBucket } from "@/lib/rank";
 import { ordinal } from "@/lib/scoring";
 import type { RoundStats } from "@/lib/types";
@@ -220,6 +221,40 @@ export function NumberCompare({
         bucketLabel={label}
         bucketTitle={title}
         wideLabels
+      />
+    </div>
+  );
+}
+
+/**
+ * King of the Hill: your percentile, the average score and perfect rate, and a
+ * chart of everyone's scores (0 to 5 right), with yours marked.
+ */
+export function KothCompare({ stats, mine, isToday }: { stats: KothStats; mine: number; isToday: boolean }) {
+  const top = stats.distribution.length - 1;
+  return (
+    <div className={styles.compare}>
+      <PercentileLine stats={stats} isToday={isToday} />
+      <dl className={styles.facts}>
+        <div>
+          <dt>Average</dt>
+          <dd>{stats.averageScore === null ? "—" : `${avg(stats.averageScore)}/${top}`}</dd>
+        </div>
+        <div>
+          <dt>Perfect</dt>
+          <dd>{stats.perfectPercent}%</dd>
+        </div>
+        <div>
+          <dt>Played</dt>
+          <dd>{fmt(stats.finishers)}</dd>
+        </div>
+      </dl>
+      <DistributionChart
+        counts={[...stats.distribution].reverse()}
+        mine={top - mine}
+        label="How many everyone got right"
+        bucketLabel={(i) => String(top - i)}
+        bucketTitle={(i) => `${top - i} of ${top} right`}
       />
     </div>
   );

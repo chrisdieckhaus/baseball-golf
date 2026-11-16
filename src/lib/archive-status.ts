@@ -31,3 +31,9 @@ export function numberStatus(picks: number, done: boolean, bust: boolean, score:
   if (bust) return { kind: "done", text: "Bust" };
   return score === 0 ? { kind: "done", text: "Bullseye" } : { kind: "done", text: "Off by", score: score ?? 0 };
 }
+
+/** How King of the Hill progress reads in the list: "4/5" once done. */
+export function kothStatus(picks: number, done: boolean, score: number | null): Status {
+  if (!done) return { kind: "partial", text: `In progress · ${picks}/5` };
+  return { kind: "done", text: "Score", score: `${score ?? 0}/5` };
+}

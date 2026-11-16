@@ -6,6 +6,7 @@ Quick daily sports stats games, all in one app:
 - **Stats Ranker** (`/rank`): put five players in order of one career stat.
 - **Roster Reveal** (`/roster`): you get the year; name the team from its starting lineup, revealed one player at a time.
 - **Hit the Number** (`/number`): name three players whose career totals add up as close to a target as you can without going over.
+- **King of the Hill** (`/king`): five head-to-head matchups on one career stat; the winner stays on as king against a new challenger.
 
 ## Baseball Golf
 
@@ -97,13 +98,28 @@ A fourth daily game on the same data, baseball only. Each day everyone gets the 
 - **Data:** `scripts/build_data.py` also writes `src/data/number.json` (server-only): every player's career total in each stat, non-zero totals only.
 - **Code:** `src/lib/number*.ts`, `src/app/api/number/route.ts`, `src/components/NumberGame.tsx`, `src/app/number/`.
 
+## King of the Hill (`/king`)
+A fifth daily game on the career leaderboards, in both sports (`/nba/king` behind the NBA kill switch). Each day everyone gets the same stat and the same chain of five matchups. Tap the player with the better number (for ERA, the lower one).
+
+- **The chain:** matchup 1 is two challengers. Whoever really wins becomes king, whatever you picked, and stays on against a new challenger. The king's number stays face up; the challenger's is hidden until you pick. Cards show the name and position, no years (career length was a giveaway). Same-named players who'd look identical get tags: Ken Griffey Sr./Jr., Vladimir Guerrero Sr./Jr., Dutch (Hubert) / (Emil) Leonard.
+- **Getting harder:** difficulty is how far apart the two players sit on the stat's all-time leaderboard (its top 300): 70–130 places apart in matchup 1, then 35–70, 15–35, 6–15 and 1–6 (`KOTH_BANDS`). Labels: Easy, Easy, Medium, Hard, Toughest. Above or below the king is a coin flip, and a new king is never placed so close to either end of the list that the remaining matchups lose room on one side, so the crown changes hands (about 93% of rounds see at least one new king after matchup 1). No matchup shows the same number on both cards.
+- **Stats** (`KOTH_STATS` in `src/lib/koth.ts`), in shuffled cycles so none repeats two days running:
+  - Baseball (15): hits, home runs, RBIs, runs, doubles, triples, walks, stolen bases, AVG, OBP, SLG, wins, strikeouts, saves, ERA.
+  - NBA (12): points, rebounds, assists, steals, blocks, 3-pointers, PPG, RPG, APG, FG%, FT%, 3P%.
+  - Left out on purpose: career-length stats (games, innings, minutes), repeats (total bases, OPS, field goals), and K/9, WHIP and turnovers.
+- **Scoring:** one point per matchup right, out of 5. The compare panel shows percent beaten, the average, the perfect rate and a chart of scores.
+- **Stored round:** the stat and the six players in order (`koth_rounds`), saved the first time it's needed and backfilled on build. Who wins each matchup comes from the current leaderboards.
+- **Playing:** `POST /api/king` takes `{ date, picks, sport }`, the player picked in each matchup so far. It returns finished matchups with both numbers and the next matchup with only the king's number. Plays are in `koth_plays`; picks only grow, and a finished round doesn't change.
+- **Share text:** `King of the Hill #15 · Nov 15, 2026` / `Career home runs` / `✅✅❌✅✅ 4/5`.
+- **Code:** `src/lib/koth*.ts`, `src/app/api/king/route.ts`, `src/components/KothGame.tsx`, `src/views/KothPage.tsx`, `src/app/king/`, `src/app/nba/king/`.
+
 ## Stats Ranker and Roster Reveal archives and plays
 - Both games number their rounds from Nov 1, 2026, like Baseball Golf. The build's backfill stores every round from then on.
 - Both save each daily play (`rank_plays`, `roster_plays`), keyed by the same anonymous `bg_player` cookie as Baseball Golf. The archives read results from those tables, falling back to localStorage.
 - Sports Revealer's old `reveal_rounds` and `reveal_plays` tables are no longer used.
 
 ## NBA versions (prototype, off by default)
-Every game also has an NBA version under `/nba`: Basketball Golf (`/nba/golf`, with Player mode at `/nba/golf/player`), Stats Ranker (`/nba/rank`) and Roster Reveal (`/nba/roster`), each with its archive.
+Every game except Hit the Number also has an NBA version under `/nba`: Basketball Golf (`/nba/golf`, with Player mode at `/nba/golf/player`), Stats Ranker (`/nba/rank`), Roster Reveal (`/nba/roster`) and King of the Hill (`/nba/king`), each with its archive.
 
 - **Kill switch:** the NBA games exist only while the `NBA_ENABLED` environment variable is `1` or `true`. Unset, every `/nba` page is a 404, NBA API calls (`sport=nba`) are a 404, the nav's MLB | NBA switch is hidden, and the build doesn't backfill NBA rounds. Change it in Vercel (Settings → Environment Variables) and redeploy.
 - **Why it's off by default:** the NBA data is built from Basketball-Reference (through the community [bball-reference-datasets](https://github.com/sumitrodatta/bball-reference-datasets) CSVs). That's fine for a private prototype, but it needs a license or a legal check before NBA goes public. NBA pages are also marked `noindex`.
@@ -131,7 +147,7 @@ It deploys to Vercel as a standard Next.js app, with Neon Postgres (`DATABASE_UR
 
 - **One domain.** The site lives at https://dailydugout.com (`src/lib/site.ts`). In production, `src/proxy.ts` 308-redirects every other host (baseball-golf.vercel.app) there. The anonymous `bg_player` cookie rides along once as `?carry=…`, so players keep their saved plays; dailydugout.com sets it (unless the browser already has one there) and redirects to the clean URL. API calls aren't redirected, so tabs already open on the old host keep working. Previews and local dev are untouched.
 - **Metadata.** Each baseball page uses `pageMetadata()` for its title, description, canonical URL (without `?date=`) and link-preview tags. `metadataBase` points every absolute URL at dailydugout.com.
-- **Link previews.** `opengraph-image.tsx` in the root, `/golf`, `/golf/player`, `/rank`, `/roster` and `/number` draw a 1200×630 card with `src/lib/og-card.tsx`. Spoiler-free: never the day's round.
+- **Link previews.** `opengraph-image.tsx` in the root, `/golf`, `/golf/player`, `/rank`, `/roster`, `/number` and `/king` draw a 1200×630 card with `src/lib/og-card.tsx`. Spoiler-free: never the day's round.
 - **Crawling.** `src/app/robots.ts` (everything but `/api/`) and `src/app/sitemap.ts` (the baseball games and archives). The NBA pages stay `noindex` and out of the sitemap.
 - **How to play.** `src/views/HowToPlay.tsx` puts each baseball game's rules under the game as plain text, plus schema.org `WebApplication` data.
 

@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import styles from "@/app/archive.module.css";
-import { golfStatus, numberStatus, rankStatus, rosterStatus, type Status } from "@/lib/archive-status";
+import { golfStatus, kothStatus, numberStatus, rankStatus, rosterStatus, type Status } from "@/lib/archive-status";
 import { basePath, namespaced, type Sport } from "@/lib/sport";
 
-type GameKey = "golf" | "player" | "rank" | "roster" | "number";
+type GameKey = "golf" | "player" | "rank" | "roster" | "number" | "king";
 
 /** Where each game's rounds live. "player" is Baseball Golf's Player mode. */
 const PATHS: Record<GameKey, string> = {
@@ -15,6 +15,7 @@ const PATHS: Record<GameKey, string> = {
   rank: "/rank",
   roster: "/roster",
   number: "/number",
+  king: "/king",
 };
 
 interface Props {
@@ -52,6 +53,11 @@ function statusFor(game: GameKey, date: string, sport: Sport): Status {
     } | null;
     const score = saved?.reveal?.score;
     return typeof score === "number" ? rankStatus(score) : null;
+  }
+  if (game === "king") {
+    const saved = read(`king-of-the-hill:${date}`) as { results?: unknown[]; done?: boolean; score?: number } | null;
+    if (!saved?.results?.length) return null;
+    return kothStatus(saved.results.length, Boolean(saved.done), saved.score ?? null);
   }
   if (game === "number") {
     const saved = read(`hit-the-number:${date}`) as {
