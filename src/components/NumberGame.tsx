@@ -161,10 +161,6 @@ export default function NumberGame({ round, isToday, today }: Props) {
         <h2 className={styles.target}>
           {fmt(round.target)} <span>{round.short}</span>
         </h2>
-        <p className={styles.instructions}>
-          Name three players whose career {stat} add up as close to <strong>{fmt(round.target)}</strong> as you can,{" "}
-          <strong>without going over</strong>. Each player&apos;s total shows when you pick him.
-        </p>
 
         <ol className={styles.slots}>
           {Array.from({ length: NUMBER_PICKS }, (_, i) => {
