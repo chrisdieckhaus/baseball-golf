@@ -26,7 +26,10 @@ export default function RankPage({ searchParams, sport }: { searchParams: Search
         <h1 className={styles.title}>
           Stats <span>Ranker</span>
         </h1>
-        <p className={styles.tagline}>One stat. Five players. Put them in order. Lowest score wins.</p>
+        {/* Baseball explains the game in How to play, below it. */}
+        {sport === "nba" && (
+          <p className={styles.tagline}>One stat. Five players. Put them in order. Lowest score wins.</p>
+        )}
       </header>
 
       <Suspense fallback={<p className={styles.loading}>Pulling today&apos;s lineup…</p>}>

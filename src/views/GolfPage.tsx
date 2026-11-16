@@ -32,9 +32,12 @@ export default function GolfPage({ searchParams, sport }: { searchParams: Search
           <GolfTitle sport={sport} />
         </h1>
         <ModeSwitch current="rank" sport={sport} />
-        <p className={styles.tagline}>
-          Three holes. Name the player at each all-time rank. Lowest score wins.
-        </p>
+        {/* Baseball explains the game in How to play, below it. */}
+        {sport === "nba" && (
+          <p className={styles.tagline}>
+            Three holes. Name the player at each all-time rank. Lowest score wins.
+          </p>
+        )}
       </header>
 
       <Suspense fallback={<p className={styles.loading}>Setting up today&apos;s round…</p>}>

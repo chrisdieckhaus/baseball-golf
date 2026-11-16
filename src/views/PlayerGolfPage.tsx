@@ -30,10 +30,13 @@ export default function PlayerGolfPage({ searchParams, sport }: { searchParams: 
           <GolfTitle sport={sport} />
         </h1>
         <ModeSwitch current="player" sport={sport} />
-        <p className={styles.tagline}>
-          Three holes. We name the player, you name his all-time rank. Lowest score
-          wins.
-        </p>
+        {/* Baseball explains the game in How to play, below it. */}
+        {sport === "nba" && (
+          <p className={styles.tagline}>
+            Three holes. We name the player, you name his all-time rank. Lowest score
+            wins.
+          </p>
+        )}
       </header>
 
       <Suspense fallback={<p className={styles.loading}>Setting up today&apos;s round…</p>}>
