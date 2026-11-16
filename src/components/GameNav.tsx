@@ -20,6 +20,13 @@ function parsePath(pathname: string): { sport: Sport; path: string } {
   return { sport: "mlb", path: pathname };
 }
 
+/** Where the sport switch goes: the same page in the other sport, or Golf if that sport doesn't have this game. */
+function sportSwitchPath(path: string, to: Sport): string {
+  if (path === "/") return "/golf";
+  if (to === "nba" && GAMES.some((g) => g.mlbOnly && path.startsWith(g.path))) return "/golf";
+  return path;
+}
+
 /**
  * The Daily Dugout name and links to every game, shown at the top of each page.
  * The current game is highlighted. While NBA is on (`nbaEnabled`, from the
@@ -59,7 +66,7 @@ export default function GameNav({ nbaEnabled = false }: { nbaEnabled?: boolean }
           {SPORTS.map((s) => (
             <Link
               key={s}
-              href={`${basePath(s)}${path === "/" ? "/golf" : path}`}
+              href={`${basePath(s)}${sportSwitchPath(path, s)}`}
               className={`${styles.sport} ${s === sport ? styles.sportActive : ""}`}
               aria-current={s === sport ? "page" : undefined}
             >
