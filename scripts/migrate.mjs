@@ -123,6 +123,32 @@ CREATE TABLE IF NOT EXISTS ${p}player_golf_plays (
 );
 CREATE INDEX IF NOT EXISTS ${p}player_golf_plays_round_scores_idx
   ON ${p}player_golf_plays (round_date, total_score) WHERE total_score IS NOT NULL;
+
+-- King of the Hill: one row per daily round, saved the first time it's needed.
+-- player_ids are the six players in the order they appear (the first two meet
+-- in matchup 1; each later one challenges the king). Values aren't saved.
+CREATE TABLE IF NOT EXISTS ${p}koth_rounds (
+  round_date  date PRIMARY KEY,
+  stat_key    text NOT NULL,
+  player_ids  text[] NOT NULL,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+
+-- King of the Hill plays: one row per player per daily round. pick_ids are the
+-- player picked in each matchup, in order; they only grow. score = matchups
+-- right, saved once all five are played.
+CREATE TABLE IF NOT EXISTS ${p}koth_plays (
+  player_id     uuid NOT NULL REFERENCES players (id) ON DELETE CASCADE,
+  round_date    date NOT NULL,
+  pick_ids      text[] NOT NULL DEFAULT '{}',
+  score         smallint,
+  done          boolean NOT NULL DEFAULT false,
+  is_live       boolean NOT NULL,           -- started on the round's own day (ET), not later from the archive
+  started_at    timestamptz NOT NULL DEFAULT now(),
+  completed_at  timestamptz,
+  PRIMARY KEY (player_id, round_date)
+);
+CREATE INDEX IF NOT EXISTS ${p}koth_plays_round_idx ON ${p}koth_plays (round_date, score) WHERE done;
 `;
 
 // Hit the Number (baseball only).

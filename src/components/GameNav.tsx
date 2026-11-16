@@ -12,6 +12,7 @@ const GAMES = [
   { path: "/roster", label: "Roster" },
   // Hit the Number is baseball only, so the NBA nav leaves it out.
   { path: "/number", label: "Number", mlbOnly: true },
+  { path: "/king", label: "King" },
 ];
 
 /** Splits "/nba/rank/archive" into its sport and the game path ("/rank/archive"). */
@@ -44,7 +45,9 @@ export default function GameNav({ nbaEnabled = false }: { nbaEnabled?: boolean }
       ? "/roster"
       : path.startsWith("/number")
         ? "/number"
-        : "/golf";
+        : path.startsWith("/king")
+          ? "/king"
+          : "/golf";
   return (
     <nav className={styles.nav} aria-label="Games">
       <Link href="/" className={styles.brand}>
