@@ -4,9 +4,11 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import LocalArchive from "@/components/LocalArchive";
-import { golfStatus, rankStatus, rosterStatus, type Status } from "@/lib/archive-status";
+import { golfStatus, numberStatus, rankStatus, rosterStatus, type Status } from "@/lib/archive-status";
 import { getDb } from "@/lib/db";
 import { getRankProgress, getRosterProgress } from "@/lib/game-plays";
+import { NUMBER_LAUNCH_DATE, numberRoundNumber } from "@/lib/number";
+import { getNumberProgress } from "@/lib/number-plays";
 import { readPlayerId } from "@/lib/player-cookie";
 import { PLAYER_GOLF_LAUNCH_DATE } from "@/lib/player-golf";
 import { getPlayerGolfProgress } from "@/lib/player-golf-plays";
@@ -18,7 +20,7 @@ import { basePath, type Sport } from "@/lib/sport";
 import { GolfTitle } from "./footers";
 import styles from "@/app/archive.module.css";
 
-export type ArchiveGame = "golf" | "player" | "rank" | "roster";
+export type ArchiveGame = "golf" | "player" | "rank" | "roster" | "number";
 
 const GAMES: Record<
   ArchiveGame,
@@ -28,6 +30,7 @@ const GAMES: Record<
   player: { path: "/golf/player", first: PLAYER_GOLF_LAUNCH_DATE, number: roundNumber, log: "[archive]" },
   rank: { path: "/rank", first: RANK_LAUNCH_DATE, number: rankRoundNumber, log: "[rank/archive]" },
   roster: { path: "/roster", first: ROSTER_LAUNCH_DATE, number: rosterRoundNumber, log: "[roster/archive]" },
+  number: { path: "/number", first: NUMBER_LAUNCH_DATE, number: numberRoundNumber, log: "[number/archive]" },
 };
 
 function formatDate(date: string): string {
@@ -57,6 +60,12 @@ async function loadSaved(game: ArchiveGame, sport: Sport): Promise<Record<string
       const progress = await getRankProgress(db, me, sport);
       return Object.fromEntries([...progress].map(([date, score]) => [date, rankStatus(score)]));
     }
+    if (game === "number") {
+      const progress = await getNumberProgress(db, me);
+      return Object.fromEntries(
+        [...progress].filter(([, p]) => p.ids.length > 0).map(([date, p]) => [date, numberStatus(p.ids.length, p.done, p.bust, p.score)]),
+      );
+    }
     const progress = await getRosterProgress(db, me, sport);
     return Object.fromEntries([...progress].map(([date, p]) => [date, rosterStatus(p.revealed, p.correct, p.done)]));
   } catch (e) {
@@ -80,6 +89,12 @@ async function RoundList({ game, sport }: { game: ArchiveGame; sport: Sport }) {
 function Title({ game, sport }: { game: ArchiveGame; sport: Sport }) {
   if (game === "golf") return <GolfTitle sport={sport} />;
   if (game === "player") return <GolfTitle sport={sport} suffix=": Player" />;
+  if (game === "number")
+    return (
+      <>
+        Hit the <span>Number</span>
+      </>
+    );
   if (game === "rank")
     return (
       <>

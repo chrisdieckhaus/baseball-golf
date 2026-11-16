@@ -10,12 +10,21 @@ const GAMES = [
   { path: "/golf", label: "Golf" },
   { path: "/rank", label: "Ranker" },
   { path: "/roster", label: "Roster" },
+  // Hit the Number is baseball only, so the NBA nav leaves it out.
+  { path: "/number", label: "Number", mlbOnly: true },
 ];
 
 /** Splits "/nba/rank/archive" into its sport and the game path ("/rank/archive"). */
 function parsePath(pathname: string): { sport: Sport; path: string } {
   if (pathname === "/nba" || pathname.startsWith("/nba/")) return { sport: "nba", path: pathname.slice(4) || "/golf" };
   return { sport: "mlb", path: pathname };
+}
+
+/** Where the sport switch goes: the same page in the other sport, or Golf if that sport doesn't have this game. */
+function sportSwitchPath(path: string, to: Sport): string {
+  if (path === "/") return "/golf";
+  if (to === "nba" && GAMES.some((g) => g.mlbOnly && path.startsWith(g.path))) return "/golf";
+  return path;
 }
 
 /**
@@ -29,14 +38,20 @@ export default function GameNav({ nbaEnabled = false }: { nbaEnabled?: boolean }
   const { sport, path } = parsePath(pathname);
   const base = basePath(sport);
   // Each game's archive counts as that game. "/" redirects to Baseball Golf.
-  const current = path.startsWith("/rank") ? "/rank" : path.startsWith("/roster") ? "/roster" : "/golf";
+  const current = path.startsWith("/rank")
+    ? "/rank"
+    : path.startsWith("/roster")
+      ? "/roster"
+      : path.startsWith("/number")
+        ? "/number"
+        : "/golf";
   return (
     <nav className={styles.nav} aria-label="Games">
       <Link href="/" className={styles.brand}>
         <Logo size={44} className={styles.logo} />
         Daily Dugout
       </Link>
-      {GAMES.map((g) => (
+      {GAMES.filter((g) => !(g.mlbOnly && sport === "nba")).map((g) => (
         <Link
           key={g.path}
           href={`${base}${g.path}`}
@@ -51,7 +66,7 @@ export default function GameNav({ nbaEnabled = false }: { nbaEnabled?: boolean }
           {SPORTS.map((s) => (
             <Link
               key={s}
-              href={`${basePath(s)}${path === "/" ? "/golf" : path}`}
+              href={`${basePath(s)}${sportSwitchPath(path, s)}`}
               className={`${styles.sport} ${s === sport ? styles.sportActive : ""}`}
               aria-current={s === sport ? "page" : undefined}
             >

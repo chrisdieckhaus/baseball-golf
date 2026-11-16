@@ -62,9 +62,20 @@ interface Props {
   usedIds: Set<string>;
   disabled: boolean;
   onSubmit: (player: PlayerIndexEntry) => void;
+  /** The button's label (default "Guess"). */
+  submitLabel?: string;
+  /** What a player already used this round says in the list. */
+  usedLabel?: string;
 }
 
-export default function PlayerSearch({ sport = "mlb", usedIds, disabled, onSubmit }: Props) {
+export default function PlayerSearch({
+  sport = "mlb",
+  usedIds,
+  disabled,
+  onSubmit,
+  submitLabel = "Guess",
+  usedLabel = "Already used this round",
+}: Props) {
   const [players, setPlayers] = useState<Indexed[] | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [query, setQuery] = useState("");
@@ -162,7 +173,7 @@ export default function PlayerSearch({ sport = "mlb", usedIds, disabled, onSubmi
                   >
                     <span className={styles.optName}>{p.n}</span>
                     <span className={styles.optMeta}>
-                      {used ? "Already used this round" : [p.p, p.y].filter(Boolean).join(" · ")}
+                      {used ? usedLabel : [p.p, p.y].filter(Boolean).join(" · ")}
                     </span>
                   </li>
                 );
@@ -171,7 +182,7 @@ export default function PlayerSearch({ sport = "mlb", usedIds, disabled, onSubmi
           )}
         </div>
         <button className={styles.guessBtn} onClick={submit} disabled={!selected || disabled}>
-          Guess
+          {submitLabel}
         </button>
       </div>
       {selected && (

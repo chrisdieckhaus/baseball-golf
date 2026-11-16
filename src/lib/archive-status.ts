@@ -24,3 +24,10 @@ export function rosterStatus(revealed: number, correct: boolean, done: boolean):
   if (done) return { kind: "done", text: correct ? `Got it after ${revealed}` : "Missed" };
   return { kind: "partial", text: `In progress · ${revealed} revealed` };
 }
+
+/** How Hit the Number progress reads in the list. */
+export function numberStatus(picks: number, done: boolean, bust: boolean, score: number | null): Status {
+  if (!done) return { kind: "partial", text: `In progress · ${picks}/3` };
+  if (bust) return { kind: "done", text: "Bust" };
+  return score === 0 ? { kind: "done", text: "Bullseye" } : { kind: "done", text: "Off by", score: score ?? 0 };
+}

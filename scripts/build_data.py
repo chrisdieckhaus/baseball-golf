@@ -200,6 +200,21 @@ def main(data_dir: Path) -> None:
     print(f"Through {last_year}: {len(players)} players, {len(leaderboards)} stats, "
           f"{len(ranked_ids)} ranked players")
 
+    # ---- Hit the Number: every player's career total in each of its stats ----
+    # Server-only, like the leaderboards. Only non-zero totals are stored; any
+    # player in players.json who isn't listed for a stat has 0.
+    number_stats = [("H", bat, "H"), ("HR", bat, "HR"), ("RBI", bat, "RBI"), ("R", bat, "R"),
+                    ("2B", bat, "X2B"), ("SB", bat, "SB"), ("BB", bat, "BB"),
+                    ("W", pit, "W"), ("SO", pit, "SO"), ("SV", pit, "SV")]
+    totals = {}
+    for key, frame, col in number_stats:
+        vals = frame[col].astype(int)
+        totals[key] = {pid: int(v) for pid, v in vals.items() if v > 0 and pid in names}
+    (ROOT / "src/data/number.json").write_text(json.dumps(
+        {"throughSeason": last_year, "firstDebutYear": FIRST_DEBUT_YEAR, "totals": totals},
+        separators=(",", ":")))
+    print(f"Hit the Number: career totals for {len(totals)} stats")
+
 
 if __name__ == "__main__":
     main(Path(sys.argv[1] if len(sys.argv) > 1 else "../data-src/Lahman/data"))

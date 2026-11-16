@@ -5,6 +5,7 @@ Quick daily sports stats games, all in one app:
 - **Baseball Golf** (`/golf`; `/` redirects there): name the player at each all-time career rank. Its **Player** mode (`/golf/player`) flips it: we name the player, you name his rank.
 - **Stats Ranker** (`/rank`): put five players in order of one career stat.
 - **Roster Reveal** (`/roster`): you get the year; name the team from its starting lineup, revealed one player at a time.
+- **Hit the Number** (`/number`): name three players whose career totals add up as close to a target as you can without going over.
 
 ## Baseball Golf
 
@@ -70,6 +71,32 @@ A third daily game on the same data, replacing Sports Revealer (`/reveal` now re
 - **Saved plays:** daily plays are saved in `roster_plays`. `revealed` only goes up, the score uses the most players ever revealed, and the first guess stands. `GET /api/roster` returns this browser's saved play, and the game restores it or uploads browser-only progress.
 - **Comparison:** finished rounds show how you compare: percent beaten, percent who got it, average players needed, and a chart of players needed.
 
+## Hit the Number (`/number`)
+A fourth daily game on the same data, baseball only. Each day everyone gets the same career stat and target, e.g. "7,000 strikeouts." Name three players whose career totals add up as close to the target as you can, without going over.
+
+- **Picking:** one player at a time. Each player's career total is revealed when you pick him, so the last pick is about landing it. Any player who debuted in 1890 or later counts (the same players as the autocomplete), and a player with none of the stat counts as 0. No player twice.
+- **Scoring:** how far under the target you finish; 0 is a bullseye. Going over is a bust and ends the round right away. In the comparison every bust ties for last.
+- **Stats and targets** (`NUMBER_STATS` in `src/lib/number.ts`): every round number in each range is a possible target.
+
+  | Stat | Targets | Step |
+  |---|---|---|
+  | Home runs | 100–1,200 | 25 |
+  | Hits | 500–8,000 | 100 |
+  | RBIs, Runs | 300–4,500 | 50 |
+  | Doubles | 100–1,500 | 25 |
+  | Stolen bases | 50–1,200 | 25 |
+  | Walks | 200–3,500 | 50 |
+  | Wins | 30–700 | 10 |
+  | Strikeouts (pitching) | 300–8,000 | 100 |
+  | Saves | 25–1,000 | 25 |
+- **Picking the round:** stats run in shuffled cycles of ten days, each stat once per cycle and never the same stat two days running. Each stat steps through its own fixed shuffle of its targets, so a stat and target don't repeat for more than a year. Each day's stat and target are saved in `number_rounds` the first time they're needed, and backfilled on every build. Rounds are numbered from Nov 1, 2026, like the other games, and `/number/archive` replays any past round.
+- **After the round:** the result, how many three-player combos hit the target exactly (with one example, leaning on the biggest totals), and how you compare: percent beaten, bullseye and bust rates, the average miss, and a chart of how close everyone got (bullseye, within 1%, 5%, 10% and 25% of the target, more, bust).
+- **Playing:** `POST /api/number` takes `{ date, picks }`, every pick so far in order. It returns each pick's total and the result once the round is done. Totals stay on the server until a player is picked.
+- **Saved plays:** `number_plays`, keyed by the same `bg_player` cookie. Picks only grow (the saved picks must start the new list) and a finished round doesn't change. `GET /api/number` returns this browser's saved play.
+- **Share text:** totals only, e.g. `Hit the Number #15 · Nov 15, 2026` / `6,950 / 7,000 strikeouts 🎯` (💥 for a bust).
+- **Data:** `scripts/build_data.py` also writes `src/data/number.json` (server-only): every player's career total in each stat, non-zero totals only.
+- **Code:** `src/lib/number*.ts`, `src/app/api/number/route.ts`, `src/components/NumberGame.tsx`, `src/app/number/`.
+
 ## Stats Ranker and Roster Reveal archives and plays
 - Both games number their rounds from Nov 1, 2026, like Baseball Golf. The build's backfill stores every round from then on.
 - Both save each daily play (`rank_plays`, `roster_plays`), keyed by the same anonymous `bg_player` cookie as Baseball Golf. The archives read results from those tables, falling back to localStorage.
@@ -104,7 +131,7 @@ It deploys to Vercel as a standard Next.js app, with Neon Postgres (`DATABASE_UR
 
 - **One domain.** The site lives at https://dailydugout.com (`src/lib/site.ts`). In production, `src/proxy.ts` 308-redirects every other host (baseball-golf.vercel.app) there. The anonymous `bg_player` cookie rides along once as `?carry=…`, so players keep their saved plays; dailydugout.com sets it (unless the browser already has one there) and redirects to the clean URL. API calls aren't redirected, so tabs already open on the old host keep working. Previews and local dev are untouched.
 - **Metadata.** Each baseball page uses `pageMetadata()` for its title, description, canonical URL (without `?date=`) and link-preview tags. `metadataBase` points every absolute URL at dailydugout.com.
-- **Link previews.** `opengraph-image.tsx` in the root, `/golf`, `/golf/player`, `/rank` and `/roster` draw a 1200×630 card with `src/lib/og-card.tsx`. Spoiler-free: never the day's round.
+- **Link previews.** `opengraph-image.tsx` in the root, `/golf`, `/golf/player`, `/rank`, `/roster` and `/number` draw a 1200×630 card with `src/lib/og-card.tsx`. Spoiler-free: never the day's round.
 - **Crawling.** `src/app/robots.ts` (everything but `/api/`) and `src/app/sitemap.ts` (the baseball games and archives). The NBA pages stay `noindex` and out of the sitemap.
 - **How to play.** `src/views/HowToPlay.tsx` puts each baseball game's rules under the game as plain text, plus schema.org `WebApplication` data.
 

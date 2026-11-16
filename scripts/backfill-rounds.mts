@@ -24,6 +24,8 @@ import { storeRosterRoundIfMissing } from "../src/lib/roster-rounds";
 import playerMeta from "../src/data/player-meta.json";
 import { PLAYER_GOLF_LAUNCH_DATE, type PlayerMeta } from "../src/lib/player-golf";
 import { storePlayerRoundIfMissing } from "../src/lib/player-golf-rounds";
+import { NUMBER_LAUNCH_DATE } from "../src/lib/number";
+import { storeNumberRoundIfMissing } from "../src/lib/number-rounds";
 
 const url = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
 if (!url) {
@@ -54,6 +56,11 @@ try {
   for (const date of playerDates) {
     if (await storePlayerRoundIfMissing(client, leaderboards, playerMeta as unknown as PlayerMeta, date)) playerCreated++;
   }
+  let numberCreated = 0;
+  const numberDates = dates.filter((d) => d >= NUMBER_LAUNCH_DATE);
+  for (const date of numberDates) {
+    if (await storeNumberRoundIfMissing(client, date)) numberCreated++;
+  }
   // NBA (only while the NBA kill switch is on; otherwise its rounds are made the first time they're needed).
   if (isNbaEnabled()) {
     const nba = leaderboardsFor("nba");
@@ -70,6 +77,7 @@ try {
   } else {
     console.log("[backfill-rounds] NBA is off (NBA_ENABLED isn't set); skipping NBA rounds.");
   }
+  console.log(`[backfill-rounds] Hit the Number: checked ${numberDates.length} round(s); saved ${numberCreated} new.`);
   console.log(`[backfill-rounds] Baseball Golf Player mode: checked ${playerDates.length} round(s); saved ${playerCreated} new.`);
   console.log(`[backfill-rounds] Roster Reveal: checked ${rosterDates.length} round(s); saved ${rosterCreated} new.`);
   console.log(`[backfill-rounds] Stats Ranker: checked ${rankDates.length} round(s); saved ${rankCreated} new.`);
