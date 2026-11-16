@@ -9,10 +9,12 @@ const PAGES: { path: string; priority: number; changeFrequency: "daily" | "weekl
   { path: "/golf/player", priority: 0.8, changeFrequency: "daily" },
   { path: "/rank", priority: 0.9, changeFrequency: "daily" },
   { path: "/roster", priority: 0.9, changeFrequency: "daily" },
+  { path: "/number", priority: 0.9, changeFrequency: "daily" },
   { path: "/golf/archive", priority: 0.5, changeFrequency: "daily" },
   { path: "/golf/player/archive", priority: 0.4, changeFrequency: "daily" },
   { path: "/rank/archive", priority: 0.5, changeFrequency: "daily" },
   { path: "/roster/archive", priority: 0.5, changeFrequency: "daily" },
+  { path: "/number/archive", priority: 0.5, changeFrequency: "daily" },
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {

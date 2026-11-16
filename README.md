@@ -131,7 +131,7 @@ It deploys to Vercel as a standard Next.js app, with Neon Postgres (`DATABASE_UR
 
 - **One domain.** The site lives at https://dailydugout.com (`src/lib/site.ts`). In production, `src/proxy.ts` 308-redirects every other host (baseball-golf.vercel.app) there. The anonymous `bg_player` cookie rides along once as `?carry=…`, so players keep their saved plays; dailydugout.com sets it (unless the browser already has one there) and redirects to the clean URL. API calls aren't redirected, so tabs already open on the old host keep working. Previews and local dev are untouched.
 - **Metadata.** Each baseball page uses `pageMetadata()` for its title, description, canonical URL (without `?date=`) and link-preview tags. `metadataBase` points every absolute URL at dailydugout.com.
-- **Link previews.** `opengraph-image.tsx` in the root, `/golf`, `/golf/player`, `/rank` and `/roster` draw a 1200×630 card with `src/lib/og-card.tsx`. Spoiler-free: never the day's round.
+- **Link previews.** `opengraph-image.tsx` in the root, `/golf`, `/golf/player`, `/rank`, `/roster` and `/number` draw a 1200×630 card with `src/lib/og-card.tsx`. Spoiler-free: never the day's round.
 - **Crawling.** `src/app/robots.ts` (everything but `/api/`) and `src/app/sitemap.ts` (the baseball games and archives). The NBA pages stay `noindex` and out of the sitemap.
 - **How to play.** `src/views/HowToPlay.tsx` puts each baseball game's rules under the game as plain text, plus schema.org `WebApplication` data.
 

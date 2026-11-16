@@ -272,7 +272,7 @@ function shortDate(date: string): string {
  *
  *   Hit the Number #15 · Nov 15, 2026
  *   875 / 900 HR 🎯
- *   https://…/number
+ *   https://dailydugout.com/number
  */
 export function buildNumberShareText(round: NumberRound, state: NumberState, url: string): string {
   const title = `Hit the Number #${numberRoundNumber(round.date)} · ${shortDate(round.date)}`;

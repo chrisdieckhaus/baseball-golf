@@ -6,7 +6,7 @@ import { MAX_HOLE_SCORE, MAX_TARGET_RANK } from "@/lib/scoring";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 import styles from "@/app/page.module.css";
 
-export type HowToGame = "golf" | "player" | "rank" | "roster";
+export type HowToGame = "golf" | "player" | "rank" | "roster" | "number";
 
 const GAMES: Record<HowToGame, { name: string; path: string; summary: string; rules: string[] }> = {
   golf: {
@@ -50,6 +50,17 @@ const GAMES: Record<HowToGame, { name: string; path: string; summary: string; ru
       "You get a season. That team's starting lineup is revealed one player at a time, from the most obscure to the most famous.",
       "Reveal as many players as you need, then make one guess: the team.",
       "Your score is how many players you saw, from 1 to 10. A wrong guess scores 11. Lowest score wins.",
+      "A new round starts every day at midnight Eastern, and past rounds are in the archive.",
+    ],
+  },
+  number: {
+    name: "Hit the Number",
+    path: "/number",
+    summary: "A daily baseball stats game: name three players whose career totals add up to a target without going over.",
+    rules: [
+      "You get a career stat and a target, like 900 home runs.",
+      "Name three players, one at a time. Each player's career total is revealed when you pick him, so you can aim your last pick. Anyone who debuted in 1890 or later counts.",
+      "Your score is how far under the target your three players finish. Hit it exactly for a bullseye. Go over and it's a bust, and the round ends.",
       "A new round starts every day at midnight Eastern, and past rounds are in the archive.",
     ],
   },

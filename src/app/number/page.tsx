@@ -4,15 +4,18 @@ import { connection } from "next/server";
 import NumberGame from "@/components/NumberGame";
 import { getNumberRound, isPlayableNumberDate, numberFirstDebutYear, numberThroughSeason } from "@/lib/number-data";
 import { todayET } from "@/lib/round";
+import { pageMetadata } from "@/lib/site";
 import { DataCredit } from "@/views/footers";
 import type { SearchParams } from "@/views/GolfPage";
+import HowToPlay from "@/views/HowToPlay";
 import styles from "@/app/page.module.css";
 
-export const metadata: Metadata = {
-  title: "Hit the Number",
+export const metadata: Metadata = pageMetadata({
+  title: "Hit the Number: Daily Baseball Stats Game · Daily Dugout",
   description:
-    "A daily baseball game: name three players whose career totals add up as close to the target as you can without going over.",
-};
+    "A free daily baseball game: name three MLB players whose career totals add up as close to the target as you can without going over.",
+  path: "/number",
+});
 
 async function TodaysRound({ searchParams }: { searchParams: SearchParams }) {
   // Render per request so the round rolls over at midnight Eastern.
@@ -32,12 +35,13 @@ export default function Page({ searchParams }: { searchParams: SearchParams }) {
         <h1 className={styles.title}>
           Hit the <span>Number</span>
         </h1>
-        <p className={styles.tagline}>Three players. One target. Get as close as you can without going over.</p>
       </header>
 
       <Suspense fallback={<p className={styles.loading}>Adding it all up…</p>}>
         <TodaysRound searchParams={searchParams} />
       </Suspense>
+
+      <HowToPlay game="number" />
 
       <footer className={styles.footer}>
         <p className={styles.dataNote}>
