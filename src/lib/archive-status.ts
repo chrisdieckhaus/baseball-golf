@@ -5,7 +5,7 @@
 import { HOLES_PER_ROUND } from "./round";
 import { scoreLabel } from "./share";
 
-export type Status = { kind: "done" | "partial"; text: string; score?: number | string } | null;
+export type Status = { kind: "done" | "partial"; text: string; score?: number | string; bust?: boolean } | null;
 
 /** How Baseball Golf progress reads in the list. */
 export function golfStatus(holesPlayed: number, totalScore: number | null, holes = HOLES_PER_ROUND): Status {
@@ -28,8 +28,10 @@ export function rosterStatus(revealed: number, correct: boolean, done: boolean):
 /** How Hit the Number progress reads in the list. */
 export function numberStatus(picks: number, done: boolean, bust: boolean, score: number | null): Status {
   if (!done) return { kind: "partial", text: `In progress · ${picks}/3` };
-  if (bust) return { kind: "done", text: "Bust" };
-  return score === 0 ? { kind: "done", text: "Bullseye" } : { kind: "done", text: "Off by", score: score ?? 0 };
+  // A bust gets the share card's 💥 and its own color; a finish is just the
+  // number it came up short by.
+  if (bust) return { kind: "done", text: "", score: "💥 Bust", bust: true };
+  return score === 0 ? { kind: "done", text: "Bullseye" } : { kind: "done", text: "", score: score ?? 0 };
 }
 
 /** How King of the Hill progress reads in the list: "4/5" once done. */
