@@ -74,7 +74,7 @@
 .play {
   font-size: 0.88rem;
   font-weight: 600;
-  color: var(--fairway);
+  color: var(--ink);
 }
 
 .partial {
@@ -88,7 +88,7 @@
 }
 
 .done strong {
-  color: var(--ink);
+  color: var(--fairway);
   font-size: 1rem;
 }
 
