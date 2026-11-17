@@ -99,8 +99,9 @@ export default function LocalArchive({ game, sport = "mlb", rounds, saved }: Pro
               <span className={styles.num}>#{r.number}</span>
               <span className={styles.date}>{r.label}</span>
               {s?.kind === "done" ? (
-                <span className={styles.done}>
-                  {s.text} {s.score !== undefined && <strong>{s.score}</strong>}
+                <span className={`${styles.done} ${s.bust ? styles.bust : ""}`}>
+                  {s.text && `${s.text} `}
+                  {s.score !== undefined && <strong>{s.score}</strong>}
                 </span>
               ) : s?.kind === "partial" ? (
                 <span className={styles.partial}>{s.text}</span>

@@ -92,6 +92,10 @@
   font-size: 1rem;
 }
 
+.bust strong {
+  color: var(--flag);
+}
+
 .empty {
   text-align: center;
   color: var(--chalk-dim);
