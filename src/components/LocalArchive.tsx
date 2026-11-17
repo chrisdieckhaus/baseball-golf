@@ -3,20 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import styles from "@/app/archive.module.css";
-import { golfStatus, kothStatus, numberStatus, rankStatus, rosterStatus, type Status } from "@/lib/archive-status";
-import { basePath, namespaced, type Sport } from "@/lib/sport";
-
-type GameKey = "golf" | "player" | "rank" | "roster" | "number" | "king";
-
-/** Where each game's rounds live. "player" is Baseball Golf's Player mode. */
-const PATHS: Record<GameKey, string> = {
-  golf: "/golf",
-  player: "/golf/player",
-  rank: "/rank",
-  roster: "/roster",
-  number: "/number",
-  king: "/king",
-};
+import type { Status } from "@/lib/archive-status";
+import { GAME_PATHS as PATHS, localStatus as statusFor, type GameKey } from "@/lib/local-status";
+import { basePath, type Sport } from "@/lib/sport";
 
 interface Props {
   game: GameKey;
@@ -27,52 +16,6 @@ interface Props {
   saved: Record<string, Status>;
 }
 
-
-function readKey(key: string): unknown {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-/** This browser's result for a round, from what the game saved in localStorage. */
-function statusFor(game: GameKey, date: string, sport: Sport): Status {
-  const read = (key: string) => readKey(namespaced(sport, key));
-  if (game === "golf" || game === "player") {
-    const saved = read(game === "golf" ? `baseball-golf:${date}` : `baseball-golf-player:${date}`) as ({ score?: number } | null)[] | null;
-    if (!Array.isArray(saved) || saved.length === 0) return null;
-    const played = saved.filter((r) => typeof r?.score === "number");
-    const total = played.length === saved.length ? played.reduce((sum, r) => sum + r!.score!, 0) : null;
-    return golfStatus(played.length, total, saved.length);
-  }
-  if (game === "rank") {
-    const saved = read(`stats-ranker:${date}`) as {
-      reveal?: { score?: number };
-    } | null;
-    const score = saved?.reveal?.score;
-    return typeof score === "number" ? rankStatus(score) : null;
-  }
-  if (game === "king") {
-    const saved = read(`king-of-the-hill:${date}`) as { results?: unknown[]; done?: boolean; score?: number } | null;
-    if (!saved?.results?.length) return null;
-    return kothStatus(saved.results.length, Boolean(saved.done), saved.score ?? null);
-  }
-  if (game === "number") {
-    const saved = read(`hit-the-number:${date}`) as {
-      picks?: unknown[];
-      done?: boolean;
-      bust?: boolean;
-      score?: number | null;
-    } | null;
-    if (!saved?.picks?.length) return null;
-    return numberStatus(saved.picks.length, Boolean(saved.done), Boolean(saved.bust), saved.score ?? null);
-  }
-  const saved = read(`roster-reveal:${date}`) as { revealed?: unknown[]; done?: boolean; correct?: boolean } | null;
-  if (!saved?.revealed) return null;
-  return rosterStatus(saved.revealed.length, Boolean(saved.correct), Boolean(saved.done));
-}
 
 /**
  * The list of previous rounds for any of the games. Each row's

@@ -1,0 +1,240 @@
+/* The homepage (src/views/HomePage.tsx and src/components/DayResults.tsx). */
+.main {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 24px 18px 56px;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 7vw, 3.4rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--chalk);
+}
+
+.title span {
+  color: var(--flag-light);
+}
+
+.tagline {
+  margin: 8px auto 0;
+  max-width: 460px;
+  color: var(--chalk-dim);
+  line-height: 1.5;
+}
+
+.loading {
+  text-align: center;
+  color: var(--chalk-dim);
+}
+
+/* ← Tuesday, November 17 → */
+.dayBar {
+  display: grid;
+  grid-template-columns: 2.4rem 1fr 2.4rem;
+  align-items: center;
+  max-width: 420px;
+  margin: 0 auto 10px;
+}
+
+.dayLabel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--chalk);
+}
+
+.dayKicker {
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--flag-light);
+}
+
+.dayLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 999px;
+  color: var(--chalk);
+  text-decoration: none;
+  font-size: 1.1rem;
+}
+
+a.dayLink {
+  border: 1.5px solid rgba(248, 245, 236, 0.35);
+}
+
+a.dayLink:hover {
+  border-color: rgba(248, 245, 236, 0.7);
+}
+
+.summary {
+  margin: 14px 0 6px;
+  text-align: center;
+  color: var(--chalk-dim);
+}
+
+.summary strong {
+  color: var(--chalk);
+}
+
+/* One pip per game: filled when done. */
+.meter {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.pip,
+.pipDone,
+.pipPartial {
+  width: 28px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(248, 245, 236, 0.2);
+}
+
+.pipDone {
+  background: var(--chalk);
+}
+
+.pipPartial {
+  background: linear-gradient(90deg, var(--chalk) 50%, rgba(248, 245, 236, 0.2) 50%);
+}
+
+.cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.card {
+  display: flex;
+}
+
+.cardLink {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--flag);
+  color: var(--ink);
+  text-decoration: none;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.cardLink:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+}
+
+.cardDone .cardLink {
+  border-left-color: var(--fairway);
+}
+
+.cardHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.name {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.num {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--flag);
+}
+
+.pitch {
+  font-size: 0.86rem;
+  line-height: 1.4;
+  color: var(--ink-dim);
+}
+
+.cardFoot {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+}
+
+.play {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--flag);
+}
+
+.partial {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--ink-dim);
+}
+
+.result {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 0.86rem;
+  color: var(--ink-dim);
+}
+
+.result strong {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  color: var(--fairway);
+}
+
+/* "Perfect", "Missed": the text is the result. */
+.result .resultText:only-child {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--fairway);
+}
+
+.bust strong,
+.bust .resultText:only-child {
+  color: var(--flag);
+}
+
+.archives,
+.back {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: var(--chalk-dim);
+}
+
+.archives a,
+.back a {
+  color: var(--chalk);
+}
