@@ -38,8 +38,12 @@ export default function GameNav({ nbaEnabled = false }: { nbaEnabled?: boolean }
   const pathname = usePathname();
   const { sport, path } = parsePath(pathname);
   const base = basePath(sport);
+  // The /stats page isn't a game: nothing is highlighted and there's no sport switch.
+  const isStats = path === "/stats";
   // Each game's archive counts as that game. "/" redirects to Baseball Golf.
-  const current = path.startsWith("/rank")
+  const current = isStats
+    ? ""
+    : path.startsWith("/rank")
     ? "/rank"
     : path.startsWith("/roster")
       ? "/roster"
@@ -64,7 +68,7 @@ export default function GameNav({ nbaEnabled = false }: { nbaEnabled?: boolean }
           {g.label}
         </Link>
       ))}
-      {nbaEnabled && (
+      {nbaEnabled && !isStats && (
         <div className={styles.sports} role="group" aria-label="Sport">
           {SPORTS.map((s) => (
             <Link
