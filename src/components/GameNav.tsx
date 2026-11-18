@@ -17,13 +17,13 @@ const GAMES = [
 
 /** Splits "/nba/rank/archive" into its sport and the game path ("/rank/archive"). */
 function parsePath(pathname: string): { sport: Sport; path: string } {
-  if (pathname === "/nba" || pathname.startsWith("/nba/")) return { sport: "nba", path: pathname.slice(4) || "/golf" };
+  if (pathname === "/nba" || pathname.startsWith("/nba/")) return { sport: "nba", path: pathname.slice(4) || "/" };
   return { sport: "mlb", path: pathname };
 }
 
 /** Where the sport switch goes: the same page in the other sport, or Golf if that sport doesn't have this game. */
 function sportSwitchPath(path: string, to: Sport): string {
-  if (path === "/") return "/golf";
+  if (path === "/") return to === "nba" ? "" : "/";
   if (to === "nba" && GAMES.some((g) => g.mlbOnly && path.startsWith(g.path))) return "/golf";
   return path;
 }
@@ -38,19 +38,11 @@ export default function GameNav({ nbaEnabled = false }: { nbaEnabled?: boolean }
   const pathname = usePathname();
   const { sport, path } = parsePath(pathname);
   const base = basePath(sport);
-  // Each game's archive counts as that game. "/" redirects to Baseball Golf.
-  const current = path.startsWith("/rank")
-    ? "/rank"
-    : path.startsWith("/roster")
-      ? "/roster"
-      : path.startsWith("/number")
-        ? "/number"
-        : path.startsWith("/king")
-          ? "/king"
-          : "/golf";
+  // Each game's archive counts as that game. The homepage highlights none.
+  const current = GAMES.find((g) => path.startsWith(g.path))?.path ?? null;
   return (
     <nav className={styles.nav} aria-label="Games">
-      <Link href="/" className={styles.brand}>
+      <Link href={base || "/"} className={styles.brand} aria-label="Daily Dugout home">
         <Logo size={44} className={styles.logo} />
         Daily Dugout
       </Link>

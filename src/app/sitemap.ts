@@ -5,6 +5,7 @@ import { SITE_URL } from "@/lib/site";
 // NBA_ENABLED kill switch (and noindex). `?date=` rounds aren't listed: they
 // point their canonical URL at the game's page.
 const PAGES: { path: string; priority: number; changeFrequency: "daily" | "weekly" }[] = [
+  { path: "/", priority: 1, changeFrequency: "daily" },
   { path: "/golf", priority: 1, changeFrequency: "daily" },
   { path: "/golf/player", priority: 0.8, changeFrequency: "daily" },
   { path: "/rank", priority: 0.9, changeFrequency: "daily" },

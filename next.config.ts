@@ -6,13 +6,12 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   redirects() {
     return [
-      // Baseball Golf moved from / to /golf, like /rank and /roster. Old links
-      // (including shared ones like /?date=2026-11-10) keep working; the query
-      // string carries over.
-      { source: "/", destination: "/golf", permanent: false },
+      // / is the homepage (every game's result for the day). Baseball Golf
+      // used to live there, so old Golf links (/?date=2026-11-10, /?seed=…)
+      // still go to /golf; the query string carries over.
+      { source: "/", has: [{ type: "query", key: "date" }], destination: "/golf", permanent: false },
+      { source: "/", has: [{ type: "query", key: "seed" }], destination: "/golf", permanent: false },
       { source: "/archive", destination: "/golf/archive", permanent: false },
-      // The NBA games start at Basketball Golf, like baseball's.
-      { source: "/nba", destination: "/nba/golf", permanent: false },
       // Sports Revealer was replaced by Roster Reveal.
       { source: "/reveal", destination: "/roster", permanent: false },
       { source: "/reveal/:path*", destination: "/roster/:path*", permanent: false },

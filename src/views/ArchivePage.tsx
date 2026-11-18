@@ -4,25 +4,19 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import LocalArchive from "@/components/LocalArchive";
-import { golfStatus, kothStatus, numberStatus, rankStatus, rosterStatus, type Status } from "@/lib/archive-status";
-import { getDb } from "@/lib/db";
-import { getRankProgress, getRosterProgress } from "@/lib/game-plays";
 import { KOTH_LAUNCH_DATE, kothRoundNumber } from "@/lib/koth";
-import { getKothProgress } from "@/lib/koth-plays";
 import { NUMBER_LAUNCH_DATE, numberRoundNumber } from "@/lib/number";
-import { getNumberProgress } from "@/lib/number-plays";
-import { readPlayerId } from "@/lib/player-cookie";
 import { PLAYER_GOLF_LAUNCH_DATE } from "@/lib/player-golf";
-import { getPlayerGolfProgress } from "@/lib/player-golf-plays";
-import { getPlayerProgress } from "@/lib/plays";
 import { rankRoundNumber, RANK_LAUNCH_DATE } from "@/lib/rank";
+import { loadSavedStatuses } from "@/lib/saved-status";
 import { ROSTER_LAUNCH_DATE, rosterRoundNumber } from "@/lib/roster";
+import type { GameKey } from "@/lib/local-status";
 import { LAUNCH_DATE, playableDates, roundNumber, todayET } from "@/lib/round";
 import { basePath, type Sport } from "@/lib/sport";
 import { GolfTitle } from "./footers";
 import styles from "@/app/archive.module.css";
 
-export type ArchiveGame = "golf" | "player" | "rank" | "roster" | "number" | "king";
+export type ArchiveGame = GameKey;
 
 const GAMES: Record<
   ArchiveGame,
@@ -46,43 +40,6 @@ function formatDate(date: string): string {
   });
 }
 
-async function loadSaved(game: ArchiveGame, sport: Sport): Promise<Record<string, Status>> {
-  const db = getDb();
-  const me = await readPlayerId();
-  if (!db || !me) return {};
-  try {
-    if (game === "golf") {
-      const progress = await getPlayerProgress(db, me, sport);
-      return Object.fromEntries([...progress].map(([date, p]) => [date, golfStatus(p.holesPlayed, p.totalScore)]));
-    }
-    if (game === "player") {
-      const progress = await getPlayerGolfProgress(db, me, sport);
-      return Object.fromEntries([...progress].map(([date, p]) => [date, golfStatus(p.holesPlayed, p.totalScore)]));
-    }
-    if (game === "rank") {
-      const progress = await getRankProgress(db, me, sport);
-      return Object.fromEntries([...progress].map(([date, score]) => [date, rankStatus(score)]));
-    }
-    if (game === "king") {
-      const progress = await getKothProgress(db, me, sport);
-      return Object.fromEntries(
-        [...progress].filter(([, p]) => p.picks.length > 0).map(([date, p]) => [date, kothStatus(p.picks.length, p.done, p.score)]),
-      );
-    }
-    if (game === "number") {
-      const progress = await getNumberProgress(db, me);
-      return Object.fromEntries(
-        [...progress].filter(([, p]) => p.ids.length > 0).map(([date, p]) => [date, numberStatus(p.ids.length, p.done, p.bust, p.score)]),
-      );
-    }
-    const progress = await getRosterProgress(db, me, sport);
-    return Object.fromEntries([...progress].map(([date, p]) => [date, rosterStatus(p.revealed, p.correct, p.done)]));
-  } catch (e) {
-    console.error(`${GAMES[game].log} Couldn't load this player's ${sport} plays`, e);
-    return {};
-  }
-}
-
 async function RoundList({ game, sport }: { game: ArchiveGame; sport: Sport }) {
   // Render per request so the list rolls over at midnight Eastern.
   await connection();
@@ -92,7 +49,7 @@ async function RoundList({ game, sport }: { game: ArchiveGame; sport: Sport }) {
     .filter((d) => d >= g.first && d < today)
     .reverse()
     .map((date) => ({ date, number: g.number(date), label: formatDate(date) }));
-  return <LocalArchive game={game} sport={sport} rounds={rounds} saved={await loadSaved(game, sport)} />;
+  return <LocalArchive game={game} sport={sport} rounds={rounds} saved={await loadSavedStatuses(game, sport, g.log)} />;
 }
 
 function Title({ game, sport }: { game: ArchiveGame; sport: Sport }) {
