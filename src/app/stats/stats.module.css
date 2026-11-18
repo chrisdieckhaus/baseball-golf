@@ -1,0 +1,63 @@
+.section {
+  margin-bottom: 28px;
+}
+
+.heading {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  color: var(--chalk);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  color: var(--chalk);
+}
+
+.table th,
+.table td {
+  padding: 8px 6px;
+  text-align: right;
+  border-bottom: 1px solid color-mix(in srgb, var(--chalk-dim) 35%, transparent);
+}
+
+.table th:first-child,
+.table td:first-child {
+  text-align: left;
+}
+
+.table th {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--chalk-dim);
+}
+
+.table tfoot td {
+  font-weight: 700;
+  border-bottom: none;
+}
+
+.strong {
+  font-weight: 700;
+  color: var(--flag-light);
+}
+
+.open {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--chalk-dim);
+}
+
+.note {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--chalk-dim);
+}
+
+.summary {
+  margin: 0 0 22px;
+  text-align: center;
+  color: var(--chalk-dim);
+}
