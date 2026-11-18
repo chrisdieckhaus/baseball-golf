@@ -42,16 +42,9 @@ export default function GameNav({ nbaEnabled = false }: { nbaEnabled?: boolean }
   const current = GAMES.find((g) => path.startsWith(g.path))?.path ?? null;
   return (
     <nav className={styles.nav} aria-label="Games">
-      <Link href={base || "/"} className={styles.brand}>
+      <Link href={base || "/"} className={styles.brand} aria-label="Daily Dugout home">
         <Logo size={44} className={styles.logo} />
         Daily Dugout
-      </Link>
-      <Link
-        href={base || "/"}
-        className={`${styles.link} ${path === "/" ? styles.active : ""}`}
-        aria-current={path === "/" ? "page" : undefined}
-      >
-        Today
       </Link>
       {GAMES.filter((g) => !(g.mlbOnly && sport === "nba")).map((g) => (
         <Link
