@@ -159,6 +159,56 @@ a.linkBtn {
   color: var(--ink-dim);
 }
 
+/* Rounds with slot rules: an empty slot is a button that picks where the next player goes. */
+.slots li:has(> .slotBtn) {
+  display: block;
+  padding: 0;
+}
+
+.slotBtn {
+  display: grid;
+  grid-template-columns: 26px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 8px 12px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.slots li.active {
+  border-style: solid;
+  border-color: var(--flag);
+  background: rgba(200, 55, 45, 0.07);
+  color: var(--ink);
+}
+
+.rule {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--flag);
+}
+
+.pickingFor {
+  margin: 14px 0 6px;
+  font-size: 0.9rem;
+}
+
+.previewNote {
+  margin: 0 0 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.06);
+  font-size: 0.8rem;
+  color: var(--ink-dim);
+}
+
 .num {
   font-family: var(--font-display);
   font-weight: 700;

@@ -3,9 +3,9 @@
 import { execFileSync } from "node:child_process";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import pg from "pg";
-import { generateNumberRound } from "./number";
+import { generateNumberRound, NUMBER_SLOTS_FROM } from "./number";
 import { getNumberPlay, getNumberProgress, getNumberStats, recordNumberPicks, type NumberPlay } from "./number-plays";
-import { getOrCreateStoredNumberRound, getStoredNumberRound, storeNumberRoundIfMissing } from "./number-rounds";
+import { getOrCreateStoredNumberRound, getStoredNumberRound, newNumberRound, storeNumberRoundIfMissing } from "./number-rounds";
 
 const url = process.env.TEST_DATABASE_URL;
 
@@ -29,6 +29,7 @@ describe.skipIf(!url)("Hit the Number plays (Postgres)", () => {
 
   const play = (ids: string[], total: number, end?: { bust?: boolean; score?: number }): NumberPlay => ({
     ids,
+    slots: [],
     total,
     done: end !== undefined,
     bust: end?.bust ?? false,
@@ -70,8 +71,27 @@ describe.skipIf(!url)("Hit the Number plays (Postgres)", () => {
     expect(await getStoredNumberRound(db, D)).toBeNull();
     expect(await storeNumberRoundIfMissing(db, D)).toBe(true);
     expect(await storeNumberRoundIfMissing(db, D)).toBe(false);
-    expect(await getOrCreateStoredNumberRound(db, D)).toEqual(generateNumberRound(D));
+    expect(await getOrCreateStoredNumberRound(db, D)).toEqual({ ...generateNumberRound(D), slots: null });
     await db.query(`UPDATE number_rounds SET target = 123 WHERE round_date = $1`, [D]);
     expect((await getOrCreateStoredNumberRound(db, D)).target).toBe(123);
+  });
+
+  it("stores slot rules for rounds from NUMBER_SLOTS_FROM on", async () => {
+    const stored = await getOrCreateStoredNumberRound(db, NUMBER_SLOTS_FROM);
+    expect(stored).toEqual(newNumberRound(NUMBER_SLOTS_FROM));
+    expect(stored.slots).toHaveLength(3);
+    // A round stored without slots (by older code) keeps none.
+    const next = "2026-11-22";
+    await db.query(`INSERT INTO number_rounds (round_date, stat_key, target) VALUES ($1, 'HR', 500)`, [next]);
+    expect((await getOrCreateStoredNumberRound(db, next)).slots).toBeNull();
+  });
+
+  it("saves each pick's slot, and won't move a pick to another slot", async () => {
+    const slotted = (ids: string[], slots: number[], total: number, end?: { score?: number }) => ({ ...play(ids, total, end), slots });
+    expect(await save(A, slotted(["x"], [2], 500))).toEqual(slotted(["x"], [2], 500));
+    expect(await save(A, slotted(["x", "y"], [0, 1], 800))).toEqual(slotted(["x"], [2], 500)); // x moved
+    const done = slotted(["x", "y", "z"], [2, 0, 1], 875, { score: 25 });
+    expect(await save(A, done)).toEqual(done);
+    expect(await getNumberPlay(db, A, D)).toEqual(done);
   });
 });
