@@ -19,6 +19,7 @@ A daily baseball trivia game. Each day everyone plays the same three holes. Each
 - Rounds stored before Nov 15, 2026 can target ranks up to 150. They're scored with the same 100 cap, and scores already saved stay as they were.
 - Tied players share a rank (1, 2, 2, 4).
 - Rate stats have minimums to qualify: 3,000 PA for batting (AVG, OBP, SLG, OPS) and 1,000 IP for pitching (ERA, WHIP, K/9).
+- Golf and Stats Ranker never pick WHIP for a new round (too obscure; `EXCLUDED_STATS` in `src/lib/round.ts`). It stays in the leaderboards so older rounds with WHIP still score.
 
 ### Player mode (`/golf/player`)
 A **Rank | Player** switch under the title picks the mode. Rank mode is the game above. Player mode flips it: each hole names a player and a career stat, and you say where he ranks all-time.

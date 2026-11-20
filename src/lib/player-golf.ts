@@ -5,7 +5,7 @@
 //
 // No "server-only" import, so scripts can use this file. The answers (ranks and
 // values) never leave the server before a guess.
-import { HOLES_PER_ROUND, MAX_TIE_SIZE, hashString, hasUsedFamily, mulberry32 } from "./round";
+import { HOLES_PER_ROUND, MAX_TIE_SIZE, pickableStatKeys, hashString, hasUsedFamily, mulberry32 } from "./round";
 import { formatValue, MAX_HOLE_SCORE, MAX_TARGET_RANK, targetPlayers } from "./scoring";
 import { namespaced, type Sport } from "./sport";
 import type { LeaderboardData, LeaderboardEntry, StatGroup } from "./types";
@@ -70,7 +70,7 @@ export function generateStoredPlayerRound(
 ): StoredPlayerHole[] {
   const rand = mulberry32(hashString(namespaced(sport, `baseball-golf-player:${date}`)));
   const pick = <T,>(arr: T[]): T => arr[Math.floor(rand() * arr.length)];
-  const keys = Object.keys(data.stats).sort();
+  const keys = pickableStatKeys(data);
   const holes: StoredPlayerHole[] = [];
   const usedStats = new Set<string>();
   const usedPlayers = new Set<string>();

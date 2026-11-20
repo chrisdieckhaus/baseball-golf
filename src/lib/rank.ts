@@ -6,7 +6,7 @@
 //
 // No "server-only" import, so scripts can use this file. The answers (values)
 // never leave the server: the browser only gets names and ids.
-import { hashString, mulberry32 } from "./round";
+import { hashString, mulberry32, pickableStatKeys } from "./round";
 import { formatValue } from "./scoring";
 import { namespaced, type Sport } from "./sport";
 import type { LeaderboardData, StatGroup } from "./types";
@@ -70,7 +70,7 @@ export interface RankReveal {
 export function generateStoredRankRound(data: LeaderboardData, date: string, sport: Sport = "mlb"): StoredRankRound {
   const rand = mulberry32(hashString(namespaced(sport, `stats-ranker:${date}`)));
   const pick = <T,>(arr: T[]): T => arr[Math.floor(rand() * arr.length)];
-  const keys = Object.keys(data.stats).sort();
+  const keys = pickableStatKeys(data);
   const bandSize = RANK_POOL / RANK_PLAYERS;
 
   for (;;) {

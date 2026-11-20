@@ -9,7 +9,7 @@ import {
   scorePlayerHole,
   type PlayerMeta,
 } from "./player-golf";
-import { MAX_TIE_SIZE } from "./round";
+import { EXCLUDED_STATS, generateRound, MAX_TIE_SIZE } from "./round";
 import { MAX_HOLE_SCORE, MAX_TARGET_RANK } from "./scoring";
 import { buildShareText } from "./share";
 
@@ -53,6 +53,17 @@ describe("Player mode rounds", () => {
       player: { id: "ortizda01", name: "David Ortiz", years: "1997–2016", pos: "DH" },
     });
     expect(JSON.stringify(round)).not.toContain("541");
+  });
+});
+
+describe("Golf stat pool", () => {
+  it("never picks an excluded stat (WHIP) in either mode", () => {
+    expect(leaderboards.stats.WHIP).toBeDefined(); // kept so old rounds still score
+    for (let i = 0; i < 365; i++) {
+      const rank = generateRound(leaderboards, nthDate(i)).holes.map((h) => h.statKey);
+      const player = generateStoredPlayerRound(leaderboards, M, nthDate(i)).map((h) => h.statKey);
+      for (const key of [...rank, ...player]) expect(EXCLUDED_STATS.has(key)).toBe(false);
+    }
   });
 });
 
