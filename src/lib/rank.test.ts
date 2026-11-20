@@ -12,6 +12,7 @@ import {
   rankRoundFromStored,
   scoreRankOrder,
 } from "./rank";
+import { EXCLUDED_STATS } from "./round";
 
 const date = "2026-11-20";
 /** The date `i` days after Nov 1, 2026, for checking many different rounds. */
@@ -76,6 +77,14 @@ describe("Stats Ranker round", () => {
     const r = rankRoundFromStored(leaderboards, date, stored);
     const reveal = scoreRankOrder(leaderboards, r, stored.playerIds);
     expect(reveal.answer.map((a) => a.rank)).toEqual([...reveal.answer.map((a) => a.rank)].sort((a, b) => a! - b!));
+  });
+});
+
+describe("Stats Ranker stat pool", () => {
+  it("never picks an excluded stat (WHIP)", () => {
+    for (let i = 0; i < 365; i++) {
+      expect(EXCLUDED_STATS.has(generateStoredRankRound(leaderboards, nthDate(i)).statKey)).toBe(false);
+    }
   });
 });
 

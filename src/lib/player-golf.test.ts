@@ -9,7 +9,7 @@ import {
   scorePlayerHole,
   type PlayerMeta,
 } from "./player-golf";
-import { GOLF_EXCLUDED_STATS, generateRound, MAX_TIE_SIZE } from "./round";
+import { EXCLUDED_STATS, generateRound, MAX_TIE_SIZE } from "./round";
 import { MAX_HOLE_SCORE, MAX_TARGET_RANK } from "./scoring";
 import { buildShareText } from "./share";
 
@@ -62,7 +62,7 @@ describe("Golf stat pool", () => {
     for (let i = 0; i < 365; i++) {
       const rank = generateRound(leaderboards, nthDate(i)).holes.map((h) => h.statKey);
       const player = generateStoredPlayerRound(leaderboards, M, nthDate(i)).map((h) => h.statKey);
-      for (const key of [...rank, ...player]) expect(GOLF_EXCLUDED_STATS.has(key)).toBe(false);
+      for (const key of [...rank, ...player]) expect(EXCLUDED_STATS.has(key)).toBe(false);
     }
   });
 });

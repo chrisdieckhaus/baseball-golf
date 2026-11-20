@@ -8,16 +8,16 @@ export const MAX_TIE_SIZE = 3;
 export const TIME_ZONE = "America/New_York";
 
 /**
- * Stats Baseball Golf (Rank and Player modes) never picks for a new round. They
- * stay in the leaderboard data so rounds already stored with them still score.
- * WHIP: too obscure (Nov 19, 2026).
+ * Stats that Baseball Golf (Rank and Player modes) and Stats Ranker never pick
+ * for a new round. They stay in the leaderboard data so rounds already stored
+ * with them still score. WHIP: too obscure (Nov 2026).
  */
-export const GOLF_EXCLUDED_STATS: ReadonlySet<string> = new Set(["WHIP"]);
+export const EXCLUDED_STATS: ReadonlySet<string> = new Set(["WHIP"]);
 
-/** The stat keys a new Golf round can pick from, sorted. */
-export function golfStatKeys(data: LeaderboardData): string[] {
+/** The stat keys a new Golf or Stats Ranker round can pick from, sorted. */
+export function pickableStatKeys(data: LeaderboardData): string[] {
   return Object.keys(data.stats)
-    .filter((k) => !GOLF_EXCLUDED_STATS.has(k))
+    .filter((k) => !EXCLUDED_STATS.has(k))
     .sort();
 }
 
@@ -121,7 +121,7 @@ export function generateRound(data: LeaderboardData, date: string, sport: Sport 
   const rand = mulberry32(hashString(namespaced(sport, `baseball-golf:${date}`)));
   const pick = <T,>(arr: T[]): T => arr[Math.floor(rand() * arr.length)];
 
-  const allKeys = golfStatKeys(data);
+  const allKeys = pickableStatKeys(data);
   const holes: Hole[] = [];
   const used = new Set<string>();
   const usedFamilies = new Set<string>();
