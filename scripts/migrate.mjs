@@ -178,6 +178,11 @@ CREATE TABLE IF NOT EXISTS number_plays (
   PRIMARY KEY (player_id, round_date)
 );
 CREATE INDEX IF NOT EXISTS number_plays_round_idx ON number_plays (round_date) WHERE done;
+
+-- Slot rules (Nov 21, 2026 on): a JSON array of three { kind, key } rules, null
+-- for rounds without them. pick_slots[i] is the slot (0-2) pick_ids[i] went in.
+ALTER TABLE number_rounds ADD COLUMN IF NOT EXISTS slots jsonb;
+ALTER TABLE number_plays ADD COLUMN IF NOT EXISTS pick_slots integer[] NOT NULL DEFAULT '{}';
 `;
 
 const SCHEMA = PLAYERS_SCHEMA + gameSchema("") + gameSchema("nba_") + NUMBER_SCHEMA;

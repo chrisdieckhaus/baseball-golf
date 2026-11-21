@@ -53,6 +53,7 @@ pip install pyreadr pandas
 python3 scripts/build_data.py /tmp/Lahman/data
 node scripts/build_player_meta.mjs
 python3 scripts/build_reveal_data.py /tmp/Lahman/data
+python3 scripts/build_number_slots.py /tmp/Lahman/data
 npm test
 ```
 
@@ -77,6 +78,13 @@ A third daily game on the same data, replacing Sports Revealer (`/reveal` now re
 A fourth daily game on the same data, baseball only. Each day everyone gets the same career stat and target, e.g. "7,000 strikeouts." Name three players whose career totals add up as close to the target as you can, without going over.
 
 - **Picking:** one player at a time. Each player's career total is revealed when you pick him, so the last pick is about landing it. Any player who debuted in 1890 or later counts (the same players as the autocomplete), and a player with none of the stat counts as 0. No player twice.
+- **Slot rules** (rounds from Nov 21, 2026, `NUMBER_SLOTS_FROM`): each of the three slots has a rule, and you tap a slot before naming the player for it. Rules come from four kinds, three different kinds a round, in a shuffled order (pitching stats have no position rules, so they always use the other three):
+  - **Decade:** played in the 1900s … 2020s.
+  - **Team:** played for one of the 30 current franchises, under any name (Brooklyn Dodgers count as Dodgers, Indians as Guardians).
+  - **Position:** played C, 1B, 2B, 3B, SS, OF or DH. Batting stats only.
+  - **Award:** Hall of Famer (inducted as a player), All-Star (selected at least once), Rookie of the Year, MVP, Cy Young (pitching stats only), Gold Glove.
+
+  Any appearance qualifies (one game at first base makes a first baseman), and the player's whole career total counts, not just his time with that team or in that decade. A new round's rules are drawn from `number:slots:<date>` until each slot has at least 25 players with some of the stat and an exact three-player combo of non-zero totals exists (`generateNumberSlots` in `src/lib/number-slots.ts`; the stat and target don't change). The rules are saved with the round in `number_rounds.slots`, and a round stored without them keeps none. Bullseye counts and the example respect the slots. Preview deployments (and `NUMBER_SLOTS_PREVIEW=1` locally) try worked-out rules on every older round too; those aren't stored and plays on them aren't saved, because previews share the production database.
 - **Scoring:** how far under the target you finish; 0 is a bullseye. Going over is a bust and ends the round right away. In the comparison every bust ties for last.
 - **Stats and targets** (`NUMBER_STATS` in `src/lib/number.ts`): every round number in each range is a possible target.
 
@@ -93,10 +101,10 @@ A fourth daily game on the same data, baseball only. Each day everyone gets the 
   | Saves | 25–1,000 | 25 |
 - **Picking the round:** stats run in shuffled cycles of ten days, each stat once per cycle and never the same stat two days running. Each stat steps through its own fixed shuffle of its targets, so a stat and target don't repeat for more than a year. Each day's stat and target are saved in `number_rounds` the first time they're needed, and backfilled on every build. Rounds are numbered from Nov 1, 2026, like the other games, and `/number/archive` replays any past round.
 - **After the round:** the result, how many three-player combos hit the target exactly (with one example, leaning on the biggest totals), and how you compare: percent beaten, bullseye and bust rates, the average miss, and a chart of how close everyone got (bullseye, within 1%, 5%, 10% and 25% of the target, more, bust).
-- **Playing:** `POST /api/number` takes `{ date, picks }`, every pick so far in order. It returns each pick's total and the result once the round is done. Totals stay on the server until a player is picked.
-- **Saved plays:** `number_plays`, keyed by the same `bg_player` cookie. Picks only grow (the saved picks must start the new list) and a finished round doesn't change. `GET /api/number` returns this browser's saved play.
+- **Playing:** `POST /api/number` takes `{ date, picks }`, every pick so far in order (`{ id, slot }` on rounds with slot rules, plain ids otherwise). It returns each pick's total and the result once the round is done. Totals stay on the server until a player is picked.
+- **Saved plays:** `number_plays`, keyed by the same `bg_player` cookie, with each pick's slot in `pick_slots`. Picks only grow (the saved picks and their slots must start the new list) and a finished round doesn't change. `GET /api/number` returns this browser's saved play.
 - **Share text:** totals only, e.g. `Hit the Number #15 · Nov 15, 2026` / `6,950 / 7,000 strikeouts 🎯` (💥 for a bust).
-- **Data:** `scripts/build_data.py` also writes `src/data/number.json` (server-only): every player's career total in each stat, non-zero totals only.
+- **Data:** `scripts/build_data.py` also writes `src/data/number.json` (server-only): every player's career total in each stat, non-zero totals only. `scripts/build_number_slots.py` writes `src/data/number-slots.json` (server-only): each player's decades, franchises, leagues, positions and awards as bit masks, from Lahman's Appearances, Teams, HallOfFame, AllstarFull and AwardsPlayers. `npm run data` runs both.
 - **Code:** `src/lib/number*.ts`, `src/app/api/number/route.ts`, `src/components/NumberGame.tsx`, `src/app/number/`.
 
 ## King of the Hill (`/king`)

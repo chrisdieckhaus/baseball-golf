@@ -6,6 +6,8 @@ import { percentBeaten, type Queryable } from "./plays";
 
 export interface NumberPlay {
   ids: string[];
+  /** The slot each pick went in, on rounds with slot rules (empty otherwise). */
+  slots: number[];
   total: number;
   done: boolean;
   bust: boolean;
@@ -15,6 +17,7 @@ export interface NumberPlay {
 function toPlay(r: Record<string, unknown>): NumberPlay {
   return {
     ids: (r.pick_ids as string[]) ?? [],
+    slots: ((r.pick_slots as number[] | null) ?? []).map(Number),
     total: Number(r.total),
     done: Boolean(r.done),
     bust: Boolean(r.bust),
@@ -24,7 +27,7 @@ function toPlay(r: Record<string, unknown>): NumberPlay {
 
 export async function getNumberPlay(db: Queryable, playerId: string, roundDate: string): Promise<NumberPlay | null> {
   const { rows } = await db.query(
-    `SELECT pick_ids, total, done, bust, score FROM number_plays WHERE player_id = $1 AND round_date = $2`,
+    `SELECT pick_ids, pick_slots, total, done, bust, score FROM number_plays WHERE player_id = $1 AND round_date = $2`,
     [playerId, roundDate],
   );
   return rows[0] ? toPlay(rows[0]) : null;
@@ -46,13 +49,14 @@ export async function recordNumberPicks(
   );
   const { rows } = await db.query(
     `UPDATE number_plays SET
-        pick_ids = $3::text[], total = $4, done = $5, bust = $6, score = $7,
+        pick_ids = $3::text[], pick_slots = $8::integer[], total = $4, done = $5, bust = $6, score = $7,
         completed_at = CASE WHEN $5 THEN now() ELSE NULL END
       WHERE player_id = $1 AND round_date = $2 AND NOT done
         AND cardinality(pick_ids) <= cardinality($3::text[])
         AND pick_ids = ($3::text[])[1:cardinality(pick_ids)]
-      RETURNING pick_ids, total, done, bust, score`,
-    [playerId, roundDate, play.ids, play.total, play.done, play.bust, play.score],
+        AND pick_slots = ($8::integer[])[1:cardinality(pick_slots)]
+      RETURNING pick_ids, pick_slots, total, done, bust, score`,
+    [playerId, roundDate, play.ids, play.total, play.done, play.bust, play.score, play.slots],
   );
   if (rows[0]) return toPlay(rows[0]);
   return (await getNumberPlay(db, playerId, roundDate))!;
@@ -61,7 +65,7 @@ export async function recordNumberPicks(
 /** This player's plays on every daily round they've started, by date. */
 export async function getNumberProgress(db: Queryable, playerId: string): Promise<Map<string, NumberPlay>> {
   const { rows } = await db.query(
-    `SELECT round_date::text AS round_date, pick_ids, total, done, bust, score FROM number_plays WHERE player_id = $1`,
+    `SELECT round_date::text AS round_date, pick_ids, pick_slots, total, done, bust, score FROM number_plays WHERE player_id = $1`,
     [playerId],
   );
   return new Map(rows.map((r) => [r.round_date as string, toPlay(r)]));

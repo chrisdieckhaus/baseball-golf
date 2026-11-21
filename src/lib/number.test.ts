@@ -4,6 +4,7 @@ import index from "../../public/players.json";
 import {
   buildNumberShareText,
   findBullseyes,
+  findSlotBullseyes,
   generateNumberRound,
   NUMBER_BUCKETS,
   NUMBER_STATS,
@@ -81,7 +82,13 @@ describe("scoring", () => {
 
   it("validates picks", () => {
     const value = (id: string) => ({ a: 500, b: 450, c: 10, z: 0 })[id];
-    expect(validatePicks(["a", "c"], 900, value)).toEqual({ ok: true, ids: ["a", "c"] });
+    expect(validatePicks(["a", "c"], 900, value)).toEqual({
+      ok: true,
+      picks: [
+        { id: "a", slot: null },
+        { id: "c", slot: null },
+      ],
+    });
     expect(validatePicks(["z"], 900, value).ok).toBe(true); // a 0 is a legal pick
     expect(validatePicks([], 900, value).ok).toBe(false);
     expect(validatePicks(["a", "b", "c", "z"], 900, value).ok).toBe(false);
@@ -89,6 +96,54 @@ describe("scoring", () => {
     expect(validatePicks(["a", "nobody"], 900, value).ok).toBe(false);
     expect(validatePicks(["a", "b", "c"], 900, value).ok).toBe(false); // nothing after a bust
     expect(validatePicks("a", 900, value).ok).toBe(false);
+  });
+
+  it("validates picks on a round with slots", () => {
+    const value = (id: string) => ({ a: 500, b: 450, c: 10 })[id];
+    // a fits slot 0, b fits slots 1 and 2, c fits only slot 2
+    const fitsMap: Record<string, number[]> = { a: [0], b: [1, 2], c: [2] };
+    const slots = { fits: (id: string, slot: number) => fitsMap[id].includes(slot), slotLabel: (i: number) => `Rule ${i}` };
+    expect(validatePicks([{ id: "c", slot: 2 }, { id: "a", slot: 0 }], 900, value, slots)).toEqual({
+      ok: true,
+      picks: [
+        { id: "c", slot: 2 },
+        { id: "a", slot: 0 },
+      ],
+    });
+    expect(validatePicks([{ id: "a", slot: 1 }], 900, value, slots)).toEqual({ ok: false, error: "He doesn't fit “Rule 1.”" });
+    expect(validatePicks(["a"], 900, value, slots).ok).toBe(false); // no slot
+    expect(validatePicks([{ id: "a", slot: 3 }], 900, value, slots).ok).toBe(false);
+    expect(validatePicks([{ id: "b", slot: 2 }, { id: "c", slot: 2 }], 900, value, slots).ok).toBe(false); // slot taken
+  });
+});
+
+describe("findSlotBullseyes", () => {
+  it("counts ways to fill the three slots with different players, matching brute force", () => {
+    // value, slots fitted (bit mask)
+    const raw: [number, number][] = [
+      [0, 7], [5, 1], [5, 3], [5, 7], [5, 4], [10, 2], [10, 6], [15, 7], [15, 1], [20, 4], [30, 3], [30, 5], [45, 2], [10, 0],
+    ];
+    const players = raw.map(([value, fit], i) => ({ id: String(i), value, fit }));
+    for (const target of [0, 10, 15, 20, 30, 45, 50, 60, 75, 200]) {
+      for (const minValue of [0, 1]) {
+        let brute = 0;
+        for (const a of players)
+          for (const b of players)
+            for (const c of players) {
+              if (a === b || a === c || b === c) continue;
+              if (!(a.fit & 1 && b.fit & 2 && c.fit & 4)) continue;
+              if (Math.min(a.value, b.value, c.value) < minValue) continue;
+              if (a.value + b.value + c.value === target) brute++;
+            }
+        const { count, example } = findSlotBullseyes(players, target, { minValue });
+        expect(count, `target ${target}, min ${minValue}`).toBe(brute);
+        if (count) {
+          expect(new Set(example!).size).toBe(3);
+          example!.forEach((p, slot) => expect(p.fit & (1 << slot)).toBeTruthy());
+          expect(example!.reduce((s, p) => s + p.value, 0)).toBe(target);
+        } else expect(example).toBeNull();
+      }
+    }
   });
 });
 

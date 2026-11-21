@@ -6,6 +6,10 @@
 // so the last pick is about landing it. Going over is a bust and ends the round.
 // Score = how far under the target you finish (0 is a bullseye).
 //
+// From NUMBER_SLOTS_FROM on, each of the three slots has a rule ("Played for the
+// Astros", "Played in the 1990s", "Hall of Famer"...). You choose which slot each
+// pick goes in, and he has to fit it. His whole career total still counts.
+//
 // No "server-only" import, so scripts and client components can use this file.
 // Career totals never ship to the browser: the server reveals each pick's total.
 import { hashString, mulberry32 } from "./round";
@@ -59,10 +63,32 @@ export function targetsFor(stat: NumberStat): number[] {
   return out;
 }
 
-/** What gets saved for a daily round. */
+/** New rounds stored on or after this date get slot rules. Rounds before it never change. */
+export const NUMBER_SLOTS_FROM = "2026-11-21";
+
+export type SlotKind = "decade" | "team" | "league" | "position" | "award";
+
+/**
+ * A slot's rule, as stored. key: a decade's first year ("1990"), a franchise
+ * ("HOU"), "AL" or "NL", a position ("1B", "OF"...), or an award ("HOF", "AS", "ROY").
+ * Any appearance qualifies: one game at first base makes a first baseman.
+ */
+export interface SlotRule {
+  kind: SlotKind;
+  key: string;
+}
+
+/** A slot's rule as the browser sees it. */
+export interface NumberSlot extends SlotRule {
+  /** "Played for the Astros", "Hall of Famer". */
+  label: string;
+}
+
+/** What gets saved for a daily round. slots is null for rounds without slot rules. */
 export interface StoredNumberRound {
   statKey: string;
   target: number;
+  slots?: SlotRule[] | null;
 }
 
 function shuffled<T>(items: T[], seed: string): T[] {
@@ -116,12 +142,23 @@ export interface NumberRound {
   short: string;
   group: "Batting" | "Pitching";
   target: number;
+  /** One rule per slot, or null when any player fits anywhere. */
+  slots: NumberSlot[] | null;
+  /** Preview deployments only: trial slot rules on a round that doesn't have them. Plays aren't saved. */
+  previewSlots?: true;
+  /** Preview deployments only: a random practice round's seed. Plays aren't saved. */
+  practice?: string;
 }
 
-export function publicNumberRound(date: string, stored: StoredNumberRound): NumberRound {
+export function publicNumberRound(
+  date: string,
+  stored: StoredNumberRound,
+  labelOf: (rule: SlotRule) => string = (r) => r.key,
+): NumberRound {
   const stat = numberStat(stored.statKey);
   if (!stat) throw new Error(`Unknown Hit the Number stat: ${stored.statKey}`);
-  return { date, statKey: stat.key, label: stat.label, short: stat.short, group: stat.group, target: stored.target };
+  const slots = stored.slots?.length === NUMBER_PICKS ? stored.slots.map((r) => ({ ...r, label: labelOf(r) })) : null;
+  return { date, statKey: stat.key, label: stat.label, short: stat.short, group: stat.group, target: stored.target, slots };
 }
 
 export interface NumberPick {
@@ -129,6 +166,14 @@ export interface NumberPick {
   name: string;
   years: string;
   value: number;
+  /** Which slot he went in (0–2), on rounds with slot rules. */
+  slot?: number;
+}
+
+/** A pick as the browser sends it: { id, slot }, or just the id on rounds without slots. */
+export interface PickInput {
+  id: string;
+  slot: number | null;
 }
 
 export interface NumberState {
@@ -144,6 +189,7 @@ export interface NumberState {
 
 export interface Bullseyes {
   count: number;
+  /** One exact combo; on rounds with slots, in slot order. */
   example: NumberPick[] | null;
 }
 
@@ -158,24 +204,44 @@ export function scorePicks(target: number, picks: NumberPick[]): Omit<NumberStat
 /**
  * Checks a list of picks: 1–3 known players, no repeats, and nothing picked
  * after the total went over. `valueOf` returns undefined for an unknown id.
+ * With slots: every pick names a different slot (0–2) and fits its rule;
+ * `fits(id, slot)` checks that and `slotLabel(slot)` names the rule in the error.
  */
 export function validatePicks(
-  ids: unknown,
+  picks: unknown,
   target: number,
   valueOf: (id: string) => number | undefined,
-): { ok: true; ids: string[] } | { ok: false; error: string } {
-  if (!Array.isArray(ids) || ids.length < 1 || ids.length > NUMBER_PICKS || !ids.every((x) => typeof x === "string")) {
-    return { ok: false, error: "Invalid picks" };
+  slots?: { fits: (id: string, slot: number) => boolean; slotLabel: (slot: number) => string } | null,
+): { ok: true; picks: PickInput[] } | { ok: false; error: string } {
+  if (!Array.isArray(picks) || picks.length < 1 || picks.length > NUMBER_PICKS) return { ok: false, error: "Invalid picks" };
+  const list: PickInput[] = [];
+  for (const p of picks) {
+    if (typeof p === "string") list.push({ id: p, slot: null });
+    else if (p && typeof p === "object" && typeof (p as PickInput).id === "string") {
+      const slot = (p as PickInput).slot;
+      list.push({ id: (p as PickInput).id, slot: typeof slot === "number" ? slot : null });
+    } else return { ok: false, error: "Invalid picks" };
   }
-  if (new Set(ids).size !== ids.length) return { ok: false, error: "You already picked that player" };
+  if (new Set(list.map((p) => p.id)).size !== list.length) return { ok: false, error: "You already picked that player" };
+  if (slots) {
+    for (const p of list) {
+      if (p.slot === null || !Number.isInteger(p.slot) || p.slot < 0 || p.slot >= NUMBER_PICKS) {
+        return { ok: false, error: "Choose a slot for that player" };
+      }
+    }
+    if (new Set(list.map((p) => p.slot)).size !== list.length) return { ok: false, error: "That slot is already filled" };
+  } else {
+    for (const p of list) p.slot = null;
+  }
   let total = 0;
-  for (let i = 0; i < ids.length; i++) {
-    const v = valueOf(ids[i]);
+  for (const p of list) {
+    const v = valueOf(p.id);
     if (v === undefined) return { ok: false, error: "Unknown player" };
     if (total > target) return { ok: false, error: "The round is already over" };
+    if (slots && !slots.fits(p.id, p.slot!)) return { ok: false, error: `He doesn't fit “${slots.slotLabel(p.slot!)}.”` };
     total += v;
   }
-  return { ok: true, ids: ids as string[] };
+  return { ok: true, picks: list };
 }
 
 /**
@@ -227,6 +293,79 @@ export function findBullseyes<P extends { value: number }>(
       }
     }
   }
+  return { count, example };
+}
+
+/**
+ * Bullseyes on a round with slots: ways to fill slot 1, 2 and 3 with three
+ * different players, each fitting his slot, whose totals add up to the target.
+ * `fit` is a bit mask of the slots a player fits (bit i = slot i). Players who
+ * fit no slot can be left out. With minValue 1, players with none of the stat
+ * don't count (round generation uses that to require a real three-player combo).
+ * The example is the combo whose smallest total is largest, in slot order.
+ */
+export function findSlotBullseyes<P extends { value: number; fit: number }>(
+  players: P[],
+  target: number,
+  opts: { minValue?: number; wantExample?: boolean; stopAtFirst?: boolean } = {},
+): { count: number; example: P[] | null } {
+  const { minValue = 0, wantExample = true, stopAtFirst = false } = opts;
+  // For each value, how many players fit each combination of slots (8 masks).
+  const byValue = new Map<number, number[]>();
+  for (const p of players) {
+    if (p.value > target || p.value < minValue || !(p.fit & 7)) continue;
+    let c = byValue.get(p.value);
+    if (!c) byValue.set(p.value, (c = [0, 0, 0, 0, 0, 0, 0, 0]));
+    c[p.fit & 7]++;
+  }
+  const n = (c: number[], bits: number) => {
+    let s = 0;
+    for (let m = 0; m < 8; m++) if ((m & bits) === bits) s += c[m];
+    return s;
+  };
+  const per = new Map<number, number[]>(); // value -> [n1, n2, n3, n12, n13, n23, n123]
+  for (const [v, c] of byValue) per.set(v, [n(c, 1), n(c, 2), n(c, 4), n(c, 3), n(c, 5), n(c, 6), n(c, 7)]);
+  const v1s = [...per.keys()].filter((v) => per.get(v)![0] > 0);
+  const v2s = [...per.keys()].filter((v) => per.get(v)![1] > 0).sort((x, y) => x - y);
+
+  let count = 0;
+  let best: [number, number, number] | null = null;
+  let bestMin = -1;
+  for (const a of v1s) {
+    const A = per.get(a)!;
+    for (const b of v2s) {
+      const c = target - a - b;
+      if (c < minValue) break;
+      const C = per.get(c);
+      if (!C || C[2] === 0) continue;
+      const B = per.get(b)!;
+      let ways: number;
+      if (a !== b && a !== c && b !== c) ways = A[0] * B[1] * C[2];
+      else if (a === b && b === c) ways = A[0] * A[1] * A[2] - A[3] * A[2] - A[4] * A[1] - A[5] * A[0] + 2 * A[6];
+      else if (a === b) ways = (A[0] * A[1] - A[3]) * C[2];
+      else if (a === c) ways = (A[0] * A[2] - A[4]) * B[1];
+      else ways = A[0] * (B[1] * B[2] - B[5]);
+      if (ways <= 0) continue;
+      count += ways;
+      const lo = Math.min(a, b, c);
+      if (lo > bestMin) {
+        bestMin = lo;
+        best = [a, b, c];
+      }
+      if (stopAtFirst) return { count, example: null };
+    }
+  }
+  if (!best || !wantExample) return { count, example: null };
+  // Pick actual players for the best values, preferring those earliest in the
+  // list. The first three candidates for each slot always include a valid fill.
+  const cands = [0, 1, 2].map((slot) =>
+    players.filter((q) => q.value === best![slot] && q.fit & (1 << slot)).slice(0, 3),
+  );
+  let example: P[] | null = null;
+  for (const a of cands[0])
+    for (const b of cands[1])
+      for (const c of cands[2])
+        if (!example && a !== b && a !== c && b !== c) example = [a, b, c];
   return { count, example };
 }
 
