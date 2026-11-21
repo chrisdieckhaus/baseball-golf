@@ -83,7 +83,7 @@ A fourth daily game on the same data, baseball only. Each day everyone gets the 
   - **Team:** played for one of the 30 current franchises, under any name (Brooklyn Dodgers count as Dodgers, Indians as Guardians).
   - **League:** played in the AL or NL.
   - **Position:** played C, 1B, 2B, 3B, SS, OF or DH. Batting stats only.
-  - **Award:** Hall of Famer (inducted as a player), All-Star (selected at least once), Rookie of the Year.
+  - **Award:** Hall of Famer (inducted as a player), All-Star (selected at least once), Rookie of the Year, MVP, Cy Young (pitching stats only), Gold Glove.
 
   Any appearance qualifies (one game at first base makes a first baseman), and the player's whole career total counts, not just his time with that team or in that decade. A new round's rules are drawn from `number:slots:<date>` until each slot has at least 25 players with some of the stat and an exact three-player combo of non-zero totals exists (`generateNumberSlots` in `src/lib/number-slots.ts`; the stat and target don't change). The rules are saved with the round in `number_rounds.slots`, and a round stored without them keeps none. Bullseye counts and the example respect the slots. Preview deployments (and `NUMBER_SLOTS_PREVIEW=1` locally) try worked-out rules on every older round too; those aren't stored and plays on them aren't saved, because previews share the production database.
 - **Scoring:** how far under the target you finish; 0 is a bullseye. Going over is a bust and ends the round right away. In the comparison every bust ties for last.

@@ -60,7 +60,7 @@ const GAMES: Record<HowToGame, { name: string; path: string; summary: string; ru
     rules: [
       "You get a career stat and a target, like 900 home runs.",
       "Name three players, one at a time. Each player's career total is revealed when you pick him, so you can aim your last pick. Anyone who debuted in 1890 or later counts.",
-      "Each slot has a rule, like played in the 1990s, played for the Astros, played first base, or Hall of Famer. Tap a slot, then name a player who fits it. One game is enough (a single game at first base counts), teams include their old names (Brooklyn Dodgers count as Dodgers), and his whole career total counts.",
+      "Each slot has a rule, like played in the 1990s, played for the Astros, played first base, Hall of Famer, or MVP. Tap a slot, then name a player who fits it. One game is enough (a single game at first base counts), teams include their old names (Brooklyn Dodgers count as Dodgers), and his whole career total counts.",
       "Your score is how far under the target your three players finish. Hit it exactly for a bullseye. Go over and it's a bust, and the round ends.",
       "A new round starts every day at midnight Eastern, and past rounds are in the archive.",
     ],

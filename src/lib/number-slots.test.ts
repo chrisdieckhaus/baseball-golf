@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import raw from "@/data/number.json";
-import { findSlotBullseyes, generateNumberRound, NUMBER_SLOTS_FROM } from "./number";
+import { findSlotBullseyes, generateNumberRound, NUMBER_SLOTS_FROM, numberStat } from "./number";
 import { newNumberRound } from "./number-rounds";
 import { fitsSlot, generateNumberSlots, MIN_SLOT_POOL, slotLabel, slotPlayers } from "./number-slots";
 
@@ -38,6 +38,16 @@ describe("Hit the Number slot rules", () => {
     expect(slotLabel({ kind: "league", key: "AL" })).toBe("Played in the AL");
     expect(slotLabel({ kind: "position", key: "1B" })).toBe("Played first base");
     expect(slotLabel({ kind: "award", key: "ROY" })).toBe("Rookie of the Year");
+    expect(slotLabel({ kind: "award", key: "CY" })).toBe("Won a Cy Young");
+  });
+
+  it("knows MVPs, Cy Youngs and Gold Gloves", () => {
+    expect(fitsSlot("bagweje01", { kind: "award", key: "MVP" })).toBe(true);
+    expect(fitsSlot("bagweje01", { kind: "award", key: "GG" })).toBe(true);
+    expect(fitsSlot("bagweje01", { kind: "award", key: "CY" })).toBe(false);
+    expect(fitsSlot("maddugr01", { kind: "award", key: "CY" })).toBe(true);
+    expect(fitsSlot("maddugr01", { kind: "award", key: "GG" })).toBe(true);
+    expect(fitsSlot("jeterde01", { kind: "award", key: "MVP" })).toBe(false);
   });
 
   it("gives new rounds three rules of different kinds that have deep pools and a real bullseye", () => {
@@ -47,6 +57,7 @@ describe("Hit the Number slot rules", () => {
       const rules = generateNumberSlots(date, statKey, target);
       expect(rules, date).not.toBeNull();
       expect(new Set(rules!.map((r) => r.kind)).size).toBe(3);
+      if (rules!.some((r) => r.key === "CY")) expect(numberStat(statKey)!.group).toBe("Pitching");
       expect(generateNumberSlots(date, statKey, target)).toEqual(rules); // same for everyone
       const players = slotPlayers(statKey, rules!);
       for (let s = 0; s < 3; s++) {

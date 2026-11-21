@@ -32,7 +32,7 @@ FIRST_DECADE = 1890                       # bit 0 = 1890s, bit 1 = 1900s, ...
 LEAGUES = ["AL", "NL"]
 POSITIONS = [("C", ["G_c"]), ("1B", ["G_1b"]), ("2B", ["G_2b"]), ("3B", ["G_3b"]),
              ("SS", ["G_ss"]), ("OF", ["G_lf", "G_cf", "G_rf", "G_of"]), ("DH", ["G_dh"])]
-AWARDS = ["HOF", "AS", "ROY"]
+AWARDS = ["HOF", "AS", "ROY", "MVP", "CY", "GG"]
 
 
 def nickname(full: str) -> str:
@@ -93,8 +93,9 @@ def main(data_dir: Path) -> None:
     hof = hof[(hof.inducted == "Y") & (hof.category == "Player")]
     allstars = load(data_dir, "AllstarFull")
     awards = load(data_dir, "AwardsPlayers")
-    roy = awards[awards.awardID == "Rookie of the Year"]
-    for bit, frame in enumerate([hof, allstars, roy]):
+    won = lambda award: awards[awards.awardID == award]
+    frames = [hof, allstars, won("Rookie of the Year"), won("Most Valuable Player"), won("Cy Young Award"), won("Gold Glove")]
+    for bit, frame in enumerate(frames):
         for pid in set(frame.playerID) & ids:
             masks[pid][4] |= 1 << bit
 

@@ -39,7 +39,16 @@ const POSITION_LABELS: Record<string, string> = {
   OF: "Played the outfield",
   DH: "Played DH",
 };
-const AWARD_LABELS: Record<string, string> = { HOF: "Hall of Famer", AS: "All-Star", ROY: "Rookie of the Year" };
+const AWARD_LABELS: Record<string, string> = {
+  HOF: "Hall of Famer",
+  AS: "All-Star",
+  ROY: "Rookie of the Year",
+  MVP: "Won an MVP",
+  CY: "Won a Cy Young",
+  GG: "Won a Gold Glove",
+};
+/** Awards that only make sense for one kind of stat. */
+const AWARD_GROUP: Record<string, "Batting" | "Pitching"> = { CY: "Pitching" };
 const teamName = new Map(data.teams.map((t) => [t.key, t.name]));
 
 /** The rule as the player reads it. */
@@ -83,7 +92,10 @@ export function fitsSlot(id: string, rule: SlotRule): boolean {
   return Boolean(masks && bit >= 0 && masks[KIND_FIELD[rule.kind]] & (2 ** bit));
 }
 
-/** Every rule a round can use. Pitching stats skip positions (pitchers rarely play elsewhere). */
+/**
+ * Every rule a round can use. Pitching stats skip positions (pitchers rarely
+ * play elsewhere); Cy Young is for pitching stats only.
+ */
 function rulesByKind(group: "Batting" | "Pitching"): [SlotKind, SlotRule[]][] {
   const decades: SlotRule[] = [];
   for (let y = 1900; y <= 2020; y += 10) decades.push({ kind: "decade", key: String(y) });
@@ -91,7 +103,12 @@ function rulesByKind(group: "Batting" | "Pitching"): [SlotKind, SlotRule[]][] {
     ["decade", decades],
     ["team", data.teams.map((t) => ({ kind: "team" as const, key: t.key }))],
     ["league", data.leagues.map((key) => ({ kind: "league" as const, key }))],
-    ["award", data.awards.map((key) => ({ kind: "award" as const, key }))],
+    [
+      "award",
+      data.awards
+        .filter((key) => (AWARD_GROUP[key] ?? group) === group)
+        .map((key) => ({ kind: "award" as const, key })),
+    ],
   ];
   if (group === "Batting") out.push(["position", data.positions.map((key) => ({ kind: "position" as const, key }))]);
   return out;
