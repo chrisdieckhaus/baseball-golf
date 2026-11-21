@@ -78,10 +78,9 @@ A third daily game on the same data, replacing Sports Revealer (`/reveal` now re
 A fourth daily game on the same data, baseball only. Each day everyone gets the same career stat and target, e.g. "7,000 strikeouts." Name three players whose career totals add up as close to the target as you can, without going over.
 
 - **Picking:** one player at a time. Each player's career total is revealed when you pick him, so the last pick is about landing it. Any player who debuted in 1890 or later counts (the same players as the autocomplete), and a player with none of the stat counts as 0. No player twice.
-- **Slot rules** (rounds from Nov 21, 2026, `NUMBER_SLOTS_FROM`): each of the three slots has a rule, and you tap a slot before naming the player for it. Rules come from five kinds, three different kinds a round, in a shuffled order:
+- **Slot rules** (rounds from Nov 21, 2026, `NUMBER_SLOTS_FROM`): each of the three slots has a rule, and you tap a slot before naming the player for it. Rules come from four kinds, three different kinds a round, in a shuffled order (pitching stats have no position rules, so they always use the other three):
   - **Decade:** played in the 1900s … 2020s.
   - **Team:** played for one of the 30 current franchises, under any name (Brooklyn Dodgers count as Dodgers, Indians as Guardians).
-  - **League:** played in the AL or NL.
   - **Position:** played C, 1B, 2B, 3B, SS, OF or DH. Batting stats only.
   - **Award:** Hall of Famer (inducted as a player), All-Star (selected at least once), Rookie of the Year, MVP, Cy Young (pitching stats only), Gold Glove.
 

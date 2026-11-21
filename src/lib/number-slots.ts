@@ -93,7 +93,8 @@ export function fitsSlot(id: string, rule: SlotRule): boolean {
 }
 
 /**
- * Every rule a round can use. Pitching stats skip positions (pitchers rarely
+ * Every rule a round can use. League rules (AL/NL) were dropped: nearly
+ * everyone fits one. Pitching stats skip positions (pitchers rarely
  * play elsewhere); Cy Young is for pitching stats only.
  */
 function rulesByKind(group: "Batting" | "Pitching"): [SlotKind, SlotRule[]][] {
@@ -102,7 +103,6 @@ function rulesByKind(group: "Batting" | "Pitching"): [SlotKind, SlotRule[]][] {
   const out: [SlotKind, SlotRule[]][] = [
     ["decade", decades],
     ["team", data.teams.map((t) => ({ kind: "team" as const, key: t.key }))],
-    ["league", data.leagues.map((key) => ({ kind: "league" as const, key }))],
     [
       "award",
       data.awards
