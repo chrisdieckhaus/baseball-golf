@@ -146,6 +146,8 @@ export interface NumberRound {
   slots: NumberSlot[] | null;
   /** Preview deployments only: trial slot rules on a round that doesn't have them. Plays aren't saved. */
   previewSlots?: true;
+  /** Preview deployments only: a random practice round's seed. Plays aren't saved. */
+  practice?: string;
 }
 
 export function publicNumberRound(

@@ -6,6 +6,8 @@ import {
   findBullseyes,
   findSlotBullseyes,
   generateNumberRound,
+  NUMBER_STATS,
+  targetsFor,
   NUMBER_LAUNCH_DATE,
   publicNumberRound,
   scorePicks,
@@ -19,7 +21,7 @@ import {
 } from "./number";
 import { getOrCreateStoredNumberRound, newNumberRound } from "./number-rounds";
 import { fitsSlot, generateNumberSlots, slotLabel, slotPlayers } from "./number-slots";
-import { isValidDate, todayET } from "./round";
+import { hashString, isValidDate, mulberry32, todayET } from "./round";
 import type { PlayerIndexEntry } from "./types";
 
 const totals = (raw as unknown as { totals: Record<string, Record<string, number>> }).totals;
@@ -56,6 +58,26 @@ export function fitsRoundSlot(round: NumberRound, id: string, slot: number): boo
  * previews share the production database.
  */
 const slotsPreview = () => process.env.VERCEL_ENV === "preview" || process.env.NUMBER_SLOTS_PREVIEW === "1";
+
+/** Practice rounds (temporary, for testing slot rules) are on wherever preview slot rules are. */
+export const practiceEnabled = slotsPreview;
+
+/** A valid practice seed: a few lowercase letters and digits. */
+export const isPracticeSeed = (seed: unknown): seed is string => typeof seed === "string" && /^[a-z0-9]{1,16}$/.test(seed);
+
+/**
+ * A random practice round: any stat, any target, fresh slot rules. The seed
+ * picks it, so the same link gives the same round. Never stored or saved.
+ */
+export function getPracticeRound(seed: string): NumberRound | null {
+  if (!slotsPreview() || !isPracticeSeed(seed)) return null;
+  const rand = mulberry32(hashString(`number:practice:${seed}`));
+  const stat = NUMBER_STATS[Math.floor(rand() * NUMBER_STATS.length)];
+  const targets = targetsFor(stat);
+  const target = targets[Math.floor(rand() * targets.length)];
+  const slots = generateNumberSlots(`practice:${seed}`, stat.key, target);
+  return { ...publicNumberRound(todayET(), { statKey: stat.key, target, slots }, slotLabel), practice: seed };
+}
 
 function withPreviewSlots(date: string, stored: StoredNumberRound): StoredNumberRound & { previewSlots?: true } {
   if (stored.slots || !slotsPreview()) return stored;

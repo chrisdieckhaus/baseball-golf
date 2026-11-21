@@ -22,6 +22,19 @@
   color: var(--chalk-dim);
 }
 
+.dateLinks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+button.archiveLink {
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+}
+
 .archiveLink {
   font-size: 0.8rem;
   font-weight: 600;

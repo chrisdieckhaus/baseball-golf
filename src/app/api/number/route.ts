@@ -1,6 +1,13 @@
 import { getDb } from "@/lib/db";
 import { validatePicks, type NumberRound } from "@/lib/number";
-import { careerTotal, fitsRoundSlot, getNumberRound, isPlayableNumberDate, numberState } from "@/lib/number-data";
+import {
+  careerTotal,
+  fitsRoundSlot,
+  getNumberRound,
+  getPracticeRound,
+  isPlayableNumberDate,
+  numberState,
+} from "@/lib/number-data";
 import { getNumberPlay, getNumberStats, recordNumberPicks, type NumberPlay } from "@/lib/number-plays";
 import { ensurePlayerId, readPlayerId } from "@/lib/player-cookie";
 import { todayET } from "@/lib/round";
@@ -52,11 +59,19 @@ export async function POST(request: Request) {
   } catch {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
-  const { date, picks, sport } = (body ?? {}) as Record<string, unknown>;
+  const { date, picks, sport, practice } = (body ?? {}) as Record<string, unknown>;
   if (sport !== undefined && sport !== null && sport !== "mlb") return notFound();
-  if (!isPlayableNumberDate(date)) return Response.json({ error: "There's no round for that date" }, { status: 400 });
 
-  const round = await getNumberRound(date);
+  let round: NumberRound;
+  if (practice !== undefined) {
+    // Preview deployments only: a practice round, scored but never saved.
+    const p = typeof practice === "string" ? getPracticeRound(practice) : null;
+    if (!p) return notFound();
+    round = p;
+  } else {
+    if (!isPlayableNumberDate(date)) return Response.json({ error: "There's no round for that date" }, { status: 400 });
+    round = await getNumberRound(date);
+  }
   const slots = round.slots;
   const checked = validatePicks(
     picks,
@@ -80,10 +95,10 @@ export async function POST(request: Request) {
   };
 
   const db = getDb();
-  if (!db || round.previewSlots) return Response.json({ state, stats: null });
+  if (!db || round.previewSlots || round.practice) return Response.json({ state, stats: null });
   try {
     const me = await ensurePlayerId();
-    const saved = await recordNumberPicks(db, { playerId: me, roundDate: date, play, isLive: date === todayET() });
+    const saved = await recordNumberPicks(db, { playerId: me, roundDate: round.date, play, isLive: round.date === todayET() });
     return Response.json(await withStats(round, saved, me));
   } catch (e) {
     console.error("[api/number] Couldn't save the play", e);
