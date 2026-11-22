@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import raw from "@/data/number.json";
 import { findSlotBullseyes, generateNumberRound, NUMBER_SLOTS_FROM, numberStat } from "./number";
 import { newNumberRound } from "./number-rounds";
-import { fitsSlot, generateNumberSlots, MIN_SLOT_POOL, slotLabel, slotPlayers } from "./number-slots";
+import { fitsSlot, generateNumberSlots, MIN_SLOT_POOL, ruleWeight, slotLabel, slotPlayers } from "./number-slots";
 
 const totals = (raw as unknown as { totals: Record<string, Record<string, number>> }).totals;
 const dateAt = (i: number) => new Date(Date.UTC(2026, 10, 21 + i)).toISOString().slice(0, 10);
@@ -29,6 +29,22 @@ describe("Hit the Number slot rules", () => {
     // Jackie Robinson's Brooklyn Dodgers count as Dodgers
     expect(fitsSlot("robinja02", { kind: "team", key: "LAD" })).toBe(true);
     expect(fitsSlot("nobody", { kind: "award", key: "HOF" })).toBe(false);
+  });
+
+  it("leans decade rules toward recent decades", () => {
+    expect(ruleWeight({ kind: "decade", key: "2020" })).toBe(1);
+    expect(ruleWeight({ kind: "decade", key: "1970" })).toBeCloseTo(0.25);
+    expect(ruleWeight({ kind: "decade", key: "1910" })).toBeLessThan(0.05);
+    expect(ruleWeight({ kind: "team", key: "HOU" })).toBe(1);
+    const counts: Record<string, number> = {};
+    for (let i = 0; i < 400; i++) {
+      const date = dateAt(i);
+      const { statKey, target } = generateNumberRound(date);
+      for (const r of generateNumberSlots(date, statKey, target)!) if (r.kind === "decade") counts[r.key] = (counts[r.key] ?? 0) + 1;
+    }
+    const recent = (counts["2000"] ?? 0) + (counts["2010"] ?? 0) + (counts["2020"] ?? 0);
+    const early = (counts["1900"] ?? 0) + (counts["1910"] ?? 0) + (counts["1920"] ?? 0);
+    expect(recent).toBeGreaterThan(early * 5);
   });
 
   it("labels rules", () => {
