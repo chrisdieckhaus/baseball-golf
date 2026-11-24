@@ -99,7 +99,7 @@ export function fitsSlot(id: string, rule: SlotRule): boolean {
  */
 function rulesByKind(group: "Batting" | "Pitching"): [SlotKind, SlotRule[]][] {
   const decades: SlotRule[] = [];
-  for (let y = 1900; y <= 2020; y += 10) decades.push({ kind: "decade", key: String(y) });
+  for (let y = 1900; y <= LATEST_DECADE; y += 10) decades.push({ kind: "decade", key: String(y) });
   const out: [SlotKind, SlotRule[]][] = [
     ["decade", decades],
     ["team", data.teams.map((t) => ({ kind: "team" as const, key: t.key }))],
@@ -112,6 +112,19 @@ function rulesByKind(group: "Batting" | "Pitching"): [SlotKind, SlotRule[]][] {
   ];
   if (group === "Batting") out.push(["position", data.positions.map((key) => ({ kind: "position" as const, key }))]);
   return out;
+}
+
+/**
+ * Decade rules lean toward recent decades: a decade's chance halves every this
+ * many years before the 2020s. The 2010s come up about 3/4 as often as the
+ * 2020s, the 1990s about 2/5, the 1910s about 1/20.
+ */
+export const DECADE_HALF_LIFE = 25;
+const LATEST_DECADE = 2020;
+
+/** How likely a rule is to be drawn within its kind. */
+export function ruleWeight(rule: SlotRule): number {
+  return rule.kind === "decade" ? 0.5 ** ((LATEST_DECADE - Number(rule.key)) / DECADE_HALF_LIFE) : 1;
 }
 
 /** Each slot needs at least this many players with some of the stat. */
@@ -142,7 +155,13 @@ export function generateNumberSlots(date: string, statKey: string, target: numbe
   const stat = numberStat(statKey);
   if (!stat) return null;
   const rand = mulberry32(hashString(`number:slots:${date}`));
-  const pick = <T>(items: T[]) => items[Math.floor(rand() * items.length)];
+  // A weighted draw: decades lean recent (ruleWeight), everything else is even.
+  const pick = (items: SlotRule[]) => {
+    const weights = items.map(ruleWeight);
+    let r = rand() * weights.reduce((a, b) => a + b, 0);
+    for (let i = 0; i < items.length; i++) if ((r -= weights[i]) < 0) return items[i];
+    return items[items.length - 1];
+  };
   const kinds = rulesByKind(stat.group);
   for (let attempt = 0; attempt < MAX_TRIES; attempt++) {
     // Three different kinds, in random order.
