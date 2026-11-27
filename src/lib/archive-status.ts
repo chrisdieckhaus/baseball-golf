@@ -14,6 +14,12 @@ export function golfStatus(holesPlayed: number, totalScore: number | null, holes
   return null;
 }
 
+/** How Lineup Card progress reads in the list: "In progress · 4/9", then "91%" or "Perfect". */
+export function lineupStatus(picks: number, done: boolean, percent: number | null): Status {
+  if (!done) return { kind: "partial", text: `In progress · ${picks}/9` };
+  return percent === 100 ? { kind: "done", text: "Perfect" } : { kind: "done", text: "", score: `${percent ?? 0}%` };
+}
+
 /** How Hit the Number progress reads in the list. */
 export function numberStatus(picks: number, done: boolean, bust: boolean, score: number | null): Status {
   if (!done) return { kind: "partial", text: `In progress · ${picks}/3` };

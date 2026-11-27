@@ -6,6 +6,7 @@ import { connection } from "next/server";
 import Link from "next/link";
 import DayResults, { type DayGame } from "@/components/DayResults";
 import { GAME_PATHS, type GameKey } from "@/lib/local-status";
+import { lineupRoundNumber } from "@/lib/lineup";
 import { numberRoundNumber } from "@/lib/number";
 import { formatRoundDate, isPlayableDate, roundNumber, todayET } from "@/lib/round";
 import { loadSavedStatuses } from "@/lib/saved-status";
@@ -40,6 +41,13 @@ const GAMES: GameInfo[] = [
     name: () => "Hit the Number",
     pitch: () => "Three players whose careers add up to the target. Don't go over.",
     number: numberRoundNumber,
+  },
+  {
+    key: "lineup",
+    name: () => "Lineup Card",
+    pitch: () => "Fill all nine spots. Every pick has to fit. Biggest team total wins.",
+    number: lineupRoundNumber,
+    mlbOnly: true,
   },
 ];
 

@@ -1,9 +1,10 @@
 // The archive page of any game, in either sport: /golf/archive,
-// /golf/player/archive, /number/archive and the /nba golf twins.
+// /golf/player/archive, /number/archive, /lineup/archive and the /nba twins.
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import LocalArchive from "@/components/LocalArchive";
+import { LINEUP_LAUNCH_DATE, lineupRoundNumber } from "@/lib/lineup";
 import { NUMBER_LAUNCH_DATE, numberRoundNumber } from "@/lib/number";
 import { PLAYER_GOLF_LAUNCH_DATE } from "@/lib/player-golf";
 import { loadSavedStatuses } from "@/lib/saved-status";
@@ -22,6 +23,7 @@ const GAMES: Record<
   golf: { path: "/golf", first: LAUNCH_DATE, number: roundNumber, log: "[archive]" },
   player: { path: "/golf/player", first: PLAYER_GOLF_LAUNCH_DATE, number: roundNumber, log: "[archive]" },
   number: { path: "/number", first: NUMBER_LAUNCH_DATE, number: numberRoundNumber, log: "[number/archive]" },
+  lineup: { path: "/lineup", first: LINEUP_LAUNCH_DATE, number: lineupRoundNumber, log: "[lineup/archive]" },
 };
 
 function formatDate(date: string): string {
@@ -49,6 +51,12 @@ async function RoundList({ game, sport }: { game: ArchiveGame; sport: Sport }) {
 function Title({ game, sport }: { game: ArchiveGame; sport: Sport }) {
   if (game === "golf") return <GolfTitle sport={sport} />;
   if (game === "player") return <GolfTitle sport={sport} suffix=": Player" />;
+  if (game === "lineup")
+    return (
+      <>
+        Lineup <span>Card</span>
+      </>
+    );
   return (
       <>
         Hit the <span>Number</span>

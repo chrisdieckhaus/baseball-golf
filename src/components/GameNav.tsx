@@ -9,6 +9,8 @@ import styles from "./GameNav.module.css";
 const GAMES: { path: string; label: string; mlbOnly?: boolean }[] = [
   { path: "/golf", label: "Golf" },
   { path: "/number", label: "Number" },
+  // Lineup Card is baseball only, so the NBA nav leaves it out.
+  { path: "/lineup", label: "Lineup", mlbOnly: true },
 ];
 
 /** Splits "/nba/golf/archive" into its sport and the game path ("/golf/archive"). */

@@ -1,8 +1,9 @@
 // This browser's saved results from the database, by date, as they read in a
 // list ("Score +34", "In progress · 1/3"). Used by the archives and the homepage.
 import "server-only";
-import { golfStatus, numberStatus, type Status } from "./archive-status";
+import { golfStatus, lineupStatus, numberStatus, type Status } from "./archive-status";
 import { getDb } from "./db";
+import { getLineupProgress } from "./lineup-plays";
 import type { GameKey } from "./local-status";
 import { getNumberProgress } from "./number-plays";
 import { readPlayerId } from "./player-cookie";
@@ -23,6 +24,13 @@ export async function loadSavedStatuses(game: GameKey, sport: Sport, log = "[sav
     if (game === "player") {
       const progress = await getPlayerGolfProgress(db, me, sport);
       return Object.fromEntries([...progress].map(([date, p]) => [date, golfStatus(p.holesPlayed, p.totalScore)]));
+    }
+    if (game === "lineup") {
+      if (sport !== "mlb") return {};
+      const progress = await getLineupProgress(db, me);
+      return Object.fromEntries(
+        [...progress].filter(([, p]) => p.ids.length > 0).map(([date, p]) => [date, lineupStatus(p.ids.length, p.done, p.percent)]),
+      );
     }
     const progress = await getNumberProgress(db, me, sport);
     return Object.fromEntries(

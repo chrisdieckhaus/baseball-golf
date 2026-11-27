@@ -4,6 +4,7 @@ Quick daily sports stats games, all in one app:
 
 - **Baseball Golf** (`/golf`; `/` redirects there): name the player at each all-time career rank. Its **Player** mode (`/golf/player`) flips it: we name the player, you name his rank.
 - **Hit the Number** (`/number`): name three players whose career totals add up as close to a target as you can without going over.
+- **Lineup Card** (`/lineup`, baseball only): fill a nine-man lineup, each spot with its own rule, to build the biggest career total.
 
 ## Baseball Golf
 
@@ -88,6 +89,18 @@ A fourth daily game on the same data, baseball only. Each day everyone gets the 
 - **Share text:** totals only, e.g. `Hit the Number #15 · Nov 15, 2026` / `6,950 / 7,000 strikeouts 🎯` (💥 for a bust).
 - **Data:** `scripts/build_data.py` also writes `src/data/number.json` (server-only): every player's career total in each stat, non-zero totals only. `scripts/build_number_slots.py` writes `src/data/number-slots.json` (server-only): each player's decades, franchises, leagues, positions and awards as bit masks, from Lahman's Appearances, Teams, HallOfFame, AllstarFull and AwardsPlayers. `npm run data` runs both.
 - **Code:** `src/lib/number*.ts`, `src/app/api/number/route.ts`, `src/components/NumberGame.tsx`, `src/app/number/`.
+
+## Lineup Card (`/lineup`)
+Baseball only. Each day everyone gets the same batting stat and nine lineup spots (C, 1B, 2B, 3B, SS, LF, CF, RF, DH), each with a rule: a team, a decade, the AL or NL, or an award (Hall of Fame, All-Star, MVP, Rookie of the Year, Gold Glove). Fill the spots in any order with players who played that position and fit its rule. Each pick's career total is revealed as you go. No player twice.
+
+- **Fitting a spot:** any appearance counts, like Hit the Number: one game at catcher makes a catcher. Lahman's Appearances split the outfield into LF, CF and RF; `scripts/build_lineup_positions.py` writes `src/data/lineup-positions.json` (server-only), one bit mask per player.
+- **Stats:** HR, hits, RBIs, runs, doubles, stolen bases and walks (counting stats only). They run in shuffled cycles of seven days, never the same stat two days running (`lineupStatFor` in `src/lib/lineup-data.ts`).
+- **Spot rules:** drawn from `lineup:spots:<date>`. Teams come up most, then decades (leaning recent, like Hit the Number), awards and leagues. A spot redraws until at least 12 players fit it with some of the stat, and no rule appears twice.
+- **Scoring:** the team total as a share of the best lineup possible, rounded down (only a perfect lineup says 100%). The best lineup is exact: each spot's top nine players, searched over every set of filled spots (`bestLineup`).
+- **After the round:** the best lineup spot by spot, a 🟩/🟨/⬜ next to each pick (as good as the best lineup's player there, at least half, or less), and how you compare: percentile, average percent, perfect cards and a chart by percent.
+- **Share text:** `Lineup Card #28 · Nov 28, 2026` / nine squares in card order / `4,812 HR · 91% of the best lineup`.
+- **Saved rounds and plays:** `lineup_rounds` (stat and rules) and `lineup_plays` (picks, spots, total, percent), keyed by the `bg_player` cookie. **Preview deployments save nothing**: rounds are worked out on the fly and cards stay in the browser, because previews share the production database. Previews (and `LINEUP_PRACTICE=1` locally) also offer random practice rounds.
+- **Code:** `src/lib/lineup*.ts`, `src/app/api/lineup/route.ts`, `src/components/LineupGame.tsx`, `src/app/lineup/`.
 
 ## NBA versions (prototype, off by default)
 Every game has an NBA version under `/nba`: Basketball Golf (`/nba/golf`, with Player mode at `/nba/golf/player`) and Hit the Number (`/nba/number`), each with its archive.

@@ -185,7 +185,37 @@ ALTER TABLE ${p}number_rounds ADD COLUMN IF NOT EXISTS slots jsonb;
 ALTER TABLE ${p}number_plays ADD COLUMN IF NOT EXISTS pick_slots integer[] NOT NULL DEFAULT '{}';
 `;
 
-const SCHEMA = PLAYERS_SCHEMA + gameSchema("") + gameSchema("nba_") + numberSchema("") + numberSchema("nba_");
+// Lineup Card (baseball only).
+const LINEUP_SCHEMA = `
+-- One row per daily round: the stat and a JSON array of nine { kind, key } spot
+-- rules (C, 1B, 2B, 3B, SS, LF, CF, RF, DH), saved the first time it's needed.
+CREATE TABLE IF NOT EXISTS lineup_rounds (
+  round_date  date PRIMARY KEY,
+  stat_key    text NOT NULL,
+  rules       jsonb NOT NULL,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+
+-- One row per player per daily round. pick_ids only grow until all nine spots
+-- are filled; pick_spots[i] is the spot (0-8) pick_ids[i] went in. percent is the
+-- total as a share of the best lineup possible, set when the card is done.
+CREATE TABLE IF NOT EXISTS lineup_plays (
+  player_id     uuid NOT NULL REFERENCES players (id) ON DELETE CASCADE,
+  round_date    date NOT NULL,
+  pick_ids      text[] NOT NULL DEFAULT '{}',
+  pick_spots    integer[] NOT NULL DEFAULT '{}',
+  total         integer NOT NULL DEFAULT 0,
+  done          boolean NOT NULL DEFAULT false,
+  percent       integer,
+  is_live       boolean NOT NULL,
+  started_at    timestamptz NOT NULL DEFAULT now(),
+  completed_at  timestamptz,
+  PRIMARY KEY (player_id, round_date)
+);
+CREATE INDEX IF NOT EXISTS lineup_plays_round_idx ON lineup_plays (round_date) WHERE done;
+`;
+
+const SCHEMA = PLAYERS_SCHEMA + gameSchema("") + gameSchema("nba_") + numberSchema("") + numberSchema("nba_") + LINEUP_SCHEMA;
 
 const client = new pg.Client({ connectionString: url });
 try {

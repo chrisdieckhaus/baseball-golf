@@ -2,17 +2,18 @@
 // the homepage use it for rounds the database doesn't have (played before
 // plays were saved, or while the database was down). Browser only: call it
 // after hydration. No "use client" so server code can import the types.
-import { golfStatus, numberStatus, type Status } from "./archive-status";
+import { golfStatus, lineupStatus, numberStatus, type Status } from "./archive-status";
 import { namespaced, type Sport } from "./sport";
 
 /** Every daily game. "player" is Baseball Golf's Player mode. */
-export type GameKey = "golf" | "player" | "number";
+export type GameKey = "golf" | "player" | "number" | "lineup";
 
 /** Where each game's rounds live (before the sport's base path). */
 export const GAME_PATHS: Record<GameKey, string> = {
   golf: "/golf",
   player: "/golf/player",
   number: "/number",
+  lineup: "/lineup",
 };
 
 function readKey(key: string): unknown {
@@ -33,6 +34,11 @@ export function localStatus(game: GameKey, date: string, sport: Sport): Status {
     const played = saved.filter((r) => typeof r?.score === "number");
     const total = played.length === saved.length ? played.reduce((sum, r) => sum + r!.score!, 0) : null;
     return golfStatus(played.length, total, saved.length);
+  }
+  if (game === "lineup") {
+    const saved = read(`lineup-card:${date}`) as { picks?: unknown[]; done?: boolean; percent?: number | null } | null;
+    if (!saved?.picks?.length) return null;
+    return lineupStatus(saved.picks.length, Boolean(saved.done), saved.percent ?? null);
   }
   {
     const saved = read(`hit-the-number:${date}`) as {

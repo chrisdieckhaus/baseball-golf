@@ -1,3 +1,5 @@
+import { lineupBucket } from "@/lib/lineup";
+import type { LineupStats } from "@/lib/lineup-plays";
 import { numberBucket, numberBucketLimits } from "@/lib/number";
 import type { NumberStats } from "@/lib/number-plays";
 import { ordinal } from "@/lib/scoring";
@@ -151,3 +153,36 @@ export function NumberCompare({
   );
 }
 
+
+/** Lineup Card: percentile, average share of the best lineup, perfect cards, and a chart by percent. */
+export function LineupCompare({ stats, percent, isToday }: { stats: LineupStats; percent: number; isToday: boolean }) {
+  const labels = ["💯", "90s", "80s", "70s", "60s", "50s", "<50"];
+  const titles = ["Perfect lineup", "90–99%", "80–89%", "70–79%", "60–69%", "50–59%", "Under 50%"];
+  return (
+    <div className={styles.compare}>
+      <PercentileLine stats={stats} isToday={isToday} />
+      <dl className={styles.facts}>
+        <div>
+          <dt>Average</dt>
+          <dd>{stats.averagePercent === null ? "—" : `${stats.averagePercent}%`}</dd>
+        </div>
+        <div>
+          <dt>Perfect</dt>
+          <dd>{stats.perfectPercent}%</dd>
+        </div>
+        <div>
+          <dt>Played</dt>
+          <dd>{fmt(stats.finishers)}</dd>
+        </div>
+      </dl>
+      <DistributionChart
+        counts={stats.distribution}
+        mine={lineupBucket(percent)}
+        label="How everyone's lineups did"
+        bucketLabel={(i) => labels[i]}
+        bucketTitle={(i) => titles[i]}
+        wideLabels
+      />
+    </div>
+  );
+}
