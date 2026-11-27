@@ -197,6 +197,9 @@ export interface NumberPick {
   value: number;
   /** Which slot he went in (0–2), on rounds with slot rules. */
   slot?: number;
+  /** Bonus round only: his all-time rank in the stat (1 = the leader), and whether he shares it. */
+  rank?: number;
+  tied?: boolean;
 }
 
 /** A pick as the browser sends it: { id, slot }, or just the id on rounds without slots. */

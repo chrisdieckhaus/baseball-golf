@@ -297,3 +297,12 @@ a.linkBtn {
   margin: 4px 0 0;
   line-height: 1.45;
 }
+
+/* Bonus round: a pick's all-time rank under his total. */
+.rank {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--ink-dim);
+  text-align: right;
+}

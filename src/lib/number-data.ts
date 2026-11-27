@@ -11,6 +11,7 @@ import {
   numberStats,
   targetsFor,
   NUMBER_LAUNCH_DATE,
+  NUMBER_PICKS,
   publicNumberRound,
   scorePicks,
   type Bullseyes,
@@ -23,6 +24,7 @@ import {
 } from "./number";
 import { getOrCreateStoredNumberRound, newNumberRound } from "./number-rounds";
 import { fitsSlot, generateNumberSlots, slotLabel, slotPlayers } from "./number-slots";
+import { bestThree, scoreMax, type MaxPickInput, type MaxState } from "./number-max";
 import { hashString, isValidDate, mulberry32, todayET } from "./round";
 import { namespaced, type Sport } from "./sport";
 import type { PlayerIndexEntry } from "./types";
@@ -174,4 +176,105 @@ export function numberState(round: NumberRound, picks: PickInput[]): NumberState
     ...scored,
     bullseyes: scored.done ? bullseyesFor(round.statKey, round.target, round.slots, round.sport) : null,
   };
+}
+
+// ---- The bonus round ("Max it out") ----
+
+/** Every non-zero career total in a stat, biggest first, for all-time ranks. */
+const sortedCache = new Map<string, number[]>();
+function sortedTotals(statKey: string, sport: Sport): number[] {
+  const key = `${sport}:${statKey}`;
+  let sorted = sortedCache.get(key);
+  if (!sorted) {
+    sorted = Object.values(totalsFor(sport)[statKey] ?? {})
+      .filter((v) => v > 0)
+      .sort((a, b) => b - a);
+    sortedCache.set(key, sorted);
+  }
+  return sorted;
+}
+
+/**
+ * All-time rank among every player in the game (1 = the leader), with ties
+ * sharing a rank like Golf's leaderboards: 1 + how many have more. Null for a
+ * total of 0.
+ */
+export function careerRank(statKey: string, value: number, sport: Sport = "mlb"): { rank: number; tied: boolean } | null {
+  if (value <= 0) return null;
+  const sorted = sortedTotals(statKey, sport);
+  // First index whose value is <= this one (the list runs biggest first).
+  let lo = 0;
+  let hi = sorted.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (sorted[mid] > value) lo = mid + 1;
+    else hi = mid;
+  }
+  const tied = sorted[lo] === value && (sorted[lo + 1] === value || (lo > 0 && sorted[lo - 1] === value));
+  return { rank: lo + 1, tied };
+}
+
+/** A bonus-round pick: the usual pick plus his all-time rank. */
+function rankedPick(round: NumberRound, id: string, slot: number): NumberPick {
+  const pick = toPick(round.statKey, id, slot, round.sport);
+  const r = careerRank(round.statKey, pick.value, round.sport);
+  if (r) {
+    pick.rank = r.rank;
+    if (r.tied) pick.tied = true;
+  }
+  return pick;
+}
+
+const maxCache = new Map<string, { total: number; picks: NumberPick[] }>();
+
+/** The best three for a round's slots, as picks in slot order. */
+export function bestMax(round: NumberRound): { total: number; picks: NumberPick[] } {
+  const rules = round.slots ?? [];
+  const key = `${round.sport}:${round.statKey}:${JSON.stringify(rules.map(({ kind, key }) => [kind, key]))}`;
+  const cached = maxCache.get(key);
+  if (cached) return cached;
+  const best = bestThree(slotPlayers(round.statKey, rules, round.sport));
+  const result = {
+    total: best.total,
+    picks: best.picks.map((p, i) =>
+      p ? rankedPick(round, p.id, i) : { id: "", name: "Nobody", years: "", value: 0, slot: i },
+    ),
+  };
+  maxCache.set(key, result);
+  return result;
+}
+
+/** The bonus round's state for a list of picks, with the best three once all three are in. */
+export function maxState(round: NumberRound, picks: MaxPickInput[]): MaxState {
+  const full = picks.map((p) => rankedPick(round, p.id, p.slot));
+  return scoreMax(full, full.length === NUMBER_PICKS ? bestMax(round) : null);
+}
+
+/** Checks the bonus round's picks: known players, one per slot, no repeats, each fits; saved picks come first. */
+export function validateMaxPicks(
+  round: NumberRound,
+  picks: unknown,
+  saved: MaxPickInput[],
+): { picks: MaxPickInput[] } | { error: string } {
+  if (!round.slots) return { error: "This round has no bonus round" };
+  if (!Array.isArray(picks) || picks.length === 0 || picks.length > NUMBER_PICKS) {
+    return { error: "picks must be a list of 1 to 3 players" };
+  }
+  const out: MaxPickInput[] = [];
+  for (const p of picks) {
+    const id = (p as MaxPickInput | null)?.id;
+    const slot = (p as MaxPickInput | null)?.slot;
+    if (typeof id !== "string" || typeof slot !== "number" || !Number.isInteger(slot) || slot < 0 || slot >= NUMBER_PICKS) {
+      return { error: "Each pick needs a player and a slot" };
+    }
+    if (careerTotal(round.statKey, id, round.sport) === undefined) return { error: "Unknown player" };
+    if (out.some((o) => o.id === id)) return { error: "He's already picked" };
+    if (out.some((o) => o.slot === slot)) return { error: "That slot is already filled" };
+    if (!fitsRoundSlot(round, id, slot)) return { error: `He doesn't fit "${round.slots[slot].label}"` };
+    out.push({ id, slot });
+  }
+  if (out.length < saved.length || saved.some((s, i) => s.id !== out[i].id || s.slot !== out[i].slot)) {
+    return { error: "Picks can't be changed" };
+  }
+  return { picks: out };
 }
