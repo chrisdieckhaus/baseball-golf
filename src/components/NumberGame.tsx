@@ -18,14 +18,19 @@ import {
 } from "@/lib/number";
 import type { NumberStats } from "@/lib/number-plays";
 import { formatRoundDate } from "@/lib/round";
+import { apiUrl, basePath, namespaced } from "@/lib/sport";
 import type { PlayerIndexEntry } from "@/lib/types";
 import styles from "./NumberGame.module.css";
 
 // Preview deployments try slot rules on old rounds; keep those plays apart.
+// NBA keys start with "nba:"; baseball's are unchanged.
 const storageKey = (round: NumberRound) =>
-  round.practice
-    ? `hit-the-number:practice:${round.practice}`
-    : `hit-the-number:${round.date}${round.previewSlots ? ":slots" : ""}`;
+  namespaced(
+    round.sport,
+    round.practice
+      ? `hit-the-number:practice:${round.practice}`
+      : `hit-the-number:${round.date}${round.previewSlots ? ":slots" : ""}`,
+  );
 
 const fmt = (n: number) => n.toLocaleString("en-US");
 
@@ -66,8 +71,10 @@ interface Props {
 
 export default function NumberGame({ round, isToday, today, canPractice = false }: Props) {
   const router = useRouter();
+  const sport = round.sport;
+  const path = `${basePath(sport)}/number`;
   /** Preview deployments only: start a new random practice round. */
-  const newPractice = () => router.push(`/number?practice=${Math.random().toString(36).slice(2, 10)}`);
+  const newPractice = () => router.push(`${path}?practice=${Math.random().toString(36).slice(2, 10)}`);
   const key = storageKey(round);
   const slots = round.slots;
   const [state, setState] = useState<NumberState>(EMPTY);
@@ -92,7 +99,11 @@ export default function NumberGame({ round, isToday, today, canPractice = false 
     const res = await fetch("/api/number", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(round.practice ? { practice: round.practice, picks: sent } : { date: round.date, picks: sent }),
+      body: JSON.stringify({
+        ...(round.practice ? { practice: round.practice } : { date: round.date }),
+        picks: sent,
+        ...(sport === "nba" ? { sport } : {}),
+      }),
     });
     const body = await res.json();
     if (!res.ok) throw new Error(body.error ?? "Something went wrong");
@@ -113,7 +124,7 @@ export default function NumberGame({ round, isToday, today, canPractice = false 
       setSynced(true);
       return;
     }
-    fetch(`/api/number?date=${round.date}`, { cache: "no-store" })
+    fetch(apiUrl(sport, "/api/number", { date: round.date }), { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
       .then(async (body: { play: { state: NumberState; stats: NumberStats | null } | null } | null) => {
         if (!body || cancelled) return;
@@ -162,7 +173,7 @@ export default function NumberGame({ round, isToday, today, canPractice = false 
   }
 
   function shareText(): string {
-    const page = `${window.location.origin}/number`;
+    const page = `${window.location.origin}${path}`;
     return buildNumberShareText(round, state, isToday ? page : `${page}?date=${round.date}`);
   }
 
@@ -178,7 +189,7 @@ export default function NumberGame({ round, isToday, today, canPractice = false 
         </p>
         <div className={styles.dateLinks}>
           {!round.practice && (
-            <Link href="/number/archive" className={styles.archiveLink}>
+            <Link href={`${path}/archive`} className={styles.archiveLink}>
               Play previous rounds
             </Link>
           )}
@@ -281,6 +292,7 @@ export default function NumberGame({ round, isToday, today, canPractice = false 
             )}
             <PlayerSearch
               key={searchKey}
+              sport={sport}
               usedIds={used}
               disabled={busy || !synced}
               onSubmit={pick}
@@ -331,12 +343,12 @@ export default function NumberGame({ round, isToday, today, canPractice = false 
                 New practice round
               </button>
             )}
-            <Link href="/number">Today&apos;s round</Link>
+            <Link href={path}>Today&apos;s round</Link>
           </>
         ) : state.done ? (
-          <DayNav path="/number" date={round.date} today={today} firstDate={NUMBER_LAUNCH_DATE} className={styles.linkBtn} />
+          <DayNav path={path} date={round.date} today={today} firstDate={NUMBER_LAUNCH_DATE} className={styles.linkBtn} />
         ) : !isToday ? (
-          <Link href="/number">Today&apos;s round</Link>
+          <Link href={path}>Today&apos;s round</Link>
         ) : null}
       </nav>
     </div>

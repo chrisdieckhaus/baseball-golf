@@ -90,7 +90,7 @@ A fourth daily game on the same data, baseball only. Each day everyone gets the 
 - **Code:** `src/lib/number*.ts`, `src/app/api/number/route.ts`, `src/components/NumberGame.tsx`, `src/app/number/`.
 
 ## NBA versions (prototype, off by default)
-Baseball Golf also has an NBA version under `/nba`: Basketball Golf (`/nba/golf`, with Player mode at `/nba/golf/player`), each with its archive. Hit the Number is baseball only.
+Every game has an NBA version under `/nba`: Basketball Golf (`/nba/golf`, with Player mode at `/nba/golf/player`) and Hit the Number (`/nba/number`), each with its archive.
 
 - **Kill switch:** the NBA games exist only while the `NBA_ENABLED` environment variable is `1` or `true`. Unset, every `/nba` page is a 404, NBA API calls (`sport=nba`) are a 404, the nav's MLB | NBA switch is hidden, and the build doesn't backfill NBA rounds. Change it in Vercel (Settings → Environment Variables) and redeploy.
 - **Why it's off by default:** the NBA data is built from Basketball-Reference (through the community [bball-reference-datasets](https://github.com/sumitrodatta/bball-reference-datasets) CSVs). That's fine for a private prototype, but it needs a license or a legal check before NBA goes public. NBA pages are also marked `noindex`.
@@ -100,6 +100,7 @@ Baseball Golf also has an NBA version under `/nba`: Basketball Golf (`/nba/golf`
   python3 scripts/build_nba_data.py /tmp/bbref/Data   # or: npm run data:nba -- /tmp/bbref/Data
   ```
 - **Stats (21):** Totals (PTS, TRB, AST, STL, BLK, 3P, FG, FT, G, MP, ORB, TOV), Per Game (PPG, RPG, APG, SPG, BPG, MPG; 400 games, or 10,000 points for PPG) and Shooting (FG% 2,000 FG, FT% 1,200 FT, 3P% 250 3P). Stats that weren't always kept count only the seasons they were, and the hole says "Tracked since …" (so Bill Russell has no blocks). A round never uses two versions of one stat (PTS and PPG share a `family`).
+- **Hit the Number (NBA):** career totals in points, rebounds, assists, steals, blocks and 3-pointers (`NBA_NUMBER_STATS` in `src/lib/number.ts`). Every round has slot rules: a decade (1950s on; a season counts for both years it spans), one of the 30 franchises (old names and cities included, plus the Nets', Nuggets', Pacers' and Spurs' ABA years), guard/forward/center, or an award (Hall of Fame, All-Star, MVP, Rookie of the Year, DPOY, Sixth Man). Rounds go in `nba_number_rounds`, plays in `nba_number_plays`. `scripts/build_nba_number_data.py` writes `src/data/nba/number.json` and `src/data/nba/number-slots.json` (server-only); run it after `build_nba_data.py` (`npm run data:nba-number -- /tmp/bbref/Data`).
 - **How it's wired:** `src/lib/sport.ts`. Baseball keeps every name it had: routes, tables, round seeds and localStorage keys. NBA uses the same tables with an `nba_` prefix (created by `scripts/migrate.mjs`), seeds and storage keys with an `nba:` prefix, and `sport=nba` on API calls. The page bodies live in `src/views/`, shared by the baseball and NBA routes.
 
 ## Development

@@ -40,7 +40,6 @@ const GAMES: GameInfo[] = [
     name: () => "Hit the Number",
     pitch: () => "Three players whose careers add up to the target. Don't go over.",
     number: numberRoundNumber,
-    mlbOnly: true,
   },
 ];
 

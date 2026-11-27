@@ -24,7 +24,7 @@ export async function loadSavedStatuses(game: GameKey, sport: Sport, log = "[sav
       const progress = await getPlayerGolfProgress(db, me, sport);
       return Object.fromEntries([...progress].map(([date, p]) => [date, golfStatus(p.holesPlayed, p.totalScore)]));
     }
-    const progress = await getNumberProgress(db, me);
+    const progress = await getNumberProgress(db, me, sport);
     return Object.fromEntries(
       [...progress].filter(([, p]) => p.ids.length > 0).map(([date, p]) => [date, numberStatus(p.ids.length, p.done, p.bust, p.score)]),
     );
