@@ -19,7 +19,6 @@ Rules, matching Basketball-Reference's career leaderboards:
 Outputs:
   src/data/nba/leaderboards.json   server-only: career leaderboards
   src/data/nba/player-meta.json    server-only: years and position of ranked players
-  src/data/nba/roster.json         server-only: Roster Reveal team-seasons
   public/players-nba.json          autocomplete index of every player
 
 Usage:
@@ -232,10 +231,6 @@ def main(data_dir: Path) -> None:
         "maxRank": MAX_RANK, "stats": leaderboards,
     }, ensure_ascii=False, separators=(",", ":")))
     (out_dir / "player-meta.json").write_text(json.dumps(meta, ensure_ascii=False))
-    (out_dir / "roster.json").write_text(json.dumps({
-        "source": source, "firstYear": int(abbrev.season.min()), "lastYear": THROUGH_SEASON,
-        "yearTeams": year_teams, "rounds": rounds,
-    }, ensure_ascii=False, separators=(",", ":")))
     (ROOT / "public/players-nba.json").write_text(json.dumps(
         {"throughSeason": THROUGH_SEASON, "players": players}, ensure_ascii=False, separators=(",", ":")))
     print(f"Through {season_label(THROUGH_SEASON)}: {len(players)} players, {len(leaderboards)} stats, "

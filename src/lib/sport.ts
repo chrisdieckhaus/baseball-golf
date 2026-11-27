@@ -25,14 +25,8 @@ export const basePath = (sport: Sport) => (sport === "nba" ? "/nba" : "");
 export type GameTable =
   | "plays"
   | "rounds"
-  | "rank_rounds"
-  | "rank_plays"
-  | "roster_rounds"
-  | "roster_plays"
   | "player_golf_rounds"
-  | "player_golf_plays"
-  | "koth_rounds"
-  | "koth_plays";
+  | "player_golf_plays";
 export const table = (sport: Sport, name: GameTable) => (sport === "nba" ? `nba_${name}` : name);
 
 /** A seed or storage key in a sport's namespace: unchanged for baseball, "nba:" in front for NBA. */
@@ -53,15 +47,13 @@ export interface SportCopy {
   golfName: string;
   /** "Baseball", "Basketball": the first word of the Golf title. */
   golfWord: string;
-  /** The share text's line for a missed Roster Reveal. */
-  rosterMiss: string;
   /** "a daily baseball game" in page descriptions. */
   noun: string;
 }
 
 export const COPY: Record<Sport, SportCopy> = {
-  mlb: { short: "MLB", golfName: "Baseball Golf", golfWord: "Baseball", rosterMiss: "Swing and a miss", noun: "baseball" },
-  nba: { short: "NBA", golfName: "Basketball Golf", golfWord: "Basketball", rosterMiss: "Air ball", noun: "basketball" },
+  mlb: { short: "MLB", golfName: "Baseball Golf", golfWord: "Baseball", noun: "baseball" },
+  nba: { short: "NBA", golfName: "Basketball Golf", golfWord: "Basketball", noun: "basketball" },
 };
 
 /** How a season reads: baseball "1996"; NBA "1995–96" (data years are the year a season ended). */

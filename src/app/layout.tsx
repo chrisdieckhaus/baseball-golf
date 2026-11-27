@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   // even on preview deployments and baseball-golf.vercel.app.
   metadataBase: new URL(SITE_URL),
   title: { default: "Daily Dugout", template: "%s · Daily Dugout" },
-  description: "Daily Dugout: quick daily baseball stats games. Baseball Golf, Stats Ranker, Roster Reveal, Hit the Number and King of the Hill.",
+  description: "Daily Dugout: quick daily baseball stats games. Baseball Golf and Hit the Number.",
   applicationName: SITE_NAME,
   openGraph: { siteName: SITE_NAME, type: "website", locale: "en_US" },
   twitter: { card: "summary_large_image" },

@@ -2,16 +2,6 @@ import { describe, expect, it } from "vitest";
 import { nbaLeaderboards as data } from "./leaderboards";
 import { generateStoredPlayerRound } from "./player-golf";
 import { playerMetaFor } from "./player-meta";
-import { generateStoredRankRound, buildRankShareText, rankRoundFromStored, scoreRankOrder } from "./rank";
-import {
-  buildRosterShareText,
-  findTeamSeason,
-  generateStoredRosterRound,
-  lineupSize,
-  publicRound,
-  rosterState,
-} from "./roster";
-import { nbaRosterData } from "./roster-pool";
 import { eligibleTargetRanks, generateRound, MAX_TIE_SIZE } from "./round";
 import { formatValue, MAX_TARGET_RANK } from "./scoring";
 import { buildShareText } from "./share";
@@ -139,75 +129,10 @@ describe("NBA Player mode rounds", () => {
   });
 });
 
-describe("NBA Stats Ranker rounds", () => {
-  it("picks five players with distinct values, one from each fifth of the top 100", () => {
-    for (const date of dates(365)) {
-      const stored = generateStoredRankRound(data, date, "nba");
-      expect(stored.playerIds).toHaveLength(5);
-      const ranks = stored.playerIds.map((id) => rank(stored.statKey, id)!).sort((a, b) => a - b);
-      ranks.forEach((r, i) => expect(Math.ceil(r / 20)).toBe(i + 1));
-      const round = rankRoundFromStored(data, date, stored);
-      const reveal = scoreRankOrder(data, round, round.players.map((p) => p.id));
-      const perfect = scoreRankOrder(data, round, reveal.answer.map((a) => a.id));
-      expect(perfect.score).toBe(0);
-    }
-  });
-  it("titles share text Stats Ranker · NBA", () => {
-    const date = "2026-11-15";
-    const round = rankRoundFromStored(data, date, generateStoredRankRound(data, date, "nba"));
-    const reveal = scoreRankOrder(data, round, round.players.map((p) => p.id));
-    expect(buildRankShareText(round, reveal, "u", "nba").split("\n")[0]).toBe("Stats Ranker · NBA #15 · Nov 15, 2026");
-  });
-});
-
-describe("NBA Roster Reveal", () => {
-  it("has every BAA/NBA/ABA team-season through 2025-26 with eight players", () => {
-    const LINEUP_SIZE = lineupSize("nba");
-    expect(LINEUP_SIZE).toBe(8);
-    expect(nbaRosterData.firstYear).toBe(1947);
-    expect(nbaRosterData.lastYear).toBe(2026);
-    expect(nbaRosterData.rounds.length).toBeGreaterThan(1800);
-    for (const r of nbaRosterData.rounds) {
-      expect(r.lineup).toHaveLength(LINEUP_SIZE);
-      expect(new Set(r.lineup.map((p) => p.id)).size).toBe(LINEUP_SIZE);
-      expect(nbaRosterData.yearTeams[String(r.year)].some(([f]) => f === r.franchise)).toBe(true);
-    }
-  });
-  it("orders the 1995-96 Bulls obscure to famous, ending with Jordan", () => {
-    const bulls = nbaRosterData.rounds.find((r) => r.year === 1996 && r.franchise === "CHI")!;
-    expect(bulls.record).toBe("72–10");
-    expect(bulls.lineup.at(-1)!.name).toBe("Michael Jordan");
-    expect(bulls.lineup.map((p) => p.name)).toEqual(expect.arrayContaining(["Scottie Pippen", "Dennis Rodman"]));
-  });
-  it("labels ABA teams in the picker", () => {
-    expect(nbaRosterData.yearTeams["1975"]).toContainEqual(["KEN", "Kentucky Colonels (ABA)"]);
-    expect(nbaRosterData.yearTeams["1975"]).toContainEqual(["BOS", "Boston Celtics"]);
-  });
-  it("walks a shuffle that doesn't repeat for years", () => {
-    const seen = new Set<string>();
-    for (const date of dates(1000)) {
-      const r = generateStoredRosterRound(nbaRosterData, date, "nba");
-      const key = `${r.year}-${r.franchise}`;
-      expect(seen.has(key)).toBe(false);
-      seen.add(key);
-      findTeamSeason(nbaRosterData, r);
-    }
-  });
-  it("says Air ball on a miss", () => {
-    const date = "2026-11-15";
-    const ts = findTeamSeason(nbaRosterData, generateStoredRosterRound(nbaRosterData, date, "nba"));
-    const round = publicRound(nbaRosterData, ts, date);
-    const wrong = round.teams.find(([f]) => f !== ts.franchise)![0];
-    const text = buildRosterShareText(round, rosterState(ts, 3, wrong), "u", "nba");
-    expect(text.split("\n")[0]).toBe("Roster Reveal · NBA #15 · Nov 15, 2026");
-    expect(text).toContain("Air ball");
-  });
-});
-
 describe("sport helpers", () => {
   it("keeps baseball's tables and URLs, prefixes NBA's", () => {
     expect(table("mlb", "plays")).toBe("plays");
-    expect(table("nba", "roster_plays")).toBe("nba_roster_plays");
+    expect(table("nba", "player_golf_plays")).toBe("nba_player_golf_plays");
     expect(apiUrl("mlb", "/api/play", { date: "2026-11-15" })).toBe("/api/play?date=2026-11-15");
     expect(apiUrl("nba", "/api/play", { date: "2026-11-15" })).toBe("/api/play?date=2026-11-15&sport=nba");
   });
@@ -216,16 +141,5 @@ describe("sport helpers", () => {
     expect(parseSport(null)).toBe("mlb");
     expect(parseSport("nba")).toBe("nba");
     expect(parseSport("nfl")).toBeNull();
-  });
-});
-
-describe("NBA Roster Reveal lineup size", () => {
-  it("allows 1–8 reveals and scores a miss as 9", async () => {
-    const { isValidRevealed, rosterResult } = await import("./roster");
-    expect(isValidRevealed(8, "nba")).toBe(true);
-    expect(isValidRevealed(9, "nba")).toBe(false);
-    expect(isValidRevealed(10, "mlb")).toBe(true);
-    expect(rosterResult(3, false, "nba")).toBe(9);
-    expect(rosterResult(3, false)).toBe(11);
   });
 });

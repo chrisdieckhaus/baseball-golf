@@ -14,17 +14,6 @@ export function golfStatus(holesPlayed: number, totalScore: number | null, holes
   return null;
 }
 
-/** How a Stats Ranker result reads in the list, in the game's own words: "Off by 3" or "Perfect". */
-export function rankStatus(score: number): Status {
-  return score === 0 ? { kind: "done", text: "Perfect" } : { kind: "done", text: "Off by", score };
-}
-
-/** How Roster Reveal progress reads in the list. */
-export function rosterStatus(revealed: number, correct: boolean, done: boolean): Status {
-  if (done) return { kind: "done", text: correct ? `Got it after ${revealed}` : "Missed" };
-  return { kind: "partial", text: `In progress · ${revealed} revealed` };
-}
-
 /** How Hit the Number progress reads in the list. */
 export function numberStatus(picks: number, done: boolean, bust: boolean, score: number | null): Status {
   if (!done) return { kind: "partial", text: `In progress · ${picks}/3` };
@@ -32,10 +21,4 @@ export function numberStatus(picks: number, done: boolean, bust: boolean, score:
   // number it came up short by.
   if (bust) return { kind: "done", text: "", score: "💥 Bust", bust: true };
   return score === 0 ? { kind: "done", text: "Bullseye" } : { kind: "done", text: "", score: score ?? 0 };
-}
-
-/** How King of the Hill progress reads in the list: "4/5" once done. */
-export function kothStatus(picks: number, done: boolean, score: number | null): Status {
-  if (!done) return { kind: "partial", text: `In progress · ${picks}/5` };
-  return { kind: "done", text: "Score", score: `${score ?? 0}/5` };
 }

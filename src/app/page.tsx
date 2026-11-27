@@ -5,7 +5,7 @@ import HomePage, { type HomeSearchParams } from "@/views/HomePage";
 export const metadata: Metadata = pageMetadata({
   title: "Daily Dugout: Daily Baseball Stats Games",
   description:
-    "Quick daily baseball stats games: Baseball Golf, Stats Ranker, Roster Reveal, Hit the Number and King of the Hill. See all of today's rounds and how you did.",
+    "Quick daily baseball stats games: Baseball Golf and Hit the Number. See all of today's rounds and how you did.",
   path: "/",
 });
 
