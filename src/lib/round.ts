@@ -8,13 +8,13 @@ export const MAX_TIE_SIZE = 3;
 export const TIME_ZONE = "America/New_York";
 
 /**
- * Stats that Baseball Golf (Rank and Player modes) and Stats Ranker never pick
+ * Stats that Baseball Golf (Rank and Player modes) never picks
  * for a new round. They stay in the leaderboard data so rounds already stored
  * with them still score. WHIP: too obscure (Nov 2026).
  */
 export const EXCLUDED_STATS: ReadonlySet<string> = new Set(["WHIP"]);
 
-/** The stat keys a new Golf or Stats Ranker round can pick from, sorted. */
+/** The stat keys a new Golf round can pick from, sorted. */
 export function pickableStatKeys(data: LeaderboardData): string[] {
   return Object.keys(data.stats)
     .filter((k) => !EXCLUDED_STATS.has(k))

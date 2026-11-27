@@ -1,15 +1,12 @@
 // The archive page of any game, in either sport: /golf/archive,
-// /golf/player/archive, /rank/archive, /roster/archive and their /nba twins.
+// /golf/player/archive, /number/archive and the /nba golf twins.
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import LocalArchive from "@/components/LocalArchive";
-import { KOTH_LAUNCH_DATE, kothRoundNumber } from "@/lib/koth";
 import { NUMBER_LAUNCH_DATE, numberRoundNumber } from "@/lib/number";
 import { PLAYER_GOLF_LAUNCH_DATE } from "@/lib/player-golf";
-import { rankRoundNumber, RANK_LAUNCH_DATE } from "@/lib/rank";
 import { loadSavedStatuses } from "@/lib/saved-status";
-import { ROSTER_LAUNCH_DATE, rosterRoundNumber } from "@/lib/roster";
 import type { GameKey } from "@/lib/local-status";
 import { LAUNCH_DATE, playableDates, roundNumber, todayET } from "@/lib/round";
 import { basePath, type Sport } from "@/lib/sport";
@@ -24,10 +21,7 @@ const GAMES: Record<
 > = {
   golf: { path: "/golf", first: LAUNCH_DATE, number: roundNumber, log: "[archive]" },
   player: { path: "/golf/player", first: PLAYER_GOLF_LAUNCH_DATE, number: roundNumber, log: "[archive]" },
-  rank: { path: "/rank", first: RANK_LAUNCH_DATE, number: rankRoundNumber, log: "[rank/archive]" },
-  roster: { path: "/roster", first: ROSTER_LAUNCH_DATE, number: rosterRoundNumber, log: "[roster/archive]" },
   number: { path: "/number", first: NUMBER_LAUNCH_DATE, number: numberRoundNumber, log: "[number/archive]" },
-  king: { path: "/king", first: KOTH_LAUNCH_DATE, number: kothRoundNumber, log: "[king/archive]" },
 };
 
 function formatDate(date: string): string {
@@ -55,28 +49,10 @@ async function RoundList({ game, sport }: { game: ArchiveGame; sport: Sport }) {
 function Title({ game, sport }: { game: ArchiveGame; sport: Sport }) {
   if (game === "golf") return <GolfTitle sport={sport} />;
   if (game === "player") return <GolfTitle sport={sport} suffix=": Player" />;
-  if (game === "king")
-    return (
-      <>
-        King of the <span>Hill</span>
-      </>
-    );
-  if (game === "number")
-    return (
+  return (
       <>
         Hit the <span>Number</span>
       </>
-    );
-  if (game === "rank")
-    return (
-      <>
-        Stats <span>Ranker</span>
-      </>
-    );
-  return (
-    <>
-      Roster <span>Reveal</span>
-    </>
   );
 }
 

@@ -13,7 +13,7 @@ export const SITE_NAME = "Daily Dugout";
  * link-preview card and a canonical URL. The canonical URL drops the query
  * string, so `?date=` rounds count as the game's page rather than as copies.
  *
- * `title` is the full title, e.g. "Stats Ranker · Daily Dugout".
+ * `title` is the full title, e.g. "Hit the Number · Daily Dugout".
  */
 export function pageMetadata({ title, description, path }: { title: string; description: string; path: string }): Metadata {
   return {

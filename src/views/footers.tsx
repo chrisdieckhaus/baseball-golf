@@ -3,7 +3,7 @@ import { leaderboardsFor } from "@/lib/leaderboards";
 import { seasonLabel, type Sport } from "@/lib/sport";
 import styles from "@/app/page.module.css";
 
-/** "Stats through …" for the career-stat games (Golf, Player mode, Stats Ranker). */
+/** "Stats through …" for the career-stat games (Golf and Player mode). */
 export function StatsNote({ sport }: { sport: Sport }) {
   const lb = leaderboardsFor(sport);
   if (sport === "nba") {

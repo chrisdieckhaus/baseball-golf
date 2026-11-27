@@ -1,8 +1,5 @@
-import type { RankStats, RosterStats } from "@/lib/game-plays";
 import { numberBucket, numberBucketLimits } from "@/lib/number";
 import type { NumberStats } from "@/lib/number-plays";
-import type { KothStats } from "@/lib/koth-plays";
-import { rankBucket } from "@/lib/rank";
 import { ordinal } from "@/lib/scoring";
 import type { RoundStats } from "@/lib/types";
 import styles from "./CompareStats.module.css";
@@ -59,7 +56,7 @@ export function GolfCompare({ stats, isToday }: { stats: RoundStats; isToday: bo
 
 /**
  * A Wordle-style bar chart of how everyone finished, with the player's own
- * bucket highlighted. Shared by Stats Ranker and Roster Reveal.
+ * bucket highlighted. Used by Hit the Number.
  */
 function DistributionChart({
   counts,
@@ -91,78 +88,6 @@ function DistributionChart({
         </li>
       ))}
     </ol>
-  );
-}
-
-/**
- * Stats Ranker: your percentile, the average and perfect-order rate, and a
- * chart of everyone's scores (0, 2, 4 … 12), with yours marked.
- */
-export function RankCompare({ stats, mine, isToday }: { stats: RankStats; mine: number; isToday: boolean }) {
-  return (
-    <div className={styles.compare}>
-      <PercentileLine stats={stats} isToday={isToday} />
-      {stats.averageScore !== null && (
-        <dl className={styles.facts}>
-          <div>
-            <dt>Average</dt>
-            <dd>{stats.averageScore === 0 ? "Perfect" : `Off by ${avg(stats.averageScore)}`}</dd>
-          </div>
-          <div>
-            <dt>Perfect orders</dt>
-            <dd>{stats.perfectPercent}%</dd>
-          </div>
-          <div>
-            <dt>Played</dt>
-            <dd>{fmt(stats.finishers)}</dd>
-          </div>
-        </dl>
-      )}
-      {stats.finishers > 0 && (
-        <DistributionChart
-          counts={stats.distribution}
-          mine={rankBucket(mine)}
-          label="How far off everyone was"
-          bucketLabel={(i) => (i === 0 ? "✓" : String(i * 2))}
-          bucketTitle={(i) => (i === 0 ? "Perfect order" : `Off by ${i * 2}`)}
-        />
-      )}
-    </div>
-  );
-}
-
-/**
- * Roster Reveal: your percentile, how many got it, and a Wordle-style chart of
- * how many players everyone needed (or missed), with yours marked.
- */
-export function RosterCompare({ stats, mine, isToday }: { stats: RosterStats; mine: number; isToday: boolean }) {
-  // One bar per lineup spot, then misses (ten spots for baseball, eight for the NBA).
-  const size = stats.distribution.length - 1;
-  return (
-    <div className={styles.compare}>
-      <PercentileLine stats={stats} isToday={isToday} />
-      <dl className={styles.facts}>
-        <div>
-          <dt>Got it</dt>
-          <dd>{stats.correctPercent}%</dd>
-        </div>
-        <div>
-          <dt>Average</dt>
-          <dd>{stats.averageRevealed === null ? "—" : `${avg(stats.averageRevealed)} players`}</dd>
-        </div>
-        <div>
-          <dt>Played</dt>
-          <dd>{fmt(stats.finishers)}</dd>
-        </div>
-      </dl>
-      <DistributionChart
-        counts={stats.distribution}
-        mine={mine - 1}
-        label="How many players everyone needed"
-        bucketLabel={(i) => (i < size ? String(i + 1) : "✗")}
-        bucketTitle={(i) => (i < size ? `Got it after ${i + 1}` : "Missed")}
-      />
-    </div>
   );
 }
 
@@ -226,36 +151,3 @@ export function NumberCompare({
   );
 }
 
-/**
- * King of the Hill: your percentile, the average score and perfect rate, and a
- * chart of everyone's scores (0 to 5 right), with yours marked.
- */
-export function KothCompare({ stats, mine, isToday }: { stats: KothStats; mine: number; isToday: boolean }) {
-  const top = stats.distribution.length - 1;
-  return (
-    <div className={styles.compare}>
-      <PercentileLine stats={stats} isToday={isToday} />
-      <dl className={styles.facts}>
-        <div>
-          <dt>Average</dt>
-          <dd>{stats.averageScore === null ? "—" : `${avg(stats.averageScore)}/${top}`}</dd>
-        </div>
-        <div>
-          <dt>Perfect</dt>
-          <dd>{stats.perfectPercent}%</dd>
-        </div>
-        <div>
-          <dt>Played</dt>
-          <dd>{fmt(stats.finishers)}</dd>
-        </div>
-      </dl>
-      <DistributionChart
-        counts={[...stats.distribution].reverse()}
-        mine={top - mine}
-        label="How many everyone got right"
-        bucketLabel={(i) => String(top - i)}
-        bucketTitle={(i) => `${top - i} of ${top} right`}
-      />
-    </div>
-  );
-}

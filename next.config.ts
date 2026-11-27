@@ -12,9 +12,14 @@ const nextConfig: NextConfig = {
       { source: "/", has: [{ type: "query", key: "date" }], destination: "/golf", permanent: false },
       { source: "/", has: [{ type: "query", key: "seed" }], destination: "/golf", permanent: false },
       { source: "/archive", destination: "/golf/archive", permanent: false },
-      // Sports Revealer was replaced by Roster Reveal.
-      { source: "/reveal", destination: "/roster", permanent: false },
-      { source: "/reveal/:path*", destination: "/roster/:path*", permanent: false },
+      // Removed games (Sports Revealer, then Stats Ranker, Roster Reveal and
+      // King of the Hill in Nov 2026): old shared links go to the homepage.
+      ...["reveal", "rank", "roster", "king"].flatMap((g) => [
+        { source: `/${g}`, destination: "/", permanent: false },
+        { source: `/${g}/:path*`, destination: "/", permanent: false },
+        { source: `/nba/${g}`, destination: "/nba", permanent: false },
+        { source: `/nba/${g}/:path*`, destination: "/nba", permanent: false },
+      ]),
     ];
   },
 };

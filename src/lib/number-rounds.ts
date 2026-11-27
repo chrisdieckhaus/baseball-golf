@@ -1,4 +1,4 @@
-// Stored Hit the Number rounds, same idea as rounds.ts and roster-rounds.ts:
+// Stored Hit the Number rounds, same idea as rounds.ts:
 // each daily round's stat, target and slot rules are saved the first time they're needed,
 // so changing the generator never changes a round that already exists.
 //

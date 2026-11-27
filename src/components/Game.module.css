@@ -47,7 +47,7 @@
   }
 }
 
-/* Kicker and heading match Stats Ranker and Roster Reveal. */
+/* Kicker and heading match Hit the Number. */
 .kicker {
   margin: 0;
   font-size: 0.72rem;
@@ -302,7 +302,7 @@
   }
 }
 
-/* ---- Result: same look as Stats Ranker and Roster Reveal ---- */
+/* ---- Result: same look as Hit the Number ---- */
 .headline {
   margin: 0 0 12px;
   font-family: var(--font-display);

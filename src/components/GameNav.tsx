@@ -8,14 +8,11 @@ import styles from "./GameNav.module.css";
 
 const GAMES = [
   { path: "/golf", label: "Golf" },
-  { path: "/rank", label: "Ranker" },
-  { path: "/roster", label: "Roster" },
   // Hit the Number is baseball only, so the NBA nav leaves it out.
   { path: "/number", label: "Number", mlbOnly: true },
-  { path: "/king", label: "King" },
 ];
 
-/** Splits "/nba/rank/archive" into its sport and the game path ("/rank/archive"). */
+/** Splits "/nba/golf/archive" into its sport and the game path ("/golf/archive"). */
 function parsePath(pathname: string): { sport: Sport; path: string } {
   if (pathname === "/nba" || pathname.startsWith("/nba/")) return { sport: "nba", path: pathname.slice(4) || "/" };
   return { sport: "mlb", path: pathname };
