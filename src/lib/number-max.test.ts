@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { publicNumberRound } from "./number";
-import { bestMax, maxState, validateMaxPicks } from "./number-data";
+import { bestMax, careerRank, maxState, validateMaxPicks } from "./number-data";
 import { bestThree, buildMaxShareText, maxBucket, maxSquare, percentOfBest } from "./number-max";
 import { newNumberRound } from "./number-rounds";
 import { fitsSlot, slotLabel } from "./number-slots";
@@ -80,5 +80,24 @@ describe("scoring and sharing", () => {
     expect(lines[1]).toBe("🟩🟩🟩");
     expect(lines[2]).toContain("Maxed out!");
     for (const p of best.picks) expect(text).not.toContain(p.name);
+  });
+});
+
+describe("all-time ranks", () => {
+  it("ranks career totals, ties sharing a rank", () => {
+    expect(careerRank("HR", 762)).toEqual({ rank: 1, tied: false }); // Bonds
+    expect(careerRank("HR", 755)).toEqual({ rank: 2, tied: false }); // Aaron
+    expect(careerRank("HR", 0)).toBeNull();
+    expect(careerRank("PTS", 38387, "nba")?.rank).toBe(2); // Kareem, behind LeBron
+    // Any total shared by several players is a tie, and the next total down ranks below all of them.
+    const t = careerRank("HR", 1);
+    expect(t?.tied).toBe(true);
+  });
+
+  it("comes back on bonus-round picks", () => {
+    const round = publicNumberRound("2026-11-27", newNumberRound("2026-11-27"), (r) => slotLabel(r));
+    const best = bestMax(round);
+    const state = maxState(round, [{ id: best.picks[0].id, slot: 0 }]);
+    expect(state.picks[0].rank).toBe(careerRank(round.statKey, state.picks[0].value)!.rank);
   });
 });

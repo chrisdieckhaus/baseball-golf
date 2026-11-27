@@ -9,11 +9,14 @@ import ShareButton from "@/components/ShareButton";
 import { NUMBER_PICKS, type NumberPick, type NumberRound } from "@/lib/number";
 import { buildMaxShareText, maxSquare, type MaxState } from "@/lib/number-max";
 import type { MaxStats } from "@/lib/number-max-plays";
+import { ordinal } from "@/lib/scoring";
 import { apiUrl, basePath, namespaced } from "@/lib/sport";
 import type { PlayerIndexEntry } from "@/lib/types";
 import styles from "./NumberGame.module.css";
 
 const fmt = (n: number) => n.toLocaleString("en-US");
+/** "1st all-time", "T-12th all-time"; nothing for a player with none of the stat. */
+const rankLabel = (p: NumberPick) => (p.rank ? `${p.tied ? "T-" : ""}${ordinal(p.rank)} all-time` : null);
 const EMPTY: MaxState = { picks: [], total: 0, done: false, best: null, percent: null };
 
 const storageKey = (round: NumberRound) =>
@@ -196,6 +199,7 @@ export default function NumberMax({ round, isToday }: { round: NumberRound; isTo
               <span className={styles.value}>
                 {best && <span aria-hidden>{maxSquare(p.value, best.picks[i].value)} </span>}
                 {fmt(p.value)}
+                {rankLabel(p) && <span className={styles.rank}>{rankLabel(p)}</span>}
               </span>
             </li>
           );
@@ -245,7 +249,8 @@ export default function NumberMax({ round, isToday }: { round: NumberRound; isTo
           <div className={styles.bullseyes}>
             <p className={styles.kicker}>The max</p>
             <p>
-              {best.picks.map((p) => `${p.name} (${fmt(p.value)})`).join(" + ")} = {fmt(best.total)}.
+              {best.picks.map((p) => `${p.name} (${fmt(p.value)}${rankLabel(p) ? `, ${rankLabel(p)}` : ""})`).join(" + ")} ={" "}
+              {fmt(best.total)}.
             </p>
           </div>
           {stats && <MaxCompare stats={stats} percent={state.percent} isToday={isToday} />}

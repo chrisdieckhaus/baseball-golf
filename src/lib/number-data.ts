@@ -180,6 +180,51 @@ export function numberState(round: NumberRound, picks: PickInput[]): NumberState
 
 // ---- The bonus round ("Max it out") ----
 
+/** Every non-zero career total in a stat, biggest first, for all-time ranks. */
+const sortedCache = new Map<string, number[]>();
+function sortedTotals(statKey: string, sport: Sport): number[] {
+  const key = `${sport}:${statKey}`;
+  let sorted = sortedCache.get(key);
+  if (!sorted) {
+    sorted = Object.values(totalsFor(sport)[statKey] ?? {})
+      .filter((v) => v > 0)
+      .sort((a, b) => b - a);
+    sortedCache.set(key, sorted);
+  }
+  return sorted;
+}
+
+/**
+ * All-time rank among every player in the game (1 = the leader), with ties
+ * sharing a rank like Golf's leaderboards: 1 + how many have more. Null for a
+ * total of 0.
+ */
+export function careerRank(statKey: string, value: number, sport: Sport = "mlb"): { rank: number; tied: boolean } | null {
+  if (value <= 0) return null;
+  const sorted = sortedTotals(statKey, sport);
+  // First index whose value is <= this one (the list runs biggest first).
+  let lo = 0;
+  let hi = sorted.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (sorted[mid] > value) lo = mid + 1;
+    else hi = mid;
+  }
+  const tied = sorted[lo] === value && (sorted[lo + 1] === value || (lo > 0 && sorted[lo - 1] === value));
+  return { rank: lo + 1, tied };
+}
+
+/** A bonus-round pick: the usual pick plus his all-time rank. */
+function rankedPick(round: NumberRound, id: string, slot: number): NumberPick {
+  const pick = toPick(round.statKey, id, slot, round.sport);
+  const r = careerRank(round.statKey, pick.value, round.sport);
+  if (r) {
+    pick.rank = r.rank;
+    if (r.tied) pick.tied = true;
+  }
+  return pick;
+}
+
 const maxCache = new Map<string, { total: number; picks: NumberPick[] }>();
 
 /** The best three for a round's slots, as picks in slot order. */
@@ -192,7 +237,7 @@ export function bestMax(round: NumberRound): { total: number; picks: NumberPick[
   const result = {
     total: best.total,
     picks: best.picks.map((p, i) =>
-      p ? toPick(round.statKey, p.id, i, round.sport) : { id: "", name: "Nobody", years: "", value: 0, slot: i },
+      p ? rankedPick(round, p.id, i) : { id: "", name: "Nobody", years: "", value: 0, slot: i },
     ),
   };
   maxCache.set(key, result);
@@ -201,7 +246,7 @@ export function bestMax(round: NumberRound): { total: number; picks: NumberPick[
 
 /** The bonus round's state for a list of picks, with the best three once all three are in. */
 export function maxState(round: NumberRound, picks: MaxPickInput[]): MaxState {
-  const full = picks.map((p) => toPick(round.statKey, p.id, p.slot, round.sport));
+  const full = picks.map((p) => rankedPick(round, p.id, p.slot));
   return scoreMax(full, full.length === NUMBER_PICKS ? bestMax(round) : null);
 }
 
