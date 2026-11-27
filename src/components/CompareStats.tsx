@@ -1,4 +1,6 @@
 import { numberBucket, numberBucketLimits } from "@/lib/number";
+import { maxBucket } from "@/lib/number-max";
+import type { MaxStats } from "@/lib/number-max-plays";
 import type { NumberStats } from "@/lib/number-plays";
 import { ordinal } from "@/lib/scoring";
 import type { RoundStats } from "@/lib/types";
@@ -151,3 +153,36 @@ export function NumberCompare({
   );
 }
 
+
+/** Hit the Number's bonus round: percentile, average share of the max, maxed-out rate, and a chart by percent. */
+export function MaxCompare({ stats, percent, isToday }: { stats: MaxStats; percent: number; isToday: boolean }) {
+  const labels = ["💯", "90s", "80s", "70s", "60s", "50s", "<50"];
+  const titles = ["Maxed out", "90–99%", "80–89%", "70–79%", "60–69%", "50–59%", "Under 50%"];
+  return (
+    <div className={styles.compare}>
+      <PercentileLine stats={stats} isToday={isToday} />
+      <dl className={styles.facts}>
+        <div>
+          <dt>Average</dt>
+          <dd>{stats.averagePercent === null ? "—" : `${stats.averagePercent}%`}</dd>
+        </div>
+        <div>
+          <dt>Maxed out</dt>
+          <dd>{stats.maxedPercent}%</dd>
+        </div>
+        <div>
+          <dt>Played</dt>
+          <dd>{fmt(stats.finishers)}</dd>
+        </div>
+      </dl>
+      <DistributionChart
+        counts={stats.distribution}
+        mine={maxBucket(percent)}
+        label="How close everyone got to the max"
+        bucketLabel={(i) => labels[i]}
+        bucketTitle={(i) => titles[i]}
+        wideLabels
+      />
+    </div>
+  );
+}

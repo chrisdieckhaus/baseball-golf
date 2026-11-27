@@ -185,7 +185,35 @@ ALTER TABLE ${p}number_rounds ADD COLUMN IF NOT EXISTS slots jsonb;
 ALTER TABLE ${p}number_plays ADD COLUMN IF NOT EXISTS pick_slots integer[] NOT NULL DEFAULT '{}';
 `;
 
-const SCHEMA = PLAYERS_SCHEMA + gameSchema("") + gameSchema("nba_") + numberSchema("") + numberSchema("nba_");
+// Hit the Number's bonus round ("Max it out"): same stat and slots, biggest total wins.
+const numberMaxSchema = (p) => `
+-- One row per player per daily round. pick_ids only grow until all three slots
+-- are filled; pick_slots[i] is the slot (0-2) pick_ids[i] went in. percent is the
+-- total as a share of the best three possible, set when it's done.
+CREATE TABLE IF NOT EXISTS ${p}number_max_plays (
+  player_id     uuid NOT NULL REFERENCES players (id) ON DELETE CASCADE,
+  round_date    date NOT NULL,
+  pick_ids      text[] NOT NULL DEFAULT '{}',
+  pick_slots    integer[] NOT NULL DEFAULT '{}',
+  total         integer NOT NULL DEFAULT 0,
+  done          boolean NOT NULL DEFAULT false,
+  percent       integer,
+  is_live       boolean NOT NULL,
+  started_at    timestamptz NOT NULL DEFAULT now(),
+  completed_at  timestamptz,
+  PRIMARY KEY (player_id, round_date)
+);
+CREATE INDEX IF NOT EXISTS ${p}number_max_plays_round_idx ON ${p}number_max_plays (round_date) WHERE done;
+`;
+
+const SCHEMA =
+  PLAYERS_SCHEMA +
+  gameSchema("") +
+  gameSchema("nba_") +
+  numberSchema("") +
+  numberSchema("nba_") +
+  numberMaxSchema("") +
+  numberMaxSchema("nba_");
 
 const client = new pg.Client({ connectionString: url });
 try {

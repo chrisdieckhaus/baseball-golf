@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { NumberCompare } from "@/components/CompareStats";
 import DayNav from "@/components/DayNav";
+import NumberMax from "@/components/NumberMax";
 import PlayerSearch from "@/components/PlayerSearch";
 import ShareButton from "@/components/ShareButton";
 import {
@@ -334,6 +335,9 @@ export default function NumberGame({ round, isToday, today, canPractice = false 
           {!round.practice && <ShareButton getText={shareText} label="Share result" className={styles.shareBtn} />}
         </section>
       )}
+
+      {/* The bonus round opens once the main round is done, so it can't give the main round away. */}
+      {state.done && synced && slots && <NumberMax round={round} isToday={isToday} />}
 
       <nav className={styles.links}>
         {round.practice ? (

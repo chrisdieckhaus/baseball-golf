@@ -11,6 +11,7 @@ import {
   numberStats,
   targetsFor,
   NUMBER_LAUNCH_DATE,
+  NUMBER_PICKS,
   publicNumberRound,
   scorePicks,
   type Bullseyes,
@@ -23,6 +24,7 @@ import {
 } from "./number";
 import { getOrCreateStoredNumberRound, newNumberRound } from "./number-rounds";
 import { fitsSlot, generateNumberSlots, slotLabel, slotPlayers } from "./number-slots";
+import { bestThree, scoreMax, type MaxPickInput, type MaxState } from "./number-max";
 import { hashString, isValidDate, mulberry32, todayET } from "./round";
 import { namespaced, type Sport } from "./sport";
 import type { PlayerIndexEntry } from "./types";
@@ -174,4 +176,60 @@ export function numberState(round: NumberRound, picks: PickInput[]): NumberState
     ...scored,
     bullseyes: scored.done ? bullseyesFor(round.statKey, round.target, round.slots, round.sport) : null,
   };
+}
+
+// ---- The bonus round ("Max it out") ----
+
+const maxCache = new Map<string, { total: number; picks: NumberPick[] }>();
+
+/** The best three for a round's slots, as picks in slot order. */
+export function bestMax(round: NumberRound): { total: number; picks: NumberPick[] } {
+  const rules = round.slots ?? [];
+  const key = `${round.sport}:${round.statKey}:${JSON.stringify(rules.map(({ kind, key }) => [kind, key]))}`;
+  const cached = maxCache.get(key);
+  if (cached) return cached;
+  const best = bestThree(slotPlayers(round.statKey, rules, round.sport));
+  const result = {
+    total: best.total,
+    picks: best.picks.map((p, i) =>
+      p ? toPick(round.statKey, p.id, i, round.sport) : { id: "", name: "Nobody", years: "", value: 0, slot: i },
+    ),
+  };
+  maxCache.set(key, result);
+  return result;
+}
+
+/** The bonus round's state for a list of picks, with the best three once all three are in. */
+export function maxState(round: NumberRound, picks: MaxPickInput[]): MaxState {
+  const full = picks.map((p) => toPick(round.statKey, p.id, p.slot, round.sport));
+  return scoreMax(full, full.length === NUMBER_PICKS ? bestMax(round) : null);
+}
+
+/** Checks the bonus round's picks: known players, one per slot, no repeats, each fits; saved picks come first. */
+export function validateMaxPicks(
+  round: NumberRound,
+  picks: unknown,
+  saved: MaxPickInput[],
+): { picks: MaxPickInput[] } | { error: string } {
+  if (!round.slots) return { error: "This round has no bonus round" };
+  if (!Array.isArray(picks) || picks.length === 0 || picks.length > NUMBER_PICKS) {
+    return { error: "picks must be a list of 1 to 3 players" };
+  }
+  const out: MaxPickInput[] = [];
+  for (const p of picks) {
+    const id = (p as MaxPickInput | null)?.id;
+    const slot = (p as MaxPickInput | null)?.slot;
+    if (typeof id !== "string" || typeof slot !== "number" || !Number.isInteger(slot) || slot < 0 || slot >= NUMBER_PICKS) {
+      return { error: "Each pick needs a player and a slot" };
+    }
+    if (careerTotal(round.statKey, id, round.sport) === undefined) return { error: "Unknown player" };
+    if (out.some((o) => o.id === id)) return { error: "He's already picked" };
+    if (out.some((o) => o.slot === slot)) return { error: "That slot is already filled" };
+    if (!fitsRoundSlot(round, id, slot)) return { error: `He doesn't fit "${round.slots[slot].label}"` };
+    out.push({ id, slot });
+  }
+  if (out.length < saved.length || saved.some((s, i) => s.id !== out[i].id || s.slot !== out[i].slot)) {
+    return { error: "Picks can't be changed" };
+  }
+  return { picks: out };
 }
