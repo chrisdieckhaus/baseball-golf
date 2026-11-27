@@ -1,3 +1,4 @@
+import { requestSport } from "@/lib/api-sport";
 import { getDb } from "@/lib/db";
 import { validatePicks, type NumberRound } from "@/lib/number";
 import {
@@ -12,7 +13,6 @@ import { getNumberPlay, getNumberStats, recordNumberPicks, type NumberPlay } fro
 import { ensurePlayerId, readPlayerId } from "@/lib/player-cookie";
 import { todayET } from "@/lib/round";
 
-// Hit the Number is baseball only.
 const notFound = () => Response.json({ error: "Not found" }, { status: 404 });
 const noStore = { "Cache-Control": "private, no-store" };
 
@@ -24,7 +24,7 @@ async function withStats(round: NumberRound, play: NumberPlay, playerId: string)
   const db = getDb();
   const stats =
     db && state.done
-      ? await getNumberStats(db, round.date, playerId, { score: state.score, bust: state.bust }, round.target)
+      ? await getNumberStats(db, round.date, playerId, { score: state.score, bust: state.bust }, round.target, round.sport)
       : null;
   return { state, stats };
 }
@@ -32,22 +32,23 @@ async function withStats(round: NumberRound, play: NumberPlay, playerId: string)
 /** This browser's saved play on a daily round: { play: { state, stats } | null }. */
 export async function GET(request: Request) {
   const params = new URL(request.url).searchParams;
-  if (params.get("sport") && params.get("sport") !== "mlb") return notFound();
+  const { sport, error } = requestSport(params.get("sport"));
+  if (error) return error;
   const date = params.get("date");
   if (!isPlayableNumberDate(date)) return Response.json({ error: "Invalid date" }, { status: 400 });
   const db = getDb();
   const me = await readPlayerId();
   if (!db || !me) return Response.json({ play: null }, { headers: noStore });
-  const round = await getNumberRound(date);
+  const round = await getNumberRound(date, sport);
   // Preview slot rules on a round that doesn't have them: the saved play (if any) was made without them.
   if (round.previewSlots) return Response.json({ play: null }, { headers: noStore });
-  const play = await getNumberPlay(db, me, date);
+  const play = await getNumberPlay(db, me, date, sport);
   if (!play || play.ids.length === 0) return Response.json({ play: null }, { headers: noStore });
   return Response.json({ play: await withStats(round, play, me) }, { headers: noStore });
 }
 
 /**
- * Make a pick. Body: { date, picks }, every pick so far in order, the new one
+ * Make a pick. Body: { date, picks, sport? }, every pick so far in order, the new one
  * last. On rounds with slot rules each pick is { id, slot }; otherwise just the id. Returns each pick's career total, the running total and, once the round
  * is done, the result. Saved plays only grow: if the saved picks don't start the
  * list (another tab got ahead), the saved play comes back unchanged.
@@ -59,24 +60,25 @@ export async function POST(request: Request) {
   } catch {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
-  const { date, picks, sport, practice } = (body ?? {}) as Record<string, unknown>;
-  if (sport !== undefined && sport !== null && sport !== "mlb") return notFound();
+  const { date, picks, practice, ...rest } = (body ?? {}) as Record<string, unknown>;
+  const { sport, error } = requestSport(rest.sport);
+  if (error) return error;
 
   let round: NumberRound;
   if (practice !== undefined) {
     // Preview deployments only: a practice round, scored but never saved.
-    const p = typeof practice === "string" ? getPracticeRound(practice) : null;
+    const p = typeof practice === "string" ? getPracticeRound(practice, sport) : null;
     if (!p) return notFound();
     round = p;
   } else {
     if (!isPlayableNumberDate(date)) return Response.json({ error: "There's no round for that date" }, { status: 400 });
-    round = await getNumberRound(date);
+    round = await getNumberRound(date, sport);
   }
   const slots = round.slots;
   const checked = validatePicks(
     picks,
     round.target,
-    (id) => careerTotal(round.statKey, id),
+    (id) => careerTotal(round.statKey, id, sport),
     slots && {
       fits: (id, slot) => fitsRoundSlot(round, id, slot),
       slotLabel: (slot) => slots[slot].label,
@@ -98,7 +100,11 @@ export async function POST(request: Request) {
   if (!db || round.previewSlots || round.practice) return Response.json({ state, stats: null });
   try {
     const me = await ensurePlayerId();
-    const saved = await recordNumberPicks(db, { playerId: me, roundDate: round.date, play, isLive: round.date === todayET() });
+    const saved = await recordNumberPicks(
+      db,
+      { playerId: me, roundDate: round.date, play, isLive: round.date === todayET() },
+      sport,
+    );
     return Response.json(await withStats(round, saved, me));
   } catch (e) {
     console.error("[api/number] Couldn't save the play", e);

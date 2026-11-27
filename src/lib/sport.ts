@@ -26,7 +26,9 @@ export type GameTable =
   | "plays"
   | "rounds"
   | "player_golf_rounds"
-  | "player_golf_plays";
+  | "player_golf_plays"
+  | "number_rounds"
+  | "number_plays";
 export const table = (sport: Sport, name: GameTable) => (sport === "nba" ? `nba_${name}` : name);
 
 /** A seed or storage key in a sport's namespace: unchanged for baseball, "nba:" in front for NBA. */

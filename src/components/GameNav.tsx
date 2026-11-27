@@ -6,10 +6,9 @@ import { basePath, COPY, SPORTS, type Sport } from "@/lib/sport";
 import Logo from "./Logo";
 import styles from "./GameNav.module.css";
 
-const GAMES = [
+const GAMES: { path: string; label: string; mlbOnly?: boolean }[] = [
   { path: "/golf", label: "Golf" },
-  // Hit the Number is baseball only, so the NBA nav leaves it out.
-  { path: "/number", label: "Number", mlbOnly: true },
+  { path: "/number", label: "Number" },
 ];
 
 /** Splits "/nba/golf/archive" into its sport and the game path ("/golf/archive"). */

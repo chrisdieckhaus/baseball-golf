@@ -13,6 +13,7 @@
 // No "server-only" import, so scripts and client components can use this file.
 // Career totals never ship to the browser: the server reveals each pick's total.
 import { hashString, mulberry32 } from "./round";
+import { namespaced, type Sport } from "./sport";
 
 export const NUMBER_PICKS = 3;
 /** Round #1. Rounds are numbered from Nov 1, 2026, like the other games. */
@@ -23,13 +24,16 @@ export function numberRoundNumber(date: string): number {
   return Math.round(days) + 1;
 }
 
+export type NumberGroup = "Batting" | "Pitching" | "Totals";
+
 export interface NumberStat {
   key: string;
   /** "Home runs": the stat's name in the question. */
   label: string;
   /** "HR": after the target ("900 HR") and in the share text. */
   short: string;
-  group: "Batting" | "Pitching";
+  /** Baseball: "Batting" or "Pitching" (positions and the Cy Young are for one or the other). NBA: "Totals". */
+  group: NumberGroup;
   /** Every target from low to high in steps of step is possible. */
   low: number;
   high: number;
@@ -54,8 +58,26 @@ export const NUMBER_STATS: NumberStat[] = [
   { key: "SV", label: "Saves", short: "saves", group: "Pitching", low: 25, high: 1000, step: 25 },
 ];
 
-const STAT_BY_KEY = new Map(NUMBER_STATS.map((s) => [s.key, s]));
-export const numberStat = (key: string): NumberStat | undefined => STAT_BY_KEY.get(key);
+/**
+ * NBA stats (career regular-season totals, BAA, NBA and ABA combined). Steals
+ * and blocks have been kept since 1973–74, 3-pointers since 1979–80 (ABA 1967–76).
+ */
+export const NBA_NUMBER_STATS: NumberStat[] = [
+  { key: "PTS", label: "Points", short: "points", group: "Totals", low: 5000, high: 60000, step: 500 },
+  { key: "TRB", label: "Rebounds", short: "rebounds", group: "Totals", low: 2000, high: 30000, step: 250 },
+  { key: "AST", label: "Assists", short: "assists", group: "Totals", low: 1000, high: 20000, step: 250 },
+  { key: "STL", label: "Steals", short: "steals", group: "Totals", low: 300, high: 4500, step: 50 },
+  { key: "BLK", label: "Blocks", short: "blocks", group: "Totals", low: 300, high: 5000, step: 50 },
+  { key: "3P", label: "3-pointers", short: "threes", group: "Totals", low: 300, high: 6000, step: 50 },
+];
+
+const STATS: Record<Sport, NumberStat[]> = { mlb: NUMBER_STATS, nba: NBA_NUMBER_STATS };
+const STAT_BY_KEY: Record<Sport, Map<string, NumberStat>> = {
+  mlb: new Map(NUMBER_STATS.map((s) => [s.key, s])),
+  nba: new Map(NBA_NUMBER_STATS.map((s) => [s.key, s])),
+};
+export const numberStats = (sport: Sport = "mlb"): NumberStat[] => STATS[sport];
+export const numberStat = (key: string, sport: Sport = "mlb"): NumberStat | undefined => STAT_BY_KEY[sport].get(key);
 
 export function targetsFor(stat: NumberStat): number[] {
   const out: number[] = [];
@@ -63,8 +85,11 @@ export function targetsFor(stat: NumberStat): number[] {
   return out;
 }
 
-/** New rounds stored on or after this date get slot rules. Rounds before it never change. */
+/** New baseball rounds stored on or after this date get slot rules. Rounds before it never change. */
 export const NUMBER_SLOTS_FROM = "2026-11-21";
+
+/** Does a new round on this date get slot rules? NBA rounds always do. */
+export const numberSlotsOn = (date: string, sport: Sport = "mlb") => sport === "nba" || date >= NUMBER_SLOTS_FROM;
 
 export type SlotKind = "decade" | "team" | "league" | "position" | "award";
 
@@ -122,25 +147,28 @@ const dayIndex = (date: string) => numberRoundNumber(date) - 1;
  * own fixed shuffle of every target in its range, so a stat and target come back
  * only after all of that stat's targets have been used: at least 40 cycles, more than a year.
  */
-export function generateNumberRound(date: string): StoredNumberRound {
+export function generateNumberRound(date: string, sport: Sport = "mlb"): StoredNumberRound {
   const idx = Math.max(dayIndex(date), 0);
-  const n = NUMBER_STATS.length;
+  const stats = numberStats(sport);
+  const n = stats.length;
   const cycle = Math.floor(idx / n);
-  const keys = NUMBER_STATS.map((s) => s.key);
-  const statKey = chainedShuffle(keys, (c) => `number:stats:${c}`, cycle)[idx % n];
+  const keys = stats.map((s) => s.key);
+  // Baseball's seeds are unchanged; NBA's start with "nba:".
+  const statKey = chainedShuffle(keys, (c) => namespaced(sport, `number:stats:${c}`), cycle)[idx % n];
   // The same order every lap, so a target comes back one lap (more than a year) later.
-  const targets = shuffled(targetsFor(numberStat(statKey)!), `number:${statKey}`);
+  const targets = shuffled(targetsFor(numberStat(statKey, sport)!), namespaced(sport, `number:${statKey}`));
   const target = targets[cycle % targets.length];
   return { statKey, target };
 }
 
 /** The round as the browser sees it. */
 export interface NumberRound {
+  sport: Sport;
   date: string;
   statKey: string;
   label: string;
   short: string;
-  group: "Batting" | "Pitching";
+  group: NumberGroup;
   target: number;
   /** One rule per slot, or null when any player fits anywhere. */
   slots: NumberSlot[] | null;
@@ -154,11 +182,12 @@ export function publicNumberRound(
   date: string,
   stored: StoredNumberRound,
   labelOf: (rule: SlotRule) => string = (r) => r.key,
+  sport: Sport = "mlb",
 ): NumberRound {
-  const stat = numberStat(stored.statKey);
+  const stat = numberStat(stored.statKey, sport);
   if (!stat) throw new Error(`Unknown Hit the Number stat: ${stored.statKey}`);
   const slots = stored.slots?.length === NUMBER_PICKS ? stored.slots.map((r) => ({ ...r, label: labelOf(r) })) : null;
-  return { date, statKey: stat.key, label: stat.label, short: stat.short, group: stat.group, target: stored.target, slots };
+  return { sport, date, statKey: stat.key, label: stat.label, short: stat.short, group: stat.group, target: stored.target, slots };
 }
 
 export interface NumberPick {
@@ -412,9 +441,12 @@ function shortDate(date: string): string {
  *   Hit the Number #15 · Nov 15, 2026
  *   875 / 900 HR 🎯
  *   https://dailydugout.com/number
+ *
+ * NBA rounds say so: "Hit the Number · NBA #15 · Nov 15, 2026".
  */
 export function buildNumberShareText(round: NumberRound, state: NumberState, url: string): string {
-  const title = `Hit the Number #${numberRoundNumber(round.date)} · ${shortDate(round.date)}`;
+  const name = round.sport === "nba" ? "Hit the Number · NBA" : "Hit the Number";
+  const title = `${name} #${numberRoundNumber(round.date)} · ${shortDate(round.date)}`;
   const line = `${fmt(state.total)} / ${fmt(round.target)} ${round.short} ${state.bust ? "💥" : "🎯"}`;
   return [title, line, url].join("\n");
 }

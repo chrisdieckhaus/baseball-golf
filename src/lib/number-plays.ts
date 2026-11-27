@@ -3,6 +3,7 @@
 // copy in localStorage; the database is the record.
 import { NUMBER_BUCKETS, numberBucket } from "./number";
 import { percentBeaten, type Queryable } from "./plays";
+import { table, type Sport } from "./sport";
 
 export interface NumberPlay {
   ids: string[];
@@ -25,9 +26,14 @@ function toPlay(r: Record<string, unknown>): NumberPlay {
   };
 }
 
-export async function getNumberPlay(db: Queryable, playerId: string, roundDate: string): Promise<NumberPlay | null> {
+export async function getNumberPlay(
+  db: Queryable,
+  playerId: string,
+  roundDate: string,
+  sport: Sport = "mlb",
+): Promise<NumberPlay | null> {
   const { rows } = await db.query(
-    `SELECT pick_ids, pick_slots, total, done, bust, score FROM number_plays WHERE player_id = $1 AND round_date = $2`,
+    `SELECT pick_ids, pick_slots, total, done, bust, score FROM ${table(sport, "number_plays")} WHERE player_id = $1 AND round_date = $2`,
     [playerId, roundDate],
   );
   return rows[0] ? toPlay(rows[0]) : null;
@@ -40,15 +46,17 @@ export async function getNumberPlay(db: Queryable, playerId: string, roundDate: 
 export async function recordNumberPicks(
   db: Queryable,
   args: { playerId: string; roundDate: string; play: NumberPlay; isLive: boolean },
+  sport: Sport = "mlb",
 ): Promise<NumberPlay> {
   const { playerId, roundDate, play, isLive } = args;
+  const plays = table(sport, "number_plays");
   await db.query(`INSERT INTO players (id) VALUES ($1) ON CONFLICT DO NOTHING`, [playerId]);
   await db.query(
-    `INSERT INTO number_plays (player_id, round_date, is_live) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
+    `INSERT INTO ${plays} (player_id, round_date, is_live) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING`,
     [playerId, roundDate, isLive],
   );
   const { rows } = await db.query(
-    `UPDATE number_plays SET
+    `UPDATE ${plays} SET
         pick_ids = $3::text[], pick_slots = $8::integer[], total = $4, done = $5, bust = $6, score = $7,
         completed_at = CASE WHEN $5 THEN now() ELSE NULL END
       WHERE player_id = $1 AND round_date = $2 AND NOT done
@@ -59,13 +67,18 @@ export async function recordNumberPicks(
     [playerId, roundDate, play.ids, play.total, play.done, play.bust, play.score, play.slots],
   );
   if (rows[0]) return toPlay(rows[0]);
-  return (await getNumberPlay(db, playerId, roundDate))!;
+  return (await getNumberPlay(db, playerId, roundDate, sport))!;
 }
 
 /** This player's plays on every daily round they've started, by date. */
-export async function getNumberProgress(db: Queryable, playerId: string): Promise<Map<string, NumberPlay>> {
+export async function getNumberProgress(
+  db: Queryable,
+  playerId: string,
+  sport: Sport = "mlb",
+): Promise<Map<string, NumberPlay>> {
   const { rows } = await db.query(
-    `SELECT round_date::text AS round_date, pick_ids, pick_slots, total, done, bust, score FROM number_plays WHERE player_id = $1`,
+    `SELECT round_date::text AS round_date, pick_ids, pick_slots, total, done, bust, score
+       FROM ${table(sport, "number_plays")} WHERE player_id = $1`,
     [playerId],
   );
   return new Map(rows.map((r) => [r.round_date as string, toPlay(r)]));
@@ -96,10 +109,11 @@ export async function getNumberStats(
   playerId: string,
   mine: { score: number | null; bust: boolean },
   target: number,
+  sport: Sport = "mlb",
 ): Promise<NumberStats> {
   const { rows } = await db.query<{ bust: boolean; score: number | null; n: string; mine: string }>(
     `SELECT bust, score, count(*) AS n, count(*) FILTER (WHERE player_id = $2) AS mine
-       FROM number_plays WHERE round_date = $1 AND done
+       FROM ${table(sport, "number_plays")} WHERE round_date = $1 AND done
       GROUP BY bust, score`,
     [roundDate, playerId],
   );

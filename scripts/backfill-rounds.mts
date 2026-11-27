@@ -48,11 +48,12 @@ try {
   // NBA (only while the NBA kill switch is on; otherwise its rounds are made the first time they're needed).
   if (isNbaEnabled()) {
     const nba = leaderboardsFor("nba");
-    const counts = { golf: 0, player: 0 };
+    const counts = { golf: 0, player: 0, number: 0 };
     for (const date of dates) {
       if (await storeRoundIfMissing(client, nba, date, "nba")) counts.golf++;
       if (date >= PLAYER_GOLF_LAUNCH_DATE && (await storePlayerRoundIfMissing(client, nba, playerMetaFor("nba"), date, "nba")))
         counts.player++;
+      if (date >= NUMBER_LAUNCH_DATE && (await storeNumberRoundIfMissing(client, date, "nba"))) counts.number++;
     }
     console.log(`[backfill-rounds] NBA: checked ${dates.length} date(s); saved new rounds ${JSON.stringify(counts)}.`);
   } else {
